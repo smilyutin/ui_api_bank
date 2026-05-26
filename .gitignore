@@ -1,0 +1,80 @@
+# vuln-bank .gitignore — tailored for this project
+# Generated to ignore common Python, Node, Playwright, Docker, IDE, and macOS artifacts
+
+## Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+env/
+env.bak/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+sdist/
+wheels/
+
+# Virtualenv and env files (may contain secrets)
+.env
+.env.*
+
+## Test & coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+test-results/
+.tox/
+.nox/
+nosetests.xml
+
+## Playwright / test runner
+.playwright/
+playwright-report/
+
+## Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+.nyc_output/
+coverage/
+
+## Static uploads / user-provided files
+# The project stores uploads under static/uploads — keep an empty .gitkeep if present
+static/uploads/
+static/uploads/*
+!static/uploads/.gitkeep
+
+## IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+## macOS
+.DS_Store
+
+## Logs and runtime
+*.log
+debug.log
+
+## Docker / local dev overrides
+docker-compose.override.yml
+.env.local
+.env.*.local
+
+## Keys / certificates
+*.pem
+*.key
+
+## Misc
+Thumbs.db
+.env

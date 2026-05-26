@@ -1,0 +1,220 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "viewport": {
+              "type": "string"
+            },
+            "favicon": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "viewport",
+            "favicon"
+          ]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "logo": {
+                "type": "string"
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "external": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "url",
+                    "external"
+                  ]
+                }
+              },
+              "headline": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "style": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "url",
+                    "style"
+                  ]
+                }
+              },
+              "image": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "download": {
+                "type": "object",
+                "properties": {
+                  "label": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "label",
+                  "url"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "icon": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "icon",
+                    "title",
+                    "description"
+                  ]
+                }
+              },
+              "text": {
+                "type": "string"
+              },
+              "social_links": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "platform": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "platform",
+                    "url"
+                  ]
+                }
+              },
+              "agent": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "mode": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "mode",
+                  "status"
+                ]
+              },
+              "api": {
+                "type": "object",
+                "properties": {
+                  "endpoint": {
+                    "type": "string"
+                  },
+                  "method": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "endpoint",
+                  "method"
+                ]
+              },
+              "welcome_message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "type"
+            ]
+          }
+        }
+      },
+      "required": [
+        "title",
+        "type",
+        "meta",
+        "sections"
+      ]
+    }
+  },
+  "required": [
+    "page"
+  ]
+}

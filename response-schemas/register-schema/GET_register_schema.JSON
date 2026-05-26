@@ -1,0 +1,309 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "viewport": {
+              "type": "string"
+            },
+            "favicon": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "stylesheets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "viewport",
+            "favicon",
+            "stylesheets"
+          ]
+        },
+        "layout": {
+          "type": "object",
+          "properties": {
+            "container": {
+              "type": "string"
+            },
+            "heading": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "container",
+            "heading"
+          ]
+        },
+        "form": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "encoding": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "validation": {
+                    "type": "object",
+                    "properties": {
+                      "client_side_validation": {
+                        "type": "boolean"
+                      },
+                      "password_complexity_required": {
+                        "type": "boolean"
+                      },
+                      "sanitized": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": []
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "placeholder",
+                  "required",
+                  "validation"
+                ]
+              }
+            },
+            "submit_button": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "method",
+            "action",
+            "encoding",
+            "fields",
+            "submit_button"
+          ]
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "url"
+            ]
+          }
+        },
+        "api_interaction": {
+          "type": "object",
+          "properties": {
+            "endpoint": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            },
+            "request_format": {
+              "type": "string"
+            },
+            "success_behavior": {
+              "type": "object",
+              "properties": {
+                "display_message": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "render_mode": {
+                      "type": "string"
+                    },
+                    "style": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "render_mode",
+                    "style"
+                  ]
+                },
+                "redirect": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string"
+                    },
+                    "delay_ms": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "url",
+                    "delay_ms"
+                  ]
+                }
+              },
+              "required": [
+                "display_message",
+                "redirect"
+              ]
+            },
+            "error_behavior": {
+              "type": "object",
+              "properties": {
+                "display_message": {
+                  "type": "object",
+                  "properties": {
+                    "target": {
+                      "type": "string"
+                    },
+                    "render_mode": {
+                      "type": "string"
+                    },
+                    "style": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "target",
+                    "render_mode",
+                    "style"
+                  ]
+                }
+              },
+              "required": [
+                "display_message"
+              ]
+            }
+          },
+          "required": [
+            "endpoint",
+            "method",
+            "request_format",
+            "success_behavior",
+            "error_behavior"
+          ]
+        },
+        "ui_elements": {
+          "type": "object",
+          "properties": {
+            "message_container": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "type"
+              ]
+            }
+          },
+          "required": [
+            "message_container"
+          ]
+        },
+        "security_flags": {
+          "type": "object",
+          "properties": {
+            "client_side_validation": {
+              "type": "boolean"
+            },
+            "csrf_protection": {
+              "type": "boolean"
+            },
+            "input_sanitization": {
+              "type": "boolean"
+            },
+            "xss_protection": {
+              "type": "boolean"
+            },
+            "password_complexity_enforced": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "client_side_validation",
+            "csrf_protection",
+            "input_sanitization",
+            "xss_protection",
+            "password_complexity_enforced"
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "type",
+        "meta",
+        "layout",
+        "form",
+        "links",
+        "api_interaction",
+        "ui_elements",
+        "security_flags"
+      ]
+    }
+  },
+  "required": [
+    "page"
+  ]
+}

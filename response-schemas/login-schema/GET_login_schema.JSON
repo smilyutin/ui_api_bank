@@ -1,0 +1,261 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema for Root",
+  "type": "object",
+  "properties": {
+    "page": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "meta": {
+          "type": "object",
+          "properties": {
+            "viewport": {
+              "type": "string"
+            },
+            "favicon": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "stylesheets": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "viewport",
+            "favicon",
+            "stylesheets"
+          ]
+        },
+        "layout": {
+          "type": "object",
+          "properties": {
+            "container": {
+              "type": "string"
+            },
+            "heading": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "container",
+            "heading"
+          ]
+        },
+        "form": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            },
+            "action": {
+              "type": "string"
+            },
+            "encoding": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "placeholder",
+                  "required"
+                ]
+              }
+            },
+            "submit_button": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "method",
+            "action",
+            "encoding",
+            "fields",
+            "submit_button"
+          ]
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "url"
+            ]
+          }
+        },
+        "api_interaction": {
+          "type": "object",
+          "properties": {
+            "endpoint": {
+              "type": "string"
+            },
+            "method": {
+              "type": "string"
+            },
+            "request_format": {
+              "type": "string"
+            },
+            "success_behavior": {
+              "type": "object",
+              "properties": {
+                "store_token": {
+                  "type": "object",
+                  "properties": {
+                    "location": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "location",
+                    "key"
+                  ]
+                },
+                "redirect": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "store_token",
+                "redirect"
+              ]
+            },
+            "error_behavior": {
+              "type": "object",
+              "properties": {
+                "display_target": {
+                  "type": "string"
+                },
+                "render_mode": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "display_target",
+                "render_mode"
+              ]
+            }
+          },
+          "required": [
+            "endpoint",
+            "method",
+            "request_format",
+            "success_behavior",
+            "error_behavior"
+          ]
+        },
+        "security_flags": {
+          "type": "object",
+          "properties": {
+            "csrf_protection": {
+              "type": "boolean"
+            },
+            "rate_limiting": {
+              "type": "boolean"
+            },
+            "xss_protection": {
+              "type": "boolean"
+            },
+            "secure_token_storage": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "csrf_protection",
+            "rate_limiting",
+            "xss_protection",
+            "secure_token_storage"
+          ]
+        },
+        "ui_elements": {
+          "type": "object",
+          "properties": {
+            "message_container": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "type"
+              ]
+            }
+          },
+          "required": [
+            "message_container"
+          ]
+        }
+      },
+      "required": [
+        "title",
+        "type",
+        "meta",
+        "layout",
+        "form",
+        "links",
+        "api_interaction",
+        "security_flags",
+        "ui_elements"
+      ]
+    }
+  },
+  "required": [
+    "page"
+  ]
+}
