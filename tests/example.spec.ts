@@ -2,8 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Vulnerable Bank smoke checks', () => {
   test('home page renders and primary links work', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('.bank-logo')).toBeVisible();
     await expect(page).toHaveTitle(/Vulnerable Bank/i);
