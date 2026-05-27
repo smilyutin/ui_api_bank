@@ -80,10 +80,8 @@ test.describe('UI - Create user account', () => {
     await login.fillPassword(user.password);
     await login.submit();
 
-    await Promise.race([
-      page.waitForURL(/\/dashboard|\/$/i, { timeout: 7000 }).catch(() => null),
-      page.waitForLoadState('networkidle').catch(() => null),
-    ]);
+    await page.waitForURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
+    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible({ timeout: 7000 });
 
     expect(page.url()).not.toContain('/login');
 
