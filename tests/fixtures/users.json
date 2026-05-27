@@ -1,14 +1,14 @@
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo3LCJ1c2VybmFtZSI6IlVJK2t1eW5uYnVrQGV4YW1wbGUuY29tIiwiaXNfYWRtaW4iOmZhbHNlLCJpYXQiOjE3Nzk4MzY2NTN9.Npl6FK0wpk3d0YnvtBqTkH1lCNs5a5WosErOLm65J7c",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyMSwidXNlcm5hbWUiOiJVSStrcm4yMDNrakBleGFtcGxlLmNvbSIsImlzX2FkbWluIjpmYWxzZSwiaWF0IjoxNzc5OTEzNTk4fQ.kmAQiNBpEHMCwk9bPTQd2CogLMIeEPehUeK0GhY22-w",
   "user": {
-    "username": "UIkuynnbuk",
-    "email": "UI+kuynnbuk@example.com",
+    "username": "UIkrn203kj",
+    "email": "UI+krn203kj@example.com",
     "password": "Password123!"
   },
   "users": [
     {
-      "username": "UIkuynnbuk",
-      "email": "UI+kuynnbuk@example.com",
+      "username": "UIkrn203kj",
+      "email": "UI+krn203kj@example.com",
       "password": "Password123!"
     }
   ]

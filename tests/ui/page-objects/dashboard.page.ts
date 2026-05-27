@@ -32,12 +32,11 @@ export class DashboardPage {
   }
 
   async waitForLoad() {
-    await this.page.waitForLoadState('networkidle');
-    // Wait for typical dashboard elements to be ready
-    await expect(async () => {
-      const isReady = await this.isLoggedIn();
-      expect(isReady).toBeTruthy();
-    }).toPass({ timeout: 5000 });
+    // The dashboard performs several fetches on load, so `networkidle` is
+    // not a reliable readiness signal here. Wait for the actual UI instead.
+    await expect(this.page).toHaveURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
+    await expect(this.page.getByRole('heading', { name: /welcome back/i })).toBeVisible({ timeout: 7000 });
+    await expect(this.page.locator('#balance')).toBeVisible({ timeout: 7000 });
   }
 
   async getNavigationItems() {
