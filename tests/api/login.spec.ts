@@ -1,12 +1,12 @@
 import { test, expect, request } from '@playwright/test';
-import { createRandomUser, findOrCreateUser, User } from '../utils/credentials';
-import { validateSchema } from '../utils/schema-validator';
-import { SecurityReporter } from '.././security/security-reporter';
+import { createRandomUser, findOrCreateUser, User } from '../../helpers/credentials';
+import { validateSchema } from '../../helpers/schema-validator';
+import { SecurityReporter } from '../../fixtures/helper/security-reporter';
 import {
   analyzeLoginFailure,
   analyzeLoginSuccess,
   loginViaAvailableFlow
-} from './helpers/login.helpers';
+} from '../../fixtures/api/login.helpers';
 
 /**
  * API Authentication Tests

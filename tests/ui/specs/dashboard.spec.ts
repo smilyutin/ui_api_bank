@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../page-objects/dashboard.page';
-import { ensureDashboardAuthenticated } from '../helpers/auth-bootstrap';
+import { DashboardPage } from '../../../pages/dashboard.page';
+import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 
 /**
  * Dashboard Functionality Tests

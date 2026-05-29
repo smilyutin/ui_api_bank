@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { RegisterPage } from '../page-objects/register.page';
-import { LoginPage } from '../page-objects/login.page';
-import { saveStoredToken, saveUser, createRandomUser } from '../../utils/credentials';
+import { RegisterPage } from '../../../pages/register.page';
+import { LoginPage } from '../../../pages/login.page';
+import { saveStoredToken, saveUser, createRandomUser } from '../../../helpers/credentials';
 
 /**
  * UI User Registration Tests

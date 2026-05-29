@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../page-objects/dashboard.page';
-import { MoneyTransferPage } from '../page-objects/money-transfer.page';
-import { ensureDashboardAuthenticated } from '../helpers/auth-bootstrap';
+import { DashboardPage } from '../../../pages/dashboard.page';
+import { MoneyTransferPage } from '../../../pages/money-transfer.page';
+import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 
 /**
  * Money Transfer Flow Tests
