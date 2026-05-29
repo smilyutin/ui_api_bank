@@ -29,121 +29,97 @@ The repository also includes `.github/workflows/copilot-setup-steps.yml`, which 
 
 ## Project structure
 
-Here’s a quick map of the main folders and files in this repo:
-
-- `app.py` - Flask application entry point, route handlers, and UI/API logic for the vulnerable bank app.
-- `auth.py` - Authentication helpers, token generation, login handling, and user/session lookup logic.
-- `database.py` - Database setup, schema creation, seed data, and the default admin account bootstrap.
-- `templates/` - Jinja2 HTML templates for login, registration, dashboard, admin, and password reset pages.
-- `static/` - Front-end assets such as CSS, JavaScript, OpenAPI docs, icons, and uploaded files.
-- `tests/` - Playwright test suites, fixtures, helpers, utilities, and security reporting support.
-- `response-schemas/` - Saved JSON schema snapshots for validating API responses in tests.
-- `specs/` - Additional test planning or specification documents used by the team.
-- `.github/` - Copilot agents and workflow files that support automation, setup, and repository tasks.
-- `Dockerfile` - Builds the Flask app image used by Docker Compose.
-- `docker-compose.yml` - Local stack definition for the app and PostgreSQL database.
-- `docker-compose.override.yml` - Local overrides for compose development behavior.
-- `package.json` - Node/Playwright scripts and test dependencies.
-- `tsconfig.json` - TypeScript configuration for the Playwright test workspace.
-- `requirements.txt` - Python packages required by the Flask application.
-
-### Expanded tree
+Here’s the rebuilt layout now that the shared helpers, page objects, and fixtures live in dedicated top-level folders:
 
 ```text
-ui_api_bank/  # Vulnerable bank app workspace
-├── .env.example                 # Example environment variables for local setup
-├── .github/                    # GitHub automation and Copilot prompt files
-│   ├── agents/                 # Playwright agent prompts
-│   │   ├── playwright-test-generator.agent.md
-│   │   ├── playwright-test-healer.agent.md
-│   │   └── playwright-test-planner.agent.md
-│   └── workflows/              # GitHub Actions workflows
-│       ├── copilot-setup-steps.yml
-│       ├── deploy.yml
-│       └── playwright.yml
-├── .gitignore                   # Ignore rules for local/build artifacts
-├── .vscode/                     # VS Code workspace configuration
-│   └── mcp.json                 # MCP server configuration for the workspace
-├── Dockerfile                   # Docker image build instructions for the app
-├── LICENSE.md                   # MIT license text for the project
-├── README.md                    # Project overview, setup, and testing guide
-├── app.py                       # Flask routes, page rendering, and API logic
-├── auth.py                      # Authentication, JWT, and login helpers
-├── database.py                  # Database schema setup and default seed data
-├── docker-compose.override.yml  # Local compose overrides for development
-├── docker-compose.yml           # Local app + PostgreSQL compose stack
-├── package-lock.json            # Locked Node dependency versions
-├── package.json                 # Playwright scripts and Node package metadata
-├── playwright.config.ts         # Playwright configuration for browser tests
-├── requirements.txt             # Python dependency pins for the Flask app
-├── response-schemas/            # Saved API response schemas for validation
-│   ├── dashboard-schema/
-│   │   └── GET_dashboard_schema.JSON  # Dashboard API response shape
-│   ├── home-schema/
-│   │   └── GET_home_schema.JSON       # Home page API response shape
-│   ├── login-schema/
-│   │   └── GET_login_schema.JSON      # Login API response shape
-│   └── register-schema/
-│       └── GET_register_schema.JSON   # Register API response shape
-├── specs/                       # Additional planning/specification docs
-│   └── README.md                # Notes for the specs folder
-├── static/                      # Front-end assets and generated uploads
-│   ├── admin.css                # Admin page styles
-│   ├── auth.css                 # Login/register/reset page styles
-│   ├── dashboard.css            # Dashboard page styles
-│   ├── dashboard.js             # Dashboard UI behavior
-│   ├── favicon-16.svg           # Small favicon variant
-│   ├── favicon.svg              # Main favicon
-│   ├── openapi.json             # API specification used by the app
-│   ├── style.css                # Shared site styles
-│   └── uploads/                 # Uploaded files stored by the app
-├── templates/                   # Flask/Jinja templates for rendered pages
-│   ├── admin.html               # Admin control panel page
-│   ├── dashboard.html           # Main user dashboard page
-│   ├── forgot_password.html     # Forgot-password request page
-│   ├── index.html               # Landing/home page
-│   ├── login.html               # Login page
-│   ├── register.html            # Registration page
-│   └── reset_password.html      # Password reset page
-├── tests/                       # Playwright tests, helpers, and fixtures
-│   ├── api/                     # API-focused test cases
-│   │   ├── create-user.spec.ts  # API user creation coverage
-│   │   ├── dashboard.spec.ts    # Dashboard API checks
-│   │   ├── login.spec.ts        # Login API checks
-│   │   └── helpers/             # Shared API helper functions
-│   │       ├── create-user.helpers.ts
-│   │       ├── login.helpers.ts
-│   │       └── register-form.helpers.ts
-│   ├── example.spec.ts          # Minimal smoke/example test
-│   ├── fixtures/                # Shared test data files
-│   │   └── users.json           # Test user fixture data
-│   ├── security/                # Security reporting helpers
-│   │   └── security-reporter.ts # Custom test result reporter
-│   ├── seed.spec.ts             # Seed test used by the generator/planner
-│   ├── ui/                      # UI-oriented tests and page objects
-│   │   ├── helpers/             # UI bootstrap and helper utilities
-│   │   │   └── auth-bootstrap.ts
-│   │   ├── page-objects/        # Page object models for UI tests
-│   │   │   ├── dashboard.page.ts
-│   │   │   ├── login.page.ts
-│   │   │   ├── money-transfer.page.ts
-│   │   │   └── register.page.ts
-│   │   ├── specs/               # UI test specs
-│   │   │   ├── create-user.spec.ts
-│   │   │   ├── dashboard.spec.ts
-│   │   │   ├── money-transfer.spec.ts
-│   │   │   └── visual-leftmenu.spec.ts
-│   │   └── visual-leftmenu.spec.ts-snapshots/ # Stored visual snapshot baselines
-│   └── utils/                   # Shared test utilities
-│       ├── credentials.ts       # Test credential helpers
-│       ├── performance-metrics.ts # Validation timing/metrics tracker
-│       └── schema-validator.ts  # JSON schema validation helper
-├── tsconfig.json                # TypeScript compiler settings for tests
-├── .venv/                       # Local Python virtual environment (generated)
-├── node_modules/                # Installed Node packages (generated)
-├── test-results/                # Playwright test output artifacts (generated)
-└── playwright-report/           # Latest generated Playwright HTML report
+ui_api_bank/
+├── .claude/
+│   └── skills/
+├── .cursor/
+│   ├── rules/
+│   └── skills/
+├── .devcontainer/
+├── .github/
+│   ├── agents/
+│   ├── instructions/
+│   └── workflows/
+├── .vscode/
+├── config/
+├── enums/
+├── env/
+├── fixtures/
+│   ├── api/
+│   │   ├── create-user.helpers.ts
+│   │   ├── login.helpers.ts
+│   │   ├── register-form.helpers.ts
+│   │   ├── request.fixture.ts
+│   │   ├── schemas.ts
+│   │   └── types.ts
+│   ├── helper/
+│   │   └── security-reporter.ts
+│   └── pom/
+├── helpers/
+│   ├── auth-bootstrap.ts
+│   ├── credentials.ts
+│   ├── performance-metrics.ts
+│   └── schema-validator.ts
+├── pages/
+│   ├── dashboard.page.ts
+│   ├── login.page.ts
+│   ├── money-transfer.page.ts
+│   └── register.page.ts
+├── scripts/
+├── specs/
+├── static/
+│   ├── admin.css
+│   ├── auth.css
+│   ├── dashboard.css
+│   ├── dashboard.js
+│   ├── favicon-16.svg
+│   ├── favicon.svg
+│   ├── openapi.json
+│   ├── style.css
+│   └── uploads/
+├── templates/
+├── test-data/
+│   └── users.json
+├── tests/
+│   ├── api/
+│   │   ├── create-user.spec.ts
+│   │   ├── dashboard.spec.ts
+│   │   └── login.spec.ts
+│   ├── example.spec.ts
+│   ├── seed.spec.ts
+│   └── ui/
+│       ├── specs/
+│       │   ├── create-user.spec.ts
+│       │   ├── dashboard.spec.ts
+│       │   ├── money-transfer.spec.ts
+│       │   └── visual-leftmenu.spec.ts
+│       └── visual-leftmenu.spec.ts-snapshots/
+├── .env.example
+├── .gitignore
+├── CLAUDE.md
+├── Dockerfile
+├── LICENSE.md
+├── README.md
+├── app.py
+├── auth.py
+├── database.py
+├── docker-compose.override.yml
+├── docker-compose.yml
+├── eslint.config.mts
+├── package-lock.json
+├── package.json
+├── playwright.config.ts
+├── requirements.txt
+├── response-schemas/
+├── tsconfig.json
+└── generated runtime folders such as `.venv/`, `node_modules/`, `playwright-report/`, and `test-results/`
+
 ```
+
+The old `tests/fixtures/`, `tests/utils/`, `tests/security/`, `tests/ui/helpers/`, and `tests/ui/page-objects/` folders were intentionally retired during the rebuild.
 
 ## Overview
 

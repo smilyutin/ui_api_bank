@@ -1,12 +1,12 @@
 import { test, expect, request } from '@playwright/test';
-import { SecurityReporter } from '.././security/security-reporter';
+import { SecurityReporter } from '../../fixtures/helper/security-reporter';
 import {
   analyzeCreateUserFailure,
   analyzeCreateUserSuccess,
   createUserViaAvailableFlow,
   EXTENDED_SUCCESS_STATUSES,
   type CreatePayload
-} from './helpers/create-user.helpers';
+} from '../../fixtures/api/create-user.helpers';
 
 test.describe('API - Create user account', () => {
   test('should create a user via API', async ({ baseURL, browser }, testInfo) => {

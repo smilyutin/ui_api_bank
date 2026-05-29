@@ -1,0 +1,11 @@
+{
+  "name": "ui_api_bank",
+  "dockerComposeFile": ["../docker-compose.yml", "../docker-compose.override.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspace/ui_api_bank",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-playwright.playwright"]
+    }
+  }
+}

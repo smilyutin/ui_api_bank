@@ -1,0 +1,15 @@
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoyMywidXNlcm5hbWUiOiJVSSs4eWZpa2RieUBleGFtcGxlLmNvbSIsImlzX2FkbWluIjpmYWxzZSwiaWF0IjoxNzgwMDcxNzk3fQ.G-baectrv-Bj3y1GyZ_WizrB9NWvYm52xaO02MNNKMc",
+  "user": {
+    "username": "UI8yfikdby",
+    "email": "UI+8yfikdby@example.com",
+    "password": "Password123!"
+  },
+  "users": [
+    {
+      "username": "UI8yfikdby",
+      "email": "UI+8yfikdby@example.com",
+      "password": "Password123!"
+    }
+  ]
+}

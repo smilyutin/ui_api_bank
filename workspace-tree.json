@@ -1,0 +1,619 @@
+{
+  "root": "/Users/minime/Projects/ui_api_bank",
+  "snapshot": "workspace layout snapshot",
+  "tree": {
+    "type": "directory",
+    "name": "ui_api_bank",
+    "children": [
+      {
+        "type": "directory",
+        "name": ".claude",
+        "children": [
+          {
+            "type": "directory",
+            "name": "skills",
+            "children": [
+              {
+                "type": "file",
+                "name": "README.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": ".cursor",
+        "children": [
+          {
+            "type": "directory",
+            "name": "rules",
+            "children": [
+              {
+                "type": "file",
+                "name": "orchestrator.md"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "skills",
+            "children": [
+              {
+                "type": "file",
+                "name": "README.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": ".devcontainer",
+        "children": [
+          {
+            "type": "file",
+            "name": "devcontainer.json"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": ".git",
+        "truncated": true
+      },
+      {
+        "type": "directory",
+        "name": ".github",
+        "children": [
+          {
+            "type": "directory",
+            "name": "agents",
+            "children": [
+              {
+                "type": "file",
+                "name": "playwright-test-generator.agent.md"
+              },
+              {
+                "type": "file",
+                "name": "playwright-test-healer.agent.md"
+              },
+              {
+                "type": "file",
+                "name": "playwright-test-planner.agent.md"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "instructions",
+            "children": [
+              {
+                "type": "file",
+                "name": "README.md"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "workflows",
+            "children": [
+              {
+                "type": "file",
+                "name": "copilot-setup-steps.yml"
+              },
+              {
+                "type": "file",
+                "name": "deploy.yml"
+              },
+              {
+                "type": "file",
+                "name": "playwright.yml"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": ".venv",
+        "truncated": true
+      },
+      {
+        "type": "directory",
+        "name": ".vscode",
+        "children": [
+          {
+            "type": "file",
+            "name": "mcp.json"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "config",
+        "children": [
+          {
+            "type": "file",
+            "name": "index.ts"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "enums",
+        "children": [
+          {
+            "type": "file",
+            "name": "index.ts"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "env",
+        "children": [
+          {
+            "type": "file",
+            "name": "README.md"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "fixtures",
+        "children": [
+          {
+            "type": "directory",
+            "name": "api",
+            "children": [
+              {
+                "type": "file",
+                "name": "create-user.helpers.ts"
+              },
+              {
+                "type": "file",
+                "name": "index.ts"
+              },
+              {
+                "type": "file",
+                "name": "login.helpers.ts"
+              },
+              {
+                "type": "file",
+                "name": "register-form.helpers.ts"
+              },
+              {
+                "type": "file",
+                "name": "request.fixture.ts"
+              },
+              {
+                "type": "file",
+                "name": "schemas.ts"
+              },
+              {
+                "type": "file",
+                "name": "types.ts"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "helper",
+            "children": [
+              {
+                "type": "file",
+                "name": "index.ts"
+              },
+              {
+                "type": "file",
+                "name": "security-reporter.ts"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "pom",
+            "children": [
+              {
+                "type": "file",
+                "name": "index.ts"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "helpers",
+        "children": [
+          {
+            "type": "file",
+            "name": "auth-bootstrap.ts"
+          },
+          {
+            "type": "file",
+            "name": "credentials.ts"
+          },
+          {
+            "type": "file",
+            "name": "index.ts"
+          },
+          {
+            "type": "file",
+            "name": "performance-metrics.ts"
+          },
+          {
+            "type": "file",
+            "name": "schema-validator.ts"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "node_modules",
+        "truncated": true
+      },
+      {
+        "type": "directory",
+        "name": "pages",
+        "children": [
+          {
+            "type": "file",
+            "name": "dashboard.page.ts"
+          },
+          {
+            "type": "file",
+            "name": "index.ts"
+          },
+          {
+            "type": "file",
+            "name": "login.page.ts"
+          },
+          {
+            "type": "file",
+            "name": "money-transfer.page.ts"
+          },
+          {
+            "type": "file",
+            "name": "register.page.ts"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "playwright-report",
+        "truncated": true
+      },
+      {
+        "type": "directory",
+        "name": "response-schemas",
+        "children": [
+          {
+            "type": "directory",
+            "name": "dashboard-schema",
+            "children": [
+              {
+                "type": "file",
+                "name": "GET_dashboard_schema.JSON"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "home-schema",
+            "children": [
+              {
+                "type": "file",
+                "name": "GET_home_schema.JSON"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "login-schema",
+            "children": [
+              {
+                "type": "file",
+                "name": "GET_login_schema.JSON"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "register-schema",
+            "children": [
+              {
+                "type": "file",
+                "name": "GET_register_schema.JSON"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "scripts",
+        "children": [
+          {
+            "type": "file",
+            "name": "README.md"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "specs",
+        "children": [
+          {
+            "type": "file",
+            "name": "README.md"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "static",
+        "children": [
+          {
+            "type": "directory",
+            "name": "uploads",
+            "children": [
+              {
+                "type": "file",
+                "name": "545449_IMG_1787.JPG"
+              },
+              {
+                "type": "file",
+                "name": "762765_Screenshot_2026-02-05_at_14.02.22.png"
+              },
+              {
+                "type": "file",
+                "name": "914861_Screenshot_2026-02-03_at_19.47.05.png"
+              },
+              {
+                "type": "file",
+                "name": "admin.png"
+              },
+              {
+                "type": "file",
+                "name": "banking-app.png"
+              },
+              {
+                "type": "file",
+                "name": "user.png"
+              }
+            ]
+          },
+          {
+            "type": "file",
+            "name": "admin.css"
+          },
+          {
+            "type": "file",
+            "name": "auth.css"
+          },
+          {
+            "type": "file",
+            "name": "dashboard.css"
+          },
+          {
+            "type": "file",
+            "name": "dashboard.js"
+          },
+          {
+            "type": "file",
+            "name": "favicon-16.svg"
+          },
+          {
+            "type": "file",
+            "name": "favicon.svg"
+          },
+          {
+            "type": "file",
+            "name": "openapi.json"
+          },
+          {
+            "type": "file",
+            "name": "style.css"
+          },
+          {
+            "type": "file",
+            "name": "user.png"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "templates",
+        "children": [
+          {
+            "type": "file",
+            "name": "admin.html"
+          },
+          {
+            "type": "file",
+            "name": "dashboard.html"
+          },
+          {
+            "type": "file",
+            "name": "forgot_password.html"
+          },
+          {
+            "type": "file",
+            "name": "index.html"
+          },
+          {
+            "type": "file",
+            "name": "login.html"
+          },
+          {
+            "type": "file",
+            "name": "register.html"
+          },
+          {
+            "type": "file",
+            "name": "reset_password.html"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "test-data",
+        "children": [
+          {
+            "type": "file",
+            "name": "users.json"
+          }
+        ]
+      },
+      {
+        "type": "directory",
+        "name": "test-results",
+        "truncated": true
+      },
+      {
+        "type": "directory",
+        "name": "tests",
+        "children": [
+          {
+            "type": "directory",
+            "name": "api",
+            "children": [
+              {
+                "type": "file",
+                "name": "create-user.spec.ts"
+              },
+              {
+                "type": "file",
+                "name": "dashboard.spec.ts"
+              },
+              {
+                "type": "file",
+                "name": "login.spec.ts"
+              }
+            ]
+          },
+          {
+            "type": "directory",
+            "name": "ui",
+            "children": [
+              {
+                "type": "directory",
+                "name": "specs",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "create-user.spec.ts"
+                  },
+                  {
+                    "type": "file",
+                    "name": "dashboard.spec.ts"
+                  },
+                  {
+                    "type": "file",
+                    "name": "money-transfer.spec.ts"
+                  },
+                  {
+                    "type": "file",
+                    "name": "visual-leftmenu.spec.ts"
+                  }
+                ]
+              },
+              {
+                "type": "directory",
+                "name": "visual-leftmenu.spec.ts-snapshots",
+                "children": [
+                  {
+                    "type": "file",
+                    "name": "left-menu-chromium-darwin.png"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "file",
+            "name": "example.spec.ts"
+          },
+          {
+            "type": "file",
+            "name": "seed.spec.ts"
+          }
+        ]
+      },
+      {
+        "type": "file",
+        "name": ".DS_Store"
+      },
+      {
+        "type": "file",
+        "name": ".env.example"
+      },
+      {
+        "type": "file",
+        "name": ".gitignore"
+      },
+      {
+        "type": "file",
+        "name": "app.py"
+      },
+      {
+        "type": "file",
+        "name": "auth.py"
+      },
+      {
+        "type": "file",
+        "name": "CLAUDE.md"
+      },
+      {
+        "type": "file",
+        "name": "database.py"
+      },
+      {
+        "type": "file",
+        "name": "docker-compose.override.yml"
+      },
+      {
+        "type": "file",
+        "name": "docker-compose.yml"
+      },
+      {
+        "type": "file",
+        "name": "Dockerfile"
+      },
+      {
+        "type": "file",
+        "name": "eslint.config.mts"
+      },
+      {
+        "type": "file",
+        "name": "LICENSE.md"
+      },
+      {
+        "type": "file",
+        "name": "package-lock.json"
+      },
+      {
+        "type": "file",
+        "name": "package.json"
+      },
+      {
+        "type": "file",
+        "name": "playwright.config.ts"
+      },
+      {
+        "type": "file",
+        "name": "README.md"
+      },
+      {
+        "type": "file",
+        "name": "requirements.txt"
+      },
+      {
+        "type": "file",
+        "name": "tsconfig.json"
+      }
+    ]
+  }
+}
