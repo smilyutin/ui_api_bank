@@ -47,16 +47,13 @@ test.describe('Profile picture management', () => {
     expect(updatedSrc).not.toBe(initialSrc);
   });
 
-  test('should import a profile picture from a URL', async ({ page }) => {
+  test('should import a profile picture from a URL', async ({ page, baseURL }) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+
     const profile = new ProfilePage(page);
 
-    // The server fetches this URL itself (not the browser), so it must be
-    // reachable from wherever the app is hosted. The app's own baseURL is not
-    // a safe substitute here: when the app runs behind a port-mapped
-    // container, its externally-facing baseURL is not reachable from inside
-    // the container. A stable third-party image keeps this a true test of the
-    // real-world "import from a URL" business function.
-    await profile.importFromUrl('https://www.google.com/favicon.ico');
+    // Use an app-hosted static asset to keep the test self-contained.
+    await profile.importFromUrl(new URL('/static/user.png', baseURL).toString());
 
     await profile.waitForUploadMessage(/imported from url successfully/i);
     await profile.waitForProfilePictureSrc(/uploads\//);
