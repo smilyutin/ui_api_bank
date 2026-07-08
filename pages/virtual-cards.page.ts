@@ -31,7 +31,7 @@ export class VirtualCardsPage extends HelperBase {
 	}
 
 	async toggleFreeze(cardId: number) {
-		await this.cardLocator(cardId).getByRole('button', { name: 'Freeze' }).click();
+		await this.cardLocator(cardId).getByRole('button', { name: /^(Freeze|Unfreeze)$/ }).click();
 	}
 
 	async verifyFrozenState(cardId: number, frozen: boolean, timeout = 7000) {
