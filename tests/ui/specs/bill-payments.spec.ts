@@ -95,10 +95,10 @@ test.describe('Bill payments', () => {
     // "ending in ####" option, which could be a stale, unfunded card.
     const listRes = await listVirtualCards(api, token);
     const listBody = await listRes.json().catch(() => null);
-    const fundedCard = (listBody?.cards || []).find((c: { id: number }) => c.id === cardId);
+    const fundedCard = (listBody?.cards || []).find((c: { id: number; card_number: string }) => c.id === cardId);
     await api.dispose();
     expect(fundedCard).toBeTruthy();
-    const last4 = String(fundedCard.card_number).slice(-4);
+    const last4 = fundedCard!.card_number.slice(-4);
 
     // Reload so loadVirtualCardsForPayment() picks up the funded, non-frozen card.
     await page.reload();
