@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "properties": {
+    "ai_response": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "type": "object"
+        },
+        "echo": {
+          "type": "string"
+        },
+        "has_user_context": {
+          "type": "boolean"
+        },
+        "response": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "context",
+        "echo",
+        "has_user_context",
+        "response"
+      ]
+    },
+    "mode": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "warning": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "ai_response",
+    "mode",
+    "status",
+    "warning"
+  ]
+}

@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import { findOrCreateUser } from '../../helpers/credentials';
 import {
   analyzeCreateUserFailure,
@@ -40,6 +41,11 @@ test.describe('API - Create user account', () => {
     const body = await result.response.json().catch(() => null);
     if ([200, 201].includes(result.response.status())) {
       expect(body).toBeTruthy();
+      // Schema is generated against the real POST /register contract; other
+      // discovered candidate paths aren't guaranteed to share that shape.
+      if (result.path.startsWith('/register (')) {
+        await validateSchema('register-schema', 'POST_register', body);
+      }
     }
 
     const success = analyzeCreateUserSuccess(result);

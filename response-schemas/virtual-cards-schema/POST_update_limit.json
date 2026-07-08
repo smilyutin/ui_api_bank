@@ -1,0 +1,62 @@
+{
+  "type": "object",
+  "properties": {
+    "debug_info": {
+      "type": "object",
+      "properties": {
+        "card_details": {
+          "type": "object",
+          "properties": {
+            "card_limit": {
+              "type": "number"
+            },
+            "card_type": {
+              "type": "string"
+            },
+            "current_balance": {
+              "type": "number"
+            },
+            "id": {
+              "type": "integer"
+            },
+            "is_active": {
+              "type": "boolean"
+            },
+            "is_frozen": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "card_limit",
+            "card_type",
+            "current_balance",
+            "id",
+            "is_active",
+            "is_frozen"
+          ]
+        },
+        "updated_fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "card_details",
+        "updated_fields"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "debug_info",
+    "message",
+    "status"
+  ]
+}

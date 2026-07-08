@@ -1,0 +1,81 @@
+{
+  "type": "object",
+  "properties": {
+    "demo_attacks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "endpoints": {
+      "type": "object",
+      "properties": {
+        "anonymous_chat": {
+          "type": "string"
+        },
+        "authenticated_chat": {
+          "type": "string"
+        },
+        "system_info": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "anonymous_chat",
+        "authenticated_chat",
+        "system_info"
+      ]
+    },
+    "modes": {
+      "type": "object",
+      "properties": {
+        "anonymous": {
+          "type": "string"
+        },
+        "authenticated": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "anonymous",
+        "authenticated"
+      ]
+    },
+    "status": {
+      "type": "string"
+    },
+    "system_info": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model",
+        "note",
+        "provider"
+      ]
+    },
+    "vulnerabilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "demo_attacks",
+    "endpoints",
+    "modes",
+    "status",
+    "system_info",
+    "vulnerabilities"
+  ]
+}

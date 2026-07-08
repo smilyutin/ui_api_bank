@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import { establishAccountSession } from '../../fixtures/api/transactions.helpers';
 import { forgeToken } from '../../fixtures/api/jwt-forge.helpers';
 import {
@@ -74,6 +75,7 @@ test.describe('API - Loan requests', () => {
 
     expect(status).toBe(200);
     expect(body?.status).toBe('success');
+    await validateSchema('loans-schema', 'POST_request_loan', body);
 
     const dashboardHtml = await fetchDashboardHtml(api, session.token);
     const loans = extractLoanRowsFromDashboardHtml(dashboardHtml);

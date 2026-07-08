@@ -9,6 +9,20 @@ const SCHEMA_BASE_PATH = './response-schemas'
 const ajv = new Ajv({ allErrors: true })
 addFormats(ajv)
 
+/**
+ * Opt-in "update mode" for intentional response-shape changes (a deliberate
+ * part of app development, not a bug). Set UPDATE_SCHEMAS=1 locally when
+ * you've changed an endpoint's response on purpose: a schema mismatch then
+ * *regenerates* the schema file from scratch, from only the current
+ * response — discarding whatever the old schema allowed — instead of
+ * failing the test. This is a full replace, not a merge: stale types/fields
+ * from before the change do not linger. Same "update the snapshot, then
+ * review the diff" workflow as Jest's --updateSnapshot. Leave unset for
+ * normal runs, where a shape mismatch is treated as a real regression and
+ * fails the test as before.
+ */
+const UPDATE_SCHEMAS = process.env.UPDATE_SCHEMAS === '1'
+
 export async function validateSchema(dirName: string, fileName: string, responseBody: object, createSchemaFlag: boolean = false) {
 	const schemaPath = path.join(SCHEMA_BASE_PATH, dirName, `${fileName}.json`)
 	const startTime = Date.now()
@@ -18,18 +32,41 @@ export async function validateSchema(dirName: string, fileName: string, response
 	try {
 		if (createSchemaFlag) await generateNewSchema(responseBody, schemaPath)
 
-		const schema = await loadSchema(schemaPath)
-		const validate = ajv.compile(schema)
+		let schema: any
+		try {
+			schema = await loadSchema(schemaPath)
+		} catch (loadError) {
+			if (!UPDATE_SCHEMAS) throw loadError
+			// No schema on disk yet — bootstrap one from this response instead
+			// of failing, since UPDATE_SCHEMAS signals this is expected.
+			await generateNewSchema(responseBody, schemaPath)
+			console.log(`[schema-validator] UPDATE_SCHEMAS: created ${schemaPath} (no existing schema found)`)
+			return
+		}
 
+		const validate = ajv.compile(schema)
 		const valid = validate(responseBody)
+
 		if (!valid) {
+			if (UPDATE_SCHEMAS) {
+				await generateNewSchema(responseBody, schemaPath)
+				console.log(
+					`[schema-validator] UPDATE_SCHEMAS: regenerated ${schemaPath} from the current response ` +
+					`(previous mismatch: ${JSON.stringify(validate.errors)}). This is a full replace — stale ` +
+					`types/fields from the old schema are not carried over. Review the diff before committing.`
+				)
+				return
+			}
+
 			success = false
 			errorType = validate.errors?.[0]?.keyword || 'unknown'
 			throw new Error(
 				`Schema validation ${fileName}_schema.json failed:\n` +
 				`${JSON.stringify(validate.errors, null, 4)})\n\n` +
 				`Actual response body: \n` +
-				`${JSON.stringify(responseBody, null, 4)}`
+				`${JSON.stringify(responseBody, null, 4)}\n\n` +
+				`If this shape change is intentional (part of app development, not a bug), ` +
+				`re-run with UPDATE_SCHEMAS=1 to regenerate the schema from the current response.`
 			)
 		}
 	} catch (error) {

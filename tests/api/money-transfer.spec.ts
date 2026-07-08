@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import { establishAccountSession } from '../../fixtures/api/transactions.helpers';
 import { forgeToken } from '../../fixtures/api/jwt-forge.helpers';
 import { transfer } from '../../fixtures/api/money-transfer.helpers';
@@ -85,6 +86,7 @@ test.describe('API - Money transfer happy path & transaction record', () => {
     expect(body?.status).toBe('success');
     expect(body?.message).toBe('Transfer Completed');
     expect(body?.new_balance).toBe(balanceBeforeSender - amount);
+    await validateSchema('money-transfer-schema', 'POST_transfer', body);
 
     const balanceAfterSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
     const balanceAfterSender = (await balanceAfterSenderRes.json().catch(() => null))?.balance;

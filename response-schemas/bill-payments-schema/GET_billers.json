@@ -1,0 +1,52 @@
+{
+  "type": "object",
+  "properties": {
+    "billers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "account_number": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer"
+          },
+          "maximum_amount": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "minimum_amount": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_number",
+          "description",
+          "id",
+          "maximum_amount",
+          "minimum_amount",
+          "name"
+        ]
+      }
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "billers",
+    "status"
+  ]
+}

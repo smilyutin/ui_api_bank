@@ -1,0 +1,74 @@
+{
+  "type": "object",
+  "properties": {
+    "ai_response": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "type": "object",
+          "properties": {
+            "account_number": {
+              "type": "string"
+            },
+            "balance": {
+              "type": "number"
+            },
+            "is_admin": {
+              "type": "boolean"
+            },
+            "profile_picture": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "user_id": {
+              "type": "integer"
+            },
+            "username": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "account_number",
+            "balance",
+            "is_admin",
+            "profile_picture",
+            "user_id",
+            "username"
+          ]
+        },
+        "echo": {
+          "type": "string"
+        },
+        "has_user_context": {
+          "type": "boolean"
+        },
+        "response": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "context",
+        "echo",
+        "has_user_context",
+        "response"
+      ]
+    },
+    "mode": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "user_context_included": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "ai_response",
+    "mode",
+    "status",
+    "user_context_included"
+  ]
+}

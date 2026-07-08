@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import { establishAccountSession } from '../../fixtures/api/transactions.helpers';
 import {
   createVirtualCard,
@@ -79,6 +80,7 @@ test.describe('API - Virtual card creation', () => {
     expect(createBody?.card_details?.card_number).toMatch(/^\d{16}$/);
     expect(createBody?.card_details?.cvv).toMatch(/^\d{3}$/);
     expect(createBody?.card_details?.expiry_date).toMatch(/^\d{2}\/\d{2}$/);
+    await validateSchema('virtual-cards-schema', 'POST_create', createBody);
 
     expect(card).toBeTruthy();
     expect(card?.card_type).toBe('premium');
@@ -219,9 +221,13 @@ test.describe('API - Virtual card listing', () => {
     }
 
     const { card } = await createVirtualCardAndFetch(api, session.token, { card_limit: 750 });
+
+    const listRes = await listVirtualCards(api, session.token);
+    const listBody = await listRes.json().catch(() => null);
     await api.dispose();
 
     expect(card).toBeTruthy();
+    await validateSchema('virtual-cards-schema', 'GET_list', listBody);
 
     const exposesFullCardNumber = /^\d{16}$/.test(card?.card_number || '');
     const exposesCvv = /^\d{3}$/.test(card?.cvv || '');
@@ -281,6 +287,7 @@ test.describe('API - Virtual card freeze toggle', () => {
     expect(freezeBody?.message).toMatch(/frozen/i);
     expect(unfreezeRes.status()).toBe(200);
     expect(unfreezeBody?.message).toMatch(/unfrozen/i);
+    await validateSchema('virtual-cards-schema', 'POST_toggle_freeze', freezeBody);
 
     reporter.reportPass(
       'Owner successfully froze and unfroze their own virtual card.',
@@ -381,6 +388,7 @@ test.describe('API - Virtual card transaction history', () => {
     const bolaConfirmed = crossUserRes.status() === 200 && crossUserBody?.status === 'success';
 
     if (bolaConfirmed) {
+      await validateSchema('virtual-cards-schema', 'GET_card_transactions', crossUserBody);
       reporter.reportVulnerability(
         'API1_BOLA',
         {
@@ -434,6 +442,7 @@ test.describe('API - Virtual card limit update', () => {
     expect(updateRes.status()).toBe(200);
     expect(updateBody?.status).toBe('success');
     expect(updateBody?.debug_info?.card_details?.card_limit).toBe(2000);
+    await validateSchema('virtual-cards-schema', 'POST_update_limit', updateBody);
 
     reporter.reportPass(
       "Owner successfully updated their own card's limit.",

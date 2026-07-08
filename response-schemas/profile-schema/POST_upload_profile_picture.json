@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "file_path": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "file_path",
+    "message",
+    "status"
+  ]
+}

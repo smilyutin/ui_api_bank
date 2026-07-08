@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import {
   establishAccountSession,
   type AccountSession
@@ -52,6 +53,9 @@ test.describe('API - Transaction & balance access', () => {
     await anon.dispose();
 
     const readableAnonymously = READ_SUCCESS_STATUSES.includes(anonStatus) && anonBody?.status === 'success';
+    if (readableAnonymously) {
+      await validateSchema('transactions-schema', 'GET_check_balance', anonBody);
+    }
 
     testInfo.attach('check_balance-anonymous', {
       body: JSON.stringify({ status: anonStatus, body: anonBody }, null, 2),
@@ -98,6 +102,9 @@ test.describe('API - Transaction & balance access', () => {
     await anon.dispose();
 
     const readableAnonymously = READ_SUCCESS_STATUSES.includes(anonStatus) && anonBody?.status === 'success';
+    if (readableAnonymously) {
+      await validateSchema('transactions-schema', 'GET_transactions', anonBody);
+    }
 
     testInfo.attach('transactions-anonymous', {
       body: JSON.stringify({ status: anonStatus, body: anonBody }, null, 2),
@@ -163,6 +170,7 @@ test.describe('API - Transaction & balance access', () => {
     expect(READ_SUCCESS_STATUSES).toContain(authedStatus);
     expect(authedBody?.account_number).toBe(session.accountNumber);
     expect(Array.isArray(authedBody?.transactions)).toBe(true);
+    await validateSchema('transactions-schema', 'GET_api_transactions', authedBody);
 
     reporter.reportPass(
       'Protected transaction API rejected anonymous access and returned owner-scoped history for a valid token.',

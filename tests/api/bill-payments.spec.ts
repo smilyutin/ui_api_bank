@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import { establishAccountSession } from '../../fixtures/api/transactions.helpers';
 import { createVirtualCardAndFetch, updateCardLimit, listVirtualCards } from '../../fixtures/api/virtual-cards.helpers';
 import {
@@ -64,6 +65,7 @@ test.describe('API - Bill categories & billers (public catalog)', () => {
     expect(body.categories.length).toBeGreaterThan(0);
     expect(body.categories[0]).toHaveProperty('id');
     expect(body.categories[0]).toHaveProperty('name');
+    await validateSchema('bill-payments-schema', 'GET_categories', body);
 
     reporter.reportPass(
       'Bill categories are intentionally public per the application\'s design (no auth required to browse the catalog).',
@@ -92,6 +94,7 @@ test.describe('API - Bill categories & billers (public catalog)', () => {
     expect(status).toBe(200);
     expect(Array.isArray(body?.billers)).toBe(true);
     expect(body.billers.length).toBeGreaterThan(0);
+    await validateSchema('bill-payments-schema', 'GET_billers', body);
 
     reporter.reportPass(
       'Biller listing is intentionally public per the application\'s design (no auth required to browse billers).',
@@ -209,6 +212,7 @@ test.describe('API - Bill payment creation', () => {
     expect(body?.payment_details?.reference).toMatch(/^BILL\d+$/);
     expect(body?.payment_details?.amount).toBe(amount);
     expect(body?.payment_details?.payment_method).toBe('balance');
+    await validateSchema('bill-payments-schema', 'POST_create', body);
 
     const persisted = await findPaymentByReference(api, session.token, body.payment_details.reference);
     await api.dispose();
@@ -357,6 +361,8 @@ test.describe('API - Bill payment creation', () => {
     const historyRes = await getBillPaymentHistory(api, session.token);
     const historyBody = await historyRes.json().catch(() => null);
     await api.dispose();
+
+    await validateSchema('bill-payments-schema', 'GET_history', historyBody);
 
     const returnedReferences = (historyBody?.payments || []).map((p: { reference: string }) => p.reference);
     for (const reference of references) {

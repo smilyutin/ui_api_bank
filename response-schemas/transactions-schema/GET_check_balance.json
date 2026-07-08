@@ -1,0 +1,23 @@
+{
+  "type": "object",
+  "properties": {
+    "account_number": {
+      "type": "string"
+    },
+    "balance": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "account_number",
+    "balance",
+    "status",
+    "username"
+  ]
+}

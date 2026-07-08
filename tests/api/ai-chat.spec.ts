@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import { establishAccountSession } from '../../fixtures/api/transactions.helpers';
 import { forgeToken } from '../../fixtures/api/jwt-forge.helpers';
 import {
@@ -97,6 +98,7 @@ test.describe('API - AI system-info (public, unauthenticated)', () => {
     expect(body?.vulnerabilities?.length).toBe(4);
     expect(Array.isArray(body?.demo_attacks)).toBe(true);
     expect(body?.demo_attacks?.length).toBe(5);
+    await validateSchema('ai-chat-schema', 'GET_system_info', body);
 
     reporter.reportVulnerability(
       'API9_ASSET_MGMT',
@@ -147,6 +149,7 @@ test.describe('API - AI chat (anonymous)', () => {
     // Documented behavior, not independently exploitable given the stub agent, so no
     // SecurityReporter call here.
     expect(body?.ai_response?.echo).toBe(message);
+    await validateSchema('ai-chat-schema', 'POST_chat_anonymous', body);
 
     reporter.reportPass(
       'Anonymous AI chat is intentionally public per the application\'s design (self-documented via the response\'s warning field) and correctly omits user context.',
@@ -198,6 +201,7 @@ test.describe('API - AI chat (authenticated)', () => {
     expect(body?.ai_response?.context?.account_number).toBe(session.accountNumber);
     expect(body?.ai_response?.context?.balance).toBe(realBalance);
     expect(body?.ai_response?.context?.is_admin).toBe(false);
+    await validateSchema('ai-chat-schema', 'POST_chat', body);
 
     testInfo.attach('prompt-injection-safety-probe', {
       body: JSON.stringify({ message, response: body?.ai_response }, null, 2),
@@ -317,6 +321,7 @@ test.describe('API - AI rate-limit status', () => {
     expect(body?.rate_limits?.authenticated?.window_hours).toBe(3);
     expect(body?.rate_limits?.authenticated?.user_remaining).toBeUndefined();
     expect(body?.authenticated_user).toBeUndefined();
+    await validateSchema('ai-chat-schema', 'GET_rate_limit_status', body);
 
     reporter.reportPass(
       'Rate-limit status is intentionally public and discloses only aggregate numeric counters, not sensitive data.',
@@ -346,6 +351,7 @@ test.describe('API - AI rate-limit status', () => {
     expect(typeof body?.rate_limits?.authenticated?.ip_remaining).toBe('number');
     expect(body?.authenticated_user?.user_id).toBe(session.userId);
     expect(body?.authenticated_user?.username).toBe(session.user.username);
+    await validateSchema('ai-chat-schema', 'GET_rate_limit_status_authenticated', body);
   });
 });
 
