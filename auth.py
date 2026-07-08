@@ -1,13 +1,24 @@
 from flask import jsonify, request
 import jwt
 import datetime
-import sqlite3  
+import os
+import secrets
+import sqlite3
 from functools import wraps
 
 # Vulnerable JWT implementation with common security issues
 
-# Weak secret key (CWE-326)
-JWT_SECRET = "secret123"
+# Fix (CWE-326): the secret must not be a fixed value committed to source
+# control. Load it from the environment; if unset, generate a random secret
+# for this process so tokens can no longer be forged just by reading the code.
+JWT_SECRET = os.environ.get('JWT_SECRET')
+if not JWT_SECRET:
+    JWT_SECRET = secrets.token_hex(32)
+    print(
+        'WARNING: JWT_SECRET is not set in the environment. Generated a random '
+        'per-process secret; sessions will not survive a restart. Set JWT_SECRET '
+        'to keep sessions stable across restarts.'
+    )
 
 # Vulnerable algorithm selection - allows 'none' algorithm
 ALGORITHMS = ['HS256', 'none']
@@ -25,29 +36,16 @@ def generate_token(user_id, username, is_admin=False):
         'iat': datetime.datetime.utcnow()
     }
     
-    # Vulnerability: Using a weak secret key
     token = jwt.encode(payload, JWT_SECRET, algorithm='HS256')
     return token
 
 def verify_token(token):
     """
-    Verify JWT token with multiple vulnerabilities
-    - Accepts 'none' algorithm (CWE-347)
-    - No signature verification in some cases
-    - No expiration check
+    Vulnerability: No expiration check (tokens are never issued with 'exp').
     """
     try:
-        # Vulnerability: Accepts any algorithm, including 'none'
         payload = jwt.decode(token, JWT_SECRET, algorithms=ALGORITHMS)
         return payload
-    except jwt.exceptions.InvalidSignatureError:
-        # Vulnerability: Still accepts tokens in some error cases
-        try:
-            # Second try without verification
-            payload = jwt.decode(token, options={'verify_signature': False})
-            return payload
-        except:
-            return None
     except Exception as e:
         # Vulnerability: Detailed error exposure in logs
         print(f"Token verification error: {str(e)}")

@@ -25,6 +25,14 @@ Create maintainable Playwright automation tests in TypeScript for the Vulnerable
 - Prepare data through helpers or APIs when possible.
 - Verify the user-visible result and any relevant API or data-state result.
 - Avoid test dependencies on execution order.
+- Cover both valid and invalid scenarios for each business function: the expected success path and the rejected/error paths (missing or malformed fields, missing or insufficient auth, boundary and edge-case values).
+- Validate input constraints explicitly — required fields, type and format, and numeric bounds (zero, negative, and unreasonably large amounts) — instead of only exercising the happy path.
+- Treat authorization and business-rule enforcement (who can perform an action, what state transitions are allowed, whether an action can be repeated) as functional coverage, not just a security add-on.
+- Cover non-functional scenarios where they affect correctness: input sanitization/encoding, idempotency of repeated requests, and consistent error response shape.
+- When planning coverage for a feature, explicitly consider all three angles rather than defaulting to only the happy path:
+  - **Functional** — business logic, valid/invalid inputs, state transitions, authorization rules.
+  - **Non-functional** — response consistency, idempotency, encoding/sanitization, performance-sensitive paths (see `helpers/` perf metrics).
+  - **Security** — OWASP API Top 10 categories relevant to the endpoint (BOLA, BOPLA, BFLA, mass assignment, injection, SSRF, weak auth/JWT); report these through `SecurityReporter` per the Security Reporting convention.
 
 ## Playwright Practices
 

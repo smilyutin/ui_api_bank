@@ -1,15 +1,15 @@
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMywidXNlcm5hbWUiOiJVSStmODB4ZGppMkBleGFtcGxlLmNvbSIsImlzX2FkbWluIjpmYWxzZSwiaWF0IjoxNzgzMTE0OTQyfQ.d9UhOc315g6odtyGjvib2JFxmCDI6pE18rP7-sKxytI",
   "user": {
-    "username": "UIf80xdji2",
-    "email": "UI+f80xdji2@example.com",
+    "username": "UI5miizplq",
+    "email": "UI+5miizplq@example.com",
     "password": "Password123!"
   },
   "users": [
     {
-      "username": "UIf80xdji2",
-      "email": "UI+f80xdji2@example.com",
+      "username": "UI5miizplq",
+      "email": "UI+5miizplq@example.com",
       "password": "Password123!"
     }
-  ]
+  ],
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxMTMsInVzZXJuYW1lIjoiVUkrNW1paXpwbHFAZXhhbXBsZS5jb20iLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTc4MzUyOTM3MX0.Cz30-HV28g-dwzg5Hbml2KbSLhqSCe3BsMAbOoDsLhU"
 }

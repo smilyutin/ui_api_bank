@@ -18,12 +18,13 @@ export type AccountSession = {
 	user: User;
 	token: string;
 	accountNumber: string;
+	userId: number;
 };
 
 type LoginBody = {
 	token?: string;
 	accountNumber?: string;
-	debug_info?: { account_number?: string };
+	debug_info?: { account_number?: string; user_id?: number };
 };
 
 const SUCCESS_STATUSES = [200, 201];
@@ -58,9 +59,10 @@ export async function establishAccountSession(
 	const body = (await login.json().catch(() => null)) as LoginBody | null;
 	const token = body?.token;
 	const accountNumber = body?.accountNumber || body?.debug_info?.account_number;
-	if (!token || !accountNumber) return null;
+	const userId = body?.debug_info?.user_id;
+	if (!token || !accountNumber || userId === undefined) return null;
 
-	return { user: { ...user, username: identifier }, token, accountNumber };
+	return { user: { ...user, username: identifier }, token, accountNumber, userId };
 }
 
 export type AccessObservation = {
