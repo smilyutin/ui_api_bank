@@ -27,7 +27,8 @@ export class BillPaymentsPage extends HelperBase {
 	async selectFirstBiller() {
 		const firstOption = this.page.locator('#biller option:not([value=""])').first();
 		const value = await firstOption.getAttribute('value');
-		if (value) await this.page.locator('#biller').selectOption(value);
+		if (!value) throw new Error('No biller options available to select');
+		await this.page.locator('#biller').selectOption(value);
 	}
 
 	async getSelectedBillerMinimumAmount(): Promise<number | null> {
