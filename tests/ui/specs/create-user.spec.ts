@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { RegisterPage } from '../../../pages/register.page';
 import { LoginPage } from '../../../pages/login.page';
-import { saveStoredToken, saveUser, createRandomUser } from '../../../helpers/credentials';
+import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
 
 /**
  * UI User Registration Tests
@@ -108,5 +108,28 @@ test.describe('UI - Create user account', () => {
       process.env.API_AUTH_TOKEN = freshToken;
     }
 
+  });
+
+  test('should show an error and not proceed to login when registering a duplicate username', async ({ page, baseURL }) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const register = new RegisterPage(page);
+
+    // Reuse the shared persisted user (already registered) so /register's
+    // "Username already exists" branch (app.py) is guaranteed to trigger.
+    const existing = findOrCreateUser('e2e');
+    if (!existing.username && !existing.email) {
+      throw new Error('Existing user is missing a username/email to reuse for the duplicate check');
+    }
+
+    // Registration stores `email` as the username (RegisterPage.fillEmail
+    // fills the form's username/email field with this value), so it's the
+    // value that must be resubmitted to actually collide with the existing row.
+    await register.goto(baseURL.toString());
+    await register.fillEmail(existing.email || existing.username!);
+    await register.fillPassword('SomeOtherPassword123!');
+    await register.submit();
+
+    await expect(page.locator('#message')).toHaveText(/already exists/i, { timeout: 5000 });
+    expect(page.url()).not.toContain('/login');
   });
 });

@@ -119,3 +119,84 @@ test.describe('API - Login with persisted user', () => {
     } catch {}
   });
 });
+
+/**
+ * These tests cover POST /login directly (the route used by
+ * loginViaAvailableFlow above) with malformed and malicious credentials,
+ * rather than only the happy path exercised earlier in this file.
+ */
+test.describe('API - Login validation and security', () => {
+  test('POST /login should reject a valid username with an incorrect password', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const user = findOrCreateUser('login-invalid-check');
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+
+    const res = await api.post('/login', {
+      data: { username: user.username || user.email, password: `${user.password}-wrong` },
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const status = res.status();
+    const body = await res.json().catch(() => null);
+    await api.dispose();
+
+    expect(status).toBe(401);
+    expect(body?.status).toBe('error');
+
+    reporter.reportPass(
+      'Login endpoint rejected a valid username paired with an incorrect password.',
+      'API2:2023 - Broken Authentication'
+    );
+  });
+
+  test('POST /login should not allow authentication bypass via SQL injection in username', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+
+    // Classic tautology payload targeting the unparameterized query in
+    // app.py (`SELECT * FROM users WHERE username='{username}' AND
+    // password='{password}'`): closes the username literal, forces the
+    // WHERE clause true, and comments out the password check.
+    const res = await api.post('/login', {
+      data: { username: `' OR '1'='1' -- `, password: 'irrelevant' },
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const status = res.status();
+    const body = await res.json().catch(() => null);
+    await api.dispose();
+
+    testInfo.attach('sqli-login-probe', {
+      body: JSON.stringify({ status, body }, null, 2),
+      contentType: 'application/json'
+    });
+
+    const bypassed = status === 200 && body?.status === 'success' && Boolean(body?.token);
+
+    if (bypassed) {
+      reporter.reportVulnerability(
+        'API2_AUTH',
+        {
+          endpoint: '/login',
+          technique: "SQL injection tautology in 'username' (' OR '1'='1' -- )",
+          responseStatus: status,
+          authenticatedAs: body?.debug_info?.username,
+          isAdmin: body?.isAdmin
+        },
+        [
+          'Use parameterized queries/prepared statements for the login lookup instead of string-interpolating the query.',
+          'Never build SQL by interpolating request input directly (app.py: f-string SELECT in the /login handler).',
+          'Add input validation that rejects SQL metacharacters in identifier-style fields as defense in depth.'
+        ]
+      );
+    } else {
+      expect(status).toBe(401);
+      reporter.reportPass(
+        'Login endpoint rejected a SQL injection tautology payload in the username field.',
+        'API2:2023 - Broken Authentication'
+      );
+    }
+  });
+});
