@@ -49,7 +49,8 @@ test.describe('Profile picture management', () => {
   });
 
   test('should import a profile picture from a URL', async ({ baseURL }) => {
-    test.skip(!process.env.APP_INTERNAL_URL, 'APP_INTERNAL_URL is not set; skipping URL-import test in this environment');
+    const missingInternalUrl = !process.env.APP_INTERNAL_URL;
+    test.skip(missingInternalUrl, 'APP_INTERNAL_URL is not set; skipping URL-import test in this environment');
     if (!baseURL) throw new Error('baseURL is not defined');
 
     const profile = pm.profile();
