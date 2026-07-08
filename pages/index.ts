@@ -5,3 +5,6 @@ export * from './login.page';
 export * from './money-transfer.page';
 export * from './profile.page';
 export * from './register.page';
+export * from './virtual-cards.page';
+export * from './bill-payments.page';
+export * from './page-manager';

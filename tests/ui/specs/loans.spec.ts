@@ -1,6 +1,5 @@
 import { test } from '@playwright/test';
-import { DashboardPage } from '../../../pages/dashboard.page';
-import { LoansPage } from '../../../pages/loans.page';
+import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 
 /**
@@ -28,6 +27,8 @@ import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
  * visible through the dashboard.
  */
 test.describe('Loan requests', () => {
+  let pm: PageManager;
+
   test.beforeEach(async ({ page, baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
@@ -37,12 +38,12 @@ test.describe('Loan requests', () => {
       fallbackUserPrefix: 'loans-ui',
     });
 
-    const dash = new DashboardPage(page);
-    await dash.waitForLoad();
+    pm = new PageManager(page);
+    await pm.dashboard().waitForLoad();
   });
 
-  test('should submit a loan request and show it as pending', async ({ page }) => {
-    const loans = new LoansPage(page);
+  test('should submit a loan request and show it as pending', async () => {
+    const loans = pm.loans();
     const amount = '850';
 
     await loans.fillAmount(amount);
@@ -53,7 +54,7 @@ test.describe('Loan requests', () => {
   });
 
   test('should keep a submitted loan visible after the dashboard is reloaded', async ({ page }) => {
-    const loans = new LoansPage(page);
+    const loans = pm.loans();
     const amount = '925';
 
     await loans.fillAmount(amount);
@@ -61,15 +62,13 @@ test.describe('Loan requests', () => {
     await loans.waitForMessage(/loan requested successfully/i);
 
     await page.reload();
-
-    const dash = new DashboardPage(page);
-    await dash.waitForLoad();
+    await pm.dashboard().waitForLoad();
 
     await loans.waitForLoanRow(amount, /pending/i);
   });
 
-  test('should accept a negative loan amount (no client or server-side validation)', async ({ page }) => {
-    const loans = new LoansPage(page);
+  test('should accept a negative loan amount (no client or server-side validation)', async () => {
+    const loans = pm.loans();
     const amount = '-500';
 
     await loans.fillAmount(amount);

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../../../pages/dashboard.page';
+import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 
 // Visual regression coverage for the left navigation/menu on the dashboard.
@@ -14,7 +14,7 @@ test.describe('UI - Left menu visual coverage', () => {
       requireToken: true,
     });
 
-    const dashboard = new DashboardPage(page);
+    const dashboard = new PageManager(page).dashboard();
     await dashboard.waitForLoad();
 
     const navTexts = await dashboard.getNavigationTexts();

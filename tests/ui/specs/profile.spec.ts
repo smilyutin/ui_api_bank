@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../../../pages/dashboard.page';
-import { ProfilePage } from '../../../pages/profile.page';
+import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 import { TEST_PNG_BUFFER } from '../../../fixtures/api/profile.helpers';
 
@@ -17,6 +16,8 @@ import { TEST_PNG_BUFFER } from '../../../fixtures/api/profile.helpers';
  * 3. Verify the success message and the updated <img> src for each flow.
  */
 test.describe('Profile picture management', () => {
+  let pm: PageManager;
+
   test.beforeEach(async ({ page, baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
@@ -26,12 +27,12 @@ test.describe('Profile picture management', () => {
       fallbackUserPrefix: 'profile-ui',
     });
 
-    const dash = new DashboardPage(page);
-    await dash.waitForLoad();
+    pm = new PageManager(page);
+    await pm.dashboard().waitForLoad();
   });
 
-  test('should upload a profile picture and update the displayed image', async ({ page }) => {
-    const profile = new ProfilePage(page);
+  test('should upload a profile picture and update the displayed image', async () => {
+    const profile = pm.profile();
     const initialSrc = await profile.getProfilePictureSrc();
 
     await profile.uploadPicture({
@@ -50,7 +51,7 @@ test.describe('Profile picture management', () => {
   // test('should import a profile picture from a URL', async ({ page, baseURL }) => {
   //   if (!baseURL) throw new Error('baseURL is not defined');
 
-  //   const profile = new ProfilePage(page);
+  //   const profile = pm.profile();
 
   //   // Use an app-hosted static asset to keep the test self-contained.
   //   // APP_INTERNAL_URL allows CI/Docker environments to supply the URL that the
