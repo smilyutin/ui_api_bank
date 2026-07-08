@@ -49,9 +49,10 @@ export class BillPaymentsPage extends HelperBase {
 
 	async selectCard(labelPattern: RegExp) {
 		const select = this.page.locator('select[name="card_id"]');
-		const option = select.locator('option').filter({ hasText: labelPattern });
-		const value = await option.first().getAttribute('value');
-		if (value) await select.selectOption(value);
+		const option = select.locator('option').filter({ hasText: labelPattern }).first();
+		const value = await option.getAttribute('value');
+		if (!value) throw new Error(`No card option matched ${labelPattern}`);
+		await select.selectOption(value);
 	}
 
 	async fillDescription(description: string) {
