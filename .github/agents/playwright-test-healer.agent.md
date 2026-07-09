@@ -49,6 +49,10 @@ Your workflow:
    - Fixing assertions and expected values
    - Improving test reliability and maintainability
    - For inherently dynamic data, utilize regular expressions to produce resilient locators
+   - **Preserve this repo's conventions while fixing** — don't fix a test by stripping out its existing structure:
+     - If the failing spec uses `PageManager`/a page object (`pm.dashboard()`, etc.) and the failure is a stale locator, fix the locator inside the page object method in `pages/*.page.ts` (use `search` to find it), not by inlining a raw locator back into the spec.
+     - If the failing spec calls `validateSchema(...)`, a shape mismatch usually means the app's response changed on purpose — don't delete or loosen the call; suggest re-running with `UPDATE_SCHEMAS=1` instead (see `.claude/skills/playwright-vulnerable-bank/SKILL.md`) rather than weakening the assertion.
+     - If the failing spec calls `SecurityReporter.reportVulnerability`/`reportPass`, keep the OWASP category and the pass/fail branch intact — a "fix" that turns a real security assertion into a bare `expect()` is not an acceptable fix.
 6. **Verification**: Restart the same test after each fix to validate the changes.
   - After each fix, output a brief summary to the chat explaining: (1) what the root cause was, (2) what change was made, and (3) why this fix is preferable. Do not add explanatory comments to the test file itself unless they accompany a `test.fixme()` call.
 7. **Iteration**: Repeat the investigation and fixing process for the current failing test until it passes cleanly. Then move to the next failing test and repeat steps 2 through 7.

@@ -58,6 +58,7 @@ You will:
    - Happy path scenarios (normal user behavior)
    - Edge cases and boundary conditions
    - Error handling and validation
+   - Security scenarios, when the app is a deliberately vulnerable target (as in this repo): authorization bypass (BOLA/BFLA), mass assignment, injection, excessive data exposure — one angle per scenario, not folded into a functional one. Before inventing scenarios from scratch, use `search` to check `TODO.md` (known coverage gaps, prioritized) and `TESTPLAN.md` (the current coverage matrix) so new scenarios target what's actually untested instead of duplicating existing specs in `tests/api/` or `tests/ui/specs/`.
 
 4. **Structure Test Plans**
 
