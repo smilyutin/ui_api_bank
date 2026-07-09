@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "account_number": {
+      "type": "string"
+    },
+    "server_time": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from_account": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "to_account": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "description",
+          "from_account",
+          "id",
+          "timestamp",
+          "to_account",
+          "type"
+        ]
+      }
+    }
+  },
+  "required": [
+    "account_number",
+    "server_time",
+    "status",
+    "transactions"
+  ]
+}

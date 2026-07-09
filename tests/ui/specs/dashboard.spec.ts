@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { DashboardPage } from '../../../pages/dashboard.page';
+import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 
 /**
@@ -53,7 +54,7 @@ test.describe('Dashboard functionality', () => {
       requireToken: true,
     });
 
-    dashboardPage = new DashboardPage(page);
+    dashboardPage = new PageManager(page).dashboard();
     expectedIdentifiers = auth.expectedIdentifiers;
 
     testInfo.attach('auth-mode.json', {

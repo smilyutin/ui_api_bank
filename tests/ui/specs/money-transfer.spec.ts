@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { DashboardPage } from '../../../pages/dashboard.page';
-import { MoneyTransferPage } from '../../../pages/money-transfer.page';
+import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 
 /**
@@ -50,7 +49,8 @@ test.describe('Money transfer flow', () => {
     });
 
     // Step 2: Navigate to dashboard and wait for load
-    const dash = new DashboardPage(page);
+    const pm = new PageManager(page);
+    const dash = pm.dashboard();
     await dash.waitForLoad();
 
     // Step 3: Navigate to Money Transfer page
@@ -65,7 +65,7 @@ test.describe('Money transfer flow', () => {
     }
 
     // Step 4: Fill money transfer form
-    const mt = new MoneyTransferPage(page);
+    const mt = pm.moneyTransfer();
     const recip = '1234567890';
     const amount = '5.00';
     await mt.fillRecipient(recip);

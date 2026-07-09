@@ -1,0 +1,46 @@
+{
+  "type": "object",
+  "properties": {
+    "card_details": {
+      "type": "object",
+      "properties": {
+        "card_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "cvv": {
+          "type": "string"
+        },
+        "expiry_date": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "number"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "card_number",
+        "cvv",
+        "expiry_date",
+        "limit",
+        "type"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "card_details",
+    "message",
+    "status"
+  ]
+}

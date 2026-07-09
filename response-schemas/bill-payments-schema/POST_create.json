@@ -1,0 +1,47 @@
+{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "payment_details": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number"
+        },
+        "card_id": {
+          "type": "null"
+        },
+        "payment_method": {
+          "type": "string"
+        },
+        "processed_by": {
+          "type": "string"
+        },
+        "reference": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "card_id",
+        "payment_method",
+        "processed_by",
+        "reference",
+        "timestamp"
+      ]
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "message",
+    "payment_details",
+    "status"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "string"
+    },
+    "new_balance": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "message",
+    "new_balance",
+    "status"
+  ]
+}

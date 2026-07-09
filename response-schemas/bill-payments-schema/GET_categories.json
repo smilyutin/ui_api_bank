@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "properties": {
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "id",
+          "name"
+        ]
+      }
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "categories",
+    "status"
+  ]
+}

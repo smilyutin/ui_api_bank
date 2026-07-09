@@ -1,0 +1,72 @@
+{
+  "type": "object",
+  "properties": {
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "balance": {
+            "type": "number"
+          },
+          "card_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "card_type": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "cvv": {
+            "type": "string"
+          },
+          "expiry_date": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "is_frozen": {
+            "type": "boolean"
+          },
+          "last_used_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "limit": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "balance",
+          "card_number",
+          "card_type",
+          "created_at",
+          "cvv",
+          "expiry_date",
+          "id",
+          "is_active",
+          "is_frozen",
+          "last_used_at",
+          "limit"
+        ]
+      }
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "cards",
+    "status"
+  ]
+}

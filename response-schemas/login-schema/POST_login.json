@@ -1,0 +1,55 @@
+{
+    "type": "object",
+    "properties": {
+        "accountNumber": {
+            "type": "string"
+        },
+        "debug_info": {
+            "type": "object",
+            "properties": {
+                "account_number": {
+                    "type": "string"
+                },
+                "is_admin": {
+                    "type": "boolean"
+                },
+                "login_time": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "username": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "account_number",
+                "is_admin",
+                "login_time",
+                "user_id",
+                "username"
+            ]
+        },
+        "isAdmin": {
+            "type": "boolean"
+        },
+        "message": {
+            "type": "string"
+        },
+        "status": {
+            "type": "string"
+        },
+        "token": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "accountNumber",
+        "debug_info",
+        "isAdmin",
+        "message",
+        "status",
+        "token"
+    ]
+}

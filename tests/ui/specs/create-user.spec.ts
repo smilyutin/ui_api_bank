@@ -1,6 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { RegisterPage } from '../../../pages/register.page';
-import { LoginPage } from '../../../pages/login.page';
+import { PageManager } from '../../../pages/page-manager';
 import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
 
 /**
@@ -43,7 +42,8 @@ import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '.
 test.describe('UI - Create user account', () => {
   test('should create a user via UI', async ({ page, baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
-    const register = new RegisterPage(page);
+    const pm = new PageManager(page);
+    const register = pm.register();
 
     // Step 1: Generate fresh random user credentials for this test
     const user = createRandomUser('UI', false);
@@ -74,7 +74,7 @@ test.describe('UI - Create user account', () => {
     expect(Boolean(sawSuccess) || onLogin).toBeTruthy();
 
     // Step 6: Login with the newly created user to verify credentials and capture a fresh token
-    const login = new LoginPage(page);
+    const login = pm.login();
     await login.goto(baseURL.toString());
     await login.fillEmail(user.email);
     await login.fillPassword(user.password);
@@ -112,7 +112,8 @@ test.describe('UI - Create user account', () => {
 
   test('should show an error and not proceed to login when registering a duplicate username', async ({ page, baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
-    const register = new RegisterPage(page);
+    const pm = new PageManager(page);
+    const register = pm.register();
 
     // Reuse the shared persisted user (already registered) so /register's
     // "Username already exists" branch (app.py) is guaranteed to trigger.

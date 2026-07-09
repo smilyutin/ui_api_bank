@@ -54,13 +54,9 @@ test.describe('API - Login with persisted user', () => {
     // Step 1: Load or create test user credentials
     const persistedUser: User = findOrCreateUser('API');
 
-    const contentType = (res.headers()['content-type'] || '').toLowerCase();
-    if (contentType.includes('application/json')) {
-      const loginPageJson = await res.json().catch(() => null);
-      if (loginPageJson && typeof loginPageJson === 'object') {
-        await validateSchema('login-schema', 'GET_login', loginPageJson as object);
-      }
-    }
+    // GET /login always serves the HTML login page (never JSON), so there is
+    // no JSON body to schema-validate here — the real login response schema
+    // is validated below, against the POST /login JSON response instead.
     const status = res.status();
     if (status === 404) {
       reporter.reportSkip('Login route (/login) is not available on this target application (404).');
@@ -110,13 +106,16 @@ test.describe('API - Login with persisted user', () => {
     reporter.reportPass(success.description, success.category);
 
     // if login response returns a token or body, check basic shape
-    try {
-      let b = null;
-      if (loginRes) {
-        b = await loginRes.json().catch(() => null);
+    const b = loginRes ? await loginRes.json().catch(() => null) : null;
+    if (b) {
+      expect(b).toBeTruthy();
+      // Schema is generated against the real POST /login contract; other
+      // discovered candidate paths (/api/auth/login, /api/login, etc.)
+      // aren't guaranteed to share that exact shape.
+      if ((successfulLoginPath || '').startsWith('/login (')) {
+        await validateSchema('login-schema', 'POST_login', b);
       }
-      if (b) expect(b).toBeTruthy();
-    } catch {}
+    }
   });
 });
 

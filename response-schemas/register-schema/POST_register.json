@@ -1,0 +1,74 @@
+{
+  "type": "object",
+  "properties": {
+    "debug_data": {
+      "type": "object",
+      "properties": {
+        "account_number": {
+          "type": "string"
+        },
+        "balance": {
+          "type": "number"
+        },
+        "fields_registered": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "is_admin": {
+          "type": "boolean"
+        },
+        "raw_data": {
+          "type": "object",
+          "properties": {
+            "password": {
+              "type": "string"
+            },
+            "username": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "password",
+            "username"
+          ]
+        },
+        "registration_time": {
+          "type": "string"
+        },
+        "server_info": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "account_number",
+        "balance",
+        "fields_registered",
+        "is_admin",
+        "raw_data",
+        "registration_time",
+        "server_info",
+        "user_id",
+        "username"
+      ]
+    },
+    "message": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "debug_data",
+    "message",
+    "status"
+  ]
+}

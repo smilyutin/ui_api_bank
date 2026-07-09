@@ -1,5 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { validateSchema } from '../../helpers/schema-validator';
 import {
   establishAccountSession,
   type AccountSession
@@ -81,6 +82,7 @@ test.describe('API - Profile picture management', () => {
     expect(READ_SUCCESS_STATUSES).toContain(status);
     expect(body?.status).toBe('success');
     expect(typeof body?.file_path).toBe('string');
+    await validateSchema('profile-schema', 'POST_upload_profile_picture', body);
 
     reporter.reportPass(
       'Authenticated owner successfully uploaded a profile picture.',

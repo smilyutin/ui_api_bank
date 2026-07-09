@@ -92,8 +92,11 @@ test.describe('API - Dashboard', () => {
     expect(status, `Unexpected status for GET /dashboard: ${status}`).toBeLessThan(500);
     expect(ok, `Unexpected status for GET /dashboard: ${status}`).toBeTruthy();
 
-    if (status === 200 && ct.includes('application/json')) {
-      await validateSchema('dashboard-schema', 'GET_dashboard', await res.json());
+    // GET /dashboard only ever returns JSON for the unauthenticated (401)
+    // case — an authenticated 200 always serves server-rendered HTML (see
+    // the text/html assertion below), so that's not schema-validated here.
+    if (status === 401 && ct.includes('application/json')) {
+      await validateSchema('dashboard-schema', 'GET_dashboard_error', await res.json());
     }
 
     if (status === 200) {

@@ -1,0 +1,71 @@
+{
+  "type": "object",
+  "properties": {
+    "client_ip": {
+      "type": "string"
+    },
+    "rate_limits": {
+      "type": "object",
+      "properties": {
+        "authenticated": {
+          "type": "object",
+          "properties": {
+            "ip_requests_made": {
+              "type": "integer"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "user_requests_made": {
+              "type": "integer"
+            },
+            "window_hours": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "ip_requests_made",
+            "limit",
+            "user_requests_made",
+            "window_hours"
+          ]
+        },
+        "unauthenticated": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "number"
+            },
+            "remaining": {
+              "type": "integer"
+            },
+            "requests_made": {
+              "type": "integer"
+            },
+            "window_hours": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "limit",
+            "remaining",
+            "requests_made",
+            "window_hours"
+          ]
+        }
+      },
+      "required": [
+        "authenticated",
+        "unauthenticated"
+      ]
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "client_ip",
+    "rate_limits",
+    "status"
+  ]
+}

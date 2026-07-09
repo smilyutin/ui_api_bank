@@ -1,0 +1,75 @@
+{
+  "type": "object",
+  "properties": {
+    "payments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "biller_name": {
+            "type": "string"
+          },
+          "card_number": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "category_name": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "type": "integer"
+          },
+          "payment_method": {
+            "type": "string"
+          },
+          "processed_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "biller_name",
+          "card_number",
+          "category_name",
+          "created_at",
+          "description",
+          "id",
+          "payment_method",
+          "processed_at",
+          "reference",
+          "status"
+        ]
+      }
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "payments",
+    "status"
+  ]
+}
