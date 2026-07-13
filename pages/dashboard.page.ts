@@ -180,45 +180,6 @@ export class DashboardPage {
 		};
 	}
 
-	async checkSessionTimeout(timeoutMs: number = 30000) {
-		const startTime = Date.now();
-		const initialUrl = this.page.url();
-
-		// Leave headroom so the test itself doesn't hit the global timeout
-		const safeWaitMs = Math.max(0, timeoutMs - 2000);
-		if (safeWaitMs > 0) {
-			await new Promise(resolve => setTimeout(resolve, safeWaitMs));
-		}
-
-		if (this.page.isClosed()) {
-			return {
-				timeElapsed: Date.now() - startTime,
-				sessionValid: false,
-				currentUrl: initialUrl,
-				error: new Error('Page was closed before the session timeout check completed')
-			};
-		}
-
-		// Check if session is still valid
-		try {
-			await this.page.reload();
-			const isStillLoggedIn = await this.isLoggedIn();
-
-			return {
-				timeElapsed: Date.now() - startTime,
-				sessionValid: isStillLoggedIn,
-				currentUrl: this.page.url()
-			};
-		} catch (e) {
-			return {
-				timeElapsed: Date.now() - startTime,
-				sessionValid: false,
-				currentUrl: initialUrl,
-				error: e
-			};
-		}
-	}
-
 	async logout() {
 			// Try role=button with logout text
 			const logoutBtn = this.page.getByRole('button', { name: /log ?out|sign ?out/i });

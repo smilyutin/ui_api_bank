@@ -188,6 +188,62 @@ test.describe('API - Virtual card creation', () => {
       );
     }
   });
+
+  test('should not generate card numbers with a non-cryptographic random source', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const session = await establishAccountSession(api, 'vcard-predictable');
+    if (!session) {
+      reporter.reportSkip('Could not establish an account session (register/login) on this target.');
+      await api.dispose();
+      test.skip(true, 'No account session available');
+      return;
+    }
+
+    const cardNumbers: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const res = await createVirtualCard(api, session.token, { card_limit: 100 });
+      const body = await res.json().catch(() => null);
+      const cardNumber: string | undefined = body?.card_details?.card_number;
+      if (cardNumber) cardNumbers.push(cardNumber);
+    }
+    await api.dispose();
+
+    testInfo.attach('card-number-predictability-probe', { body: JSON.stringify({ cardNumbers }, null, 2), contentType: 'application/json' });
+
+    if (cardNumbers.length < 2) {
+      reporter.reportSkip('Could not create enough cards back-to-back to probe number generation on this target.');
+      return;
+    }
+
+    const hasDuplicate = new Set(cardNumbers).size !== cardNumbers.length;
+
+    // app.py's generate_card_number()/generate_cvv() use
+    // random.choices(string.digits, k=...) — Python's Mersenne-Twister
+    // `random` module, not the `secrets` module (CWE-330: Use of
+    // Insufficiently Random Values). This is a source-level finding
+    // (visible in app.py, not something these three samples alone prove
+    // via statistical attack) — the live probe here rules out the more
+    // naive failure mode this was originally suspected to be (a
+    // sequential/incrementing counter, the way bill-payment reference
+    // numbers are int(time.time())-based): these card numbers are not
+    // sequential. That doesn't make the underlying RNG choice safe.
+    reporter.reportVulnerability(
+      'API8_SECURITY_MISCONFIGURATION',
+      {
+        endpoint: '/api/virtual-cards/create',
+        sampledCardNumbers: cardNumbers,
+        hasDuplicateInSample: hasDuplicate,
+        source: "app.py generate_card_number()/generate_cvv() use random.choices(string.digits, ...) — Python's non-cryptographic random module"
+      },
+      [
+        "Use the secrets module (e.g. secrets.choice / secrets.randbelow) instead of random for card_number and cvv generation — both are security-sensitive values.",
+        'Add a uniqueness constraint on virtual_cards.card_number at the database level regardless of generator choice.'
+      ]
+    );
+  });
 });
 
 test.describe('API - Virtual card listing', () => {

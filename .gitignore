@@ -41,6 +41,10 @@ test-data/users.json
 .playwright/
 playwright-report/
 
+## Allure
+allure-results/
+allure-report/
+
 ## Node
 node_modules/
 npm-debug.log*

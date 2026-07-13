@@ -178,6 +178,43 @@ test.describe('API - Money transfer amount validation abuse', () => {
     }
   });
 
+  test('should have no independent ceiling on amount beyond balance sufficiency', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const sender = await establishAccountSession(api, 'transfer-ceiling-sender');
+    const recipient = await establishAccountSession(api, 'transfer-ceiling-recipient');
+    if (!sender || !recipient) {
+      reporter.reportSkip('Could not establish two account sessions (register/login) on this target.');
+      await api.dispose();
+      test.skip(true, 'No account sessions available');
+      return;
+    }
+
+    const res = await transfer(api, sender.token, { to_account: recipient.accountNumber, amount: 999999999 });
+    const status = res.status();
+    const body = await res.json().catch(() => null);
+    await api.dispose();
+
+    testInfo.attach('transfer-ceiling-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+
+    const onlyRejectedForBalance = status === 400 && body?.message === 'Insufficient funds';
+
+    if (onlyRejectedForBalance) {
+      reporter.reportVulnerability(
+        'API6_MASS_ASSIGNMENT',
+        { endpoint: '/transfer', amountSubmitted: 999999999, rejectionReason: body?.message },
+        ['Add an independent sanity ceiling on transfer amount regardless of balance sufficiency (mirrors the same gap already fixed for bill payments).']
+      );
+    } else {
+      reporter.reportPass(
+        'A very large transfer amount was rejected for a reason other than balance sufficiency.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    }
+  });
+
   test('should not expose a raw exception message for a malformed/missing amount', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

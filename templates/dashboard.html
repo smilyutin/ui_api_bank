@@ -10,7 +10,7 @@
 </head>
 <body>
     <!-- Mobile menu toggle -->
-    <button class="menu-toggle" onclick="toggleSidePanel()">☰</button>
+    <button class="menu-toggle" onclick="toggleSidePanel()">Menu</button>
 
     <!-- Side panel navigation -->
     <div class="side-panel">
@@ -19,37 +19,37 @@
         </div>
         <nav>
             <a href="#profile" class="nav-link" onclick="setActiveLink(this)">
-                <span class="nav-link-icon">👤</span>
+                <span class="nav-link-icon"></span>
                 Profile
             </a>
             <a href="#transfers" class="nav-link" onclick="setActiveLink(this)">
-                <span class="nav-link-icon">↗️</span>
+                <span class="nav-link-icon"></span>
                 Money Transfer
             </a>
             <a href="#loans" class="nav-link" onclick="setActiveLink(this)">
-                <span class="nav-link-icon">💰</span>
+                <span class="nav-link-icon"></span>
                 Loans
             </a>
             <a href="#transactions" class="nav-link" onclick="setActiveLink(this)">
-                <span class="nav-link-icon">📊</span>
+                <span class="nav-link-icon"></span>
                 Transaction History
             </a>
             <a href="#virtual-cards" class="nav-link" onclick="setActiveLink(this)">
-                <span class="nav-link-icon">💳</span>
+                <span class="nav-link-icon"></span>
                 Virtual Cards
             </a>
             <a href="#bill-payments" class="nav-link" onclick="setActiveLink(this)">
-                <span class="nav-link-icon">📃</span>
+                <span class="nav-link-icon"></span>
                 Bill Payments
             </a>
             {% if is_admin %}
             <a href="{{ url_for('admin_panel') }}" class="nav-link">
-                <span class="nav-link-icon">⚙️</span>
+                <span class="nav-link-icon"></span>
                 Admin Panel
             </a>
             {% endif %}
             <a href="#" onclick="logout()" class="nav-link">
-                <span class="nav-link-icon">🔒</span>
+                <span class="nav-link-icon"></span>
                 Logout
             </a>
         </nav>
@@ -80,22 +80,22 @@
         <!-- Quick actions section -->
         <div class="quick-actions">
             <div class="action-card" onclick="document.querySelector('.nav-link[href=\'#transfers\']').click()">
-                <div class="action-icon">↗️</div>
+                <div class="action-icon"></div>
                 <div class="action-title">Send Money</div>
                 <div class="action-description">Transfer money to another account quickly and securely.</div>
             </div>
             <div class="action-card" onclick="document.querySelector('.nav-link[href=\'#loans\']').click()">
-                <div class="action-icon">💰</div>
+                <div class="action-icon"></div>
                 <div class="action-title">Request Loan</div>
                 <div class="action-description">Need funds? Apply for a loan with competitive rates.</div>
             </div>
             <div class="action-card" onclick="document.querySelector('.nav-link[href=\'#virtual-cards\']').click()">
-                <div class="action-icon">💳</div>
+                <div class="action-icon"></div>
                 <div class="action-title">Virtual Cards</div>
                 <div class="action-description">Create and manage your virtual payment cards.</div>
             </div>
             <div class="action-card" onclick="document.querySelector('.nav-link[href=\'#bill-payments\']').click()">
-                <div class="action-icon">📃</div>
+                <div class="action-icon"></div>
                 <div class="action-title">Pay Bills</div>
                 <div class="action-description">Pay your bills easily from your account.</div>
             </div>
@@ -114,7 +114,7 @@
                      src="{{ url_for('static', filename='uploads/' + user.profile_picture) if user.profile_picture else url_for('static', filename='uploads/user.png') }}"
                      alt="Profile Picture">
                 <div class="profile-picture-edit" onclick="document.getElementById('profile_picture').click()">
-                        ✏️
+                        Edit
                 </div>
             </div>
                         <!-- Vulnerability: No file type validation -->
@@ -373,11 +373,11 @@
                 <div class="mode-selector">
                     <label class="mode-option">
                         <input type="radio" name="chatMode" value="authenticated" checked>
-                        <span>🔐 Authenticated</span>
+                        <span>Authenticated</span>
                     </label>
                     <label class="mode-option">
                         <input type="radio" name="chatMode" value="anonymous">
-                        <span>👤 Anonymous</span>
+                        <span>Anonymous</span>
                     </label>
                 </div>
             </div>
@@ -393,8 +393,8 @@
                     <div class="message-content">
                         <div class="message-text">Hi {{ username }}! I'm your AI banking assistant. I can help you with account inquiries, balance checks, and transaction history. 
                         <br><br>
-                        🔐 <strong>Authenticated Mode</strong>: I have access to your account details
-                        <br>👤 <strong>Anonymous Mode</strong>: No personal data, but still vulnerable to attacks</div>
+                        <strong>Authenticated Mode</strong>: I have access to your account details
+                        <br><strong>Anonymous Mode</strong>: No personal data, but still vulnerable to attacks</div>
                         <div class="message-time" id="initialTime"></div>
                     </div>
                 </div>

@@ -1,15 +1,15 @@
 {
   "user": {
-    "username": "UIa0znoue1",
-    "email": "UI+a0znoue1@example.com",
+    "username": "UIf2kx2g5n",
+    "email": "UI+f2kx2g5n@example.com",
     "password": "Password123!"
   },
   "users": [
     {
-      "username": "UIa0znoue1",
-      "email": "UI+a0znoue1@example.com",
+      "username": "UIf2kx2g5n",
+      "email": "UI+f2kx2g5n@example.com",
       "password": "Password123!"
     }
   ],
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4NzEsInVzZXJuYW1lIjoiVUkrYTB6bm91ZTFAZXhhbXBsZS5jb20iLCJpc19hZG1pbiI6ZmFsc2UsImlhdCI6MTc4MzU2MDU2Nn0.wjveUpYON_KnnWnfuVXqV6SOz-m7gzJQFFVdmZRRxuA"
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxNzE3LCJ1c2VybmFtZSI6IlVJK2Yya3gyZzVuQGV4YW1wbGUuY29tIiwiaXNfYWRtaW4iOmZhbHNlLCJpYXQiOjE3ODM5NzA0MTF9.JnIdafbUoHH0iekB05f_-D61Mlmv9S3_qFXkPldjgtc"
 }

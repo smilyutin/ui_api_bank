@@ -27,6 +27,7 @@ Per test, cover three angles (see SKILL.md "Test Design" for the full rules):
 | API | `tests/api/*.spec.ts` | Direct HTTP via Playwright `request`, response-shape asserted with `validateSchema()`, security findings via `SecurityReporter` |
 | UI | `tests/ui/specs/*.spec.ts` | Page Object Model via `pages/` + `PageManager`, driven through `helpers/auth-bootstrap.ts` |
 | Visual | `tests/ui/specs/visual-leftmenu.spec.ts` | Playwright screenshot comparison (`*-snapshots/`) |
+| Security | `tests/security/<category>/*.spec.ts` | OWASP-style checks organized by category (`abuse/`, `authentication/`, `authorization/`, `cors/`, `crossSiteReqForgery/`, `headers/`, `input/`, `supply-chain/`), reported via the same `SecurityReporter` (re-exported through `tests/security/utils/`); shared probe logic lives in `sec-objects/<category>/<name>.logic.ts` |
 
 There is no dedicated load/perf test type; `helpers/performance-metrics.ts` only tracks schema-validation timing as a side effect of API tests, not standalone perf testing.
 
@@ -60,6 +61,7 @@ helpers/           auth bootstrap, credential persistence, schema validation, pe
 response-schemas/  Ajv schemas, one subdir per feature
 test-data/         users.json — shared test user + tokens
 tests/api/         API specs · tests/ui/specs/  UI specs
+tests/security/    OWASP-style checks by category; sec-objects/ shared logic, utils/ re-exports
 ```
 
 Full conventions (Page Object rules, Page Manager, readiness-check pattern, auth bootstrap internals, schema-update workflow, OWASP-key convention table, JWT-forgery caveat): `.claude/skills/playwright-vulnerable-bank/SKILL.md`.
@@ -80,16 +82,20 @@ Full conventions (Page Object rules, Page Manager, readiness-check pattern, auth
 | AI customer support | `ai-chat.spec.ts` | — (no UI spec drives the chat widget) | `ai-chat-schema/` |
 | Left nav / visual | — | `visual-leftmenu.spec.ts` | — |
 
-Every feature has an API spec with schema validation; UI coverage exists for everything except transactions (subsumed by dashboard) and the AI chat widget (API-only today).
+Every feature has an API spec with schema validation; UI coverage exists for everything except transactions (subsumed by dashboard) and the AI chat widget (API-only today). `tests/security/` is organized by OWASP category rather than by feature, so it isn't reflected as its own column here — see section 9 for its coverage.
 
 ## 9. Security Coverage Summary
 
-A full README-vulnerability-to-test audit was done and is tracked as actionable gaps in `TODO.md`. Headline status:
+A full README-vulnerability-to-test audit was done and is tracked, item by item, in `TODO.md`. Headline status:
 
-- **Well covered**: auth SQL injection, BOLA/BOPLA/mass assignment, excessive data exposure, SSRF, insecure token transmission (query-string), verbose error-message exposure, virtual-card and bill-payment business-logic flaws.
-- **Already fixed, README stale**: hardcoded/weak JWT secret — `auth.py` now derives it from the environment; forged-token tests confirm rejection and report pass rather than a live finding.
-- **Intentionally not covered**: balance-check-then-deduct race conditions (transfers, bill payments, card balances) — `app.py` runs single-threaded, so a `Promise.all`-based race test would false-negative; documented in code comments rather than silently skipped.
-- **Zero coverage today** (see `TODO.md` for the actionable breakdown): XSS, CSRF, file-upload validation (type/size/path-traversal), predictable virtual-card numbers, session expiration/token invalidation, rate limiting outside the AI-chat endpoints, weak PIN password-reset.
+- **Well covered (`tests/api/`, `tests/ui/specs/`)**: auth SQL injection, BOLA/BOPLA/mass assignment, excessive data exposure, SSRF, insecure token transmission (query-string), verbose error-message exposure, virtual-card and bill-payment business-logic flaws, stored XSS (server-side `{{ username | safe }}` reflection and client-side `innerHTML` DOM execution via transfer description).
+- **Well covered (`tests/security/`)**: a dedicated OWASP-style suite organized by category — `authentication/` (cookies, JWT forgery, session timeout/fixation, logout invalidation, bruteforce/lockout, PIN bruteforce, password policy, plaintext password storage, CSP + token-storage hardening, generic login errors, Werkzeug debugger exposure), `authorization/` (virtual-card-create mass assignment), `abuse/` (rate limiting, payload size), `cors/`, `crossSiteReqForgery/` (live CSRF against `/transfer`), `headers/` (clickjacking, HSTS, nosniff, Permissions-Policy, Referrer-Policy across representative endpoints), `input/` (file-upload type/size/naming/path-traversal), and `supply-chain/` (`npm audit` against this repo's own dependencies).
+- **Already fixed, docs updated**: hardcoded/weak JWT secret — `auth.py` now derives it from the environment; forged-token tests confirm rejection and report pass rather than a live finding. `README.md`'s vulnerability list has been corrected to match.
+- **Intentionally not covered**:
+  - Balance-check-then-deduct race conditions (transfers, bill payments, card balances) — `app.py` runs single-threaded, so a `Promise.all`-based race test would false-negative; documented in code comments rather than silently skipped.
+  - AI direct-DB-access / role-override attacks — not exploitable against the current `LocalAIAgent` stub (echo-only); revisit if a real LLM-backed agent is reintroduced.
+  - Card activity monitoring — a logging/observability property, not a request/response behavior any black-box HTTP assertion can observe.
+- **One open finding, not yet mitigated**: Flask running with `DEBUG=True` lets the legacy SQLite-backed `/api/login` route (`auth.py`, still registered via `init_auth_routes(app)`) leak a full interactive Werkzeug debugger traceback on an unhandled exception — confirmed CRITICAL-adjacent (`tests/security/authentication/broken-authentication.spec.ts`). See `TODO.md` for remediation options.
 
 ## 10. Test Data Management
 
@@ -103,7 +109,7 @@ Single shared primary user + tokens persisted in `test-data/users.json` via `hel
 
 ## 12. Adding Coverage for a New Feature
 
-See SKILL.md's "Adding a New Feature (checklist)" — API helper → page object + `PageManager` registration → API spec (functional/non-functional/security angles + schema validation) → `UPDATE_SCHEMAS=1` run → UI spec using `ensureDashboardAuthenticated` + `PageManager`.
+See SKILL.md's "Adding a New Feature (checklist)": API helper, then page object + `PageManager` registration, then API spec (functional/non-functional/security angles + schema validation), then `UPDATE_SCHEMAS=1` run, then UI spec using `ensureDashboardAuthenticated` + `PageManager`.
 
 ## 13. Open Items
 

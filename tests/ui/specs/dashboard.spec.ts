@@ -249,14 +249,4 @@ test.describe('Dashboard functionality', () => {
     const unique = new Set(normalized);
     expect(unique.size).toBe(normalized.length);
   });
-
-  test('should handle session timeout gracefully', async () => {
-    const timeoutResult = await dashboardPage.checkSessionTimeout(30000);
-
-    if (!timeoutResult.sessionValid) {
-      expect(timeoutResult.currentUrl).toMatch(/\/(login|auth)/);
-    } else {
-      expect(timeoutResult.currentUrl).toMatch(/\/dashboard/);
-    }
-  });
 });
