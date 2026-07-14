@@ -11,6 +11,8 @@ This repo has two halves:
 
 Most Claude Code work in this repo is on the test suite, not the vulnerable app itself.
 
+Do not use emoji anywhere in this repo — docs, code, commit messages, or app UI (`templates/`). Existing emoji were stripped project-wide; don't reintroduce them in new files or edits.
+
 ## Commands
 
 Run the app (Docker, from repo root):
@@ -27,6 +29,9 @@ npx playwright test tests/api/login.spec.ts       # single file
 npx playwright test -g "should allow logout"      # single test by name
 npx playwright test --project=chromium            # single browser
 npx playwright show-report                        # open HTML report after a run
+npm run allure:generate                           # build Allure report from allure-results/ into allure-report/
+npm run allure:open                                # serve the generated Allure report
+npm run allure:report                              # generate + open in one step
 ```
 
 ## Test suite architecture
@@ -39,6 +44,7 @@ helpers/           auth bootstrap, credential persistence, schema validation, pe
 response-schemas/  Ajv schemas, one subdir per feature
 test-data/         users.json — shared test user + tokens
 tests/api/         API specs · tests/ui/specs/  UI specs
+tests/security/    OWASP-style checks by category (auth, CORS, CSRF, headers, file upload, abuse, supply-chain)
 ```
 
 No barrel/`index.ts` files — import each module directly.
@@ -49,4 +55,5 @@ No barrel/`index.ts` files — import each module directly.
 
 - `.env` (not committed) configures `DB_NAME`/`DB_USER`/`DB_PASSWORD`/`DB_HOST`/`DB_PORT` for Postgres. Copy `.env.example` to `.env` for local runs. `DB_HOST=db` is for Docker; use `localhost` for a local Postgres install.
 - Test-only env vars: `BASE_URL` (target app), `API_AUTH_TOKEN`/`ADMIN_AUTH_TOKEN` (skip token minting), `ADMIN_USERNAME`/`ADMIN_EMAIL`/`ADMIN_IDENTIFIER` + `ADMIN_PASSWORD` (admin UI fallback login), `SECURITY_SOFT=1` (downgrade `SecurityReporter.reportWarning` from throwing to warning-only), `UPDATE_SCHEMAS=1` (regenerate mismatched/missing `response-schemas/` files instead of failing — see SKILL.md "Schema Validation").
-- CI (`.github/workflows/playwright.yml`) builds the Docker stack, polls `http://localhost:5001` until ready, then runs `npm test` and uploads the HTML report.
+- CI (`.github/workflows/playwright.yml`) builds the Docker stack, polls `http://localhost:5001` until ready, then runs `npm test` and uploads both the Playwright HTML report and the generated Allure report as artifacts.
+- Allure: `playwright.config.ts` runs the `allure-playwright` reporter alongside `html`/`list`, writing raw results to `allure-results/` (gitignored). Run `npm run allure:generate` to build `allure-report/` (gitignored) from those results, then `npm run allure:open` to view it — both dirs are per-run output, not committed.

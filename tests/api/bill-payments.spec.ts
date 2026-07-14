@@ -877,4 +877,152 @@ test.describe('API - Bill payment creation', () => {
       ]
     );
   });
+
+  test('should complete a virtual card payment with no CVV or other transaction verification', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const session = await establishAccountSession(api, 'bill-no-verification');
+    const discovered = await discoverBiller(api);
+    if (!session || !discovered) {
+      reporter.reportSkip('Could not establish an account session or discover a biller on this target.');
+      await api.dispose();
+      test.skip(true, 'Setup unavailable');
+      return;
+    }
+
+    const { card } = await createVirtualCardAndFetch(api, session.token, { card_limit: 500 });
+    if (!card) {
+      reporter.reportSkip('Could not create a virtual card to run the verification check.');
+      await api.dispose();
+      test.skip(true, 'Card not created');
+      return;
+    }
+    // A new card's current_balance defaults to 0 — fund it first so a
+    // rejection below can only mean "verification required", not
+    // "insufficient balance" for an unrelated reason.
+    await updateCardLimit(api, session.token, card.id, { current_balance: 200 });
+
+    // app.py's create_bill_payment only ever reads card_id for a virtual-card
+    // payment (checks is_frozen and current_balance, nothing else) — the
+    // card's own cvv is known here (from creation) but deliberately never
+    // sent, to prove the payment succeeds without it.
+    const amount = discovered.biller.minimum_amount + 1;
+    const res = await createBillPayment(api, session.token, {
+      biller_id: discovered.biller.id,
+      amount,
+      payment_method: 'virtual_card',
+      card_id: card.id
+      // cvv intentionally omitted
+    });
+    const status = res.status();
+    const body = await res.json().catch(() => null);
+    await api.dispose();
+
+    testInfo.attach('no-verification-probe', {
+      body: JSON.stringify({ cvvKnown: card.cvv, cvvSent: false, status, body }, null, 2),
+      contentType: 'application/json'
+    });
+
+    const succeededWithoutVerification = status === 200 && body?.status === 'success';
+
+    if (succeededWithoutVerification) {
+      reporter.reportVulnerability(
+        'API6_MASS_ASSIGNMENT',
+        {
+          endpoint: '/api/bill-payments/create',
+          paymentMethod: 'virtual_card',
+          verificationSent: 'none (no CVV, no OTP, no re-authentication)',
+          cardId: card.id
+        },
+        [
+          'Require the card CVV (or another out-of-band verification step) on every virtual-card payment, not just an internal card_id.',
+          'This compounds the existing BOLA finding on this same field (see "should not let a user pay a bill using another user\'s virtual card") — anyone who can guess/enumerate a card_id can both use it cross-account AND without ever proving they hold the card.'
+        ]
+      );
+    } else {
+      reporter.reportPass(
+        'Virtual card payment was not completed without additional transaction verification.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    }
+  });
+
+  test('should not expose a raw database error for malformed biller_id/category_id input', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const session = await establishAccountSession(api, 'bill-biller-sqli');
+    const discovered = await discoverBiller(api);
+    if (!session || !discovered) {
+      reporter.reportSkip('Could not establish an account session or discover a biller on this target.');
+      await api.dispose();
+      test.skip(true, 'Setup unavailable');
+      return;
+    }
+
+    // Two distinct spots, both checked: neither is exploitable as classic
+    // "auth bypass" SQL injection, but one still leaks a raw DB error.
+    // 1. biller_id in POST /api/bill-payments/create — inserted via a
+    //    parameterized query (%s placeholders), so a payload can't break out
+    //    of a string literal the way card_id/card_type can elsewhere in this
+    //    app (see the card_id SQLi test above). BUT: bill_payments.biller_id
+    //    is an INTEGER column, so a non-integer value still fails at the
+    //    database layer with psycopg2's own type-coercion error — and
+    //    that raw error (revealing the exact VALUES clause, including
+    //    another user's internal numeric id) is returned to the client
+    //    verbatim. Confirmed live: sending "1 OR '1'='1'" as biller_id
+    //    produces a 500 with the literal Postgres message
+    //    `invalid input syntax for type integer: "1 OR '1'='1'" ... LINE 4: VALUES (1427, ...`.
+    //    This is real detailed-error-exposure (API8), not injection (API8
+    //    is still the right bucket — same category the SKILL.md convention
+    //    table already uses for raw SQL/traceback exposure).
+    // 2. category_id in GET /api/billers/by-category/<int:category_id> —
+    //    interpolated into a raw f-string SQL query, but the route is
+    //    declared with Flask's <int:> converter, which 404s any non-integer
+    //    path segment before the handler runs at all — confirmed live, not
+    //    exploitable.
+    const paymentRes = await createBillPayment(api, session.token, {
+      biller_id: "1 OR '1'='1",
+      amount: discovered.biller.minimum_amount + 1,
+      payment_method: 'balance'
+    });
+    const paymentStatus = paymentRes.status();
+    const paymentBody = await paymentRes.json().catch(() => null);
+
+    const categoryRes = await api.get(`/api/billers/by-category/1%20OR%201=1`);
+    const categoryStatus = categoryRes.status();
+    await api.dispose();
+
+    testInfo.attach('biller-sqli-probe', {
+      body: JSON.stringify(
+        { paymentStatus, paymentBody, categoryStatus, categoryRouteBlocked: categoryStatus === 404 },
+        null,
+        2
+      ),
+      contentType: 'application/json'
+    });
+
+    const paymentRevealsDbError = paymentStatus === 500 && /syntax error|psycopg2|invalid input syntax|LINE \d+/i.test(paymentBody?.message || '');
+    const categoryRouteBlocked = categoryStatus === 404;
+
+    if (paymentRevealsDbError || !categoryRouteBlocked) {
+      reporter.reportVulnerability(
+        'API8_SECURITY_MISCONFIGURATION',
+        { biller_id: paymentBody, categoryRouteStatus: categoryStatus },
+        [
+          'Validate biller_id is a positive integer before it ever reaches the database, and return a generic 400 for malformed input.',
+          'Do not return raw database exception text (str(e)) to API clients for any endpoint; log it server-side and return a generic error message.',
+          'If category_id\'s <int:> converter is ever loosened to a string type, parameterize that query before doing so.'
+        ]
+      );
+    } else {
+      reporter.reportPass(
+        "Neither biller_id nor category_id exposed a raw database error or allowed a classic injection payload through.",
+        'API8:2023 - Security Misconfiguration'
+      );
+    }
+  });
 });

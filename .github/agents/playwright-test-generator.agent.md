@@ -57,7 +57,7 @@ This repo already has established Playwright conventions — don't write raw, ad
 6. Retrieve the generator log via `generator_read_log`.
    - If `generator_read_log` returns an empty result or an error, notify the user and do not invoke `generator_write_test`. Ask the user whether to retry or skip this test.
 7. Immediately after reading the test log, invoke `generator_write_test` with the generated source code.
-  - If `<test-file>` is present, use it exactly as the output file name. If `<test-file>` is absent, derive the file name from the scenario name by lowercasing, replacing spaces with hyphens, and appending `.spec.ts` (e.g., "Add Valid Todo" → `add-valid-todo.spec.ts`).
+  - If `<test-file>` is present, use it exactly as the output file name. If `<test-file>` is absent, derive the file name from the scenario name by lowercasing, replacing spaces with hyphens, and appending `.spec.ts` (e.g., "Add Valid Todo" becomes `add-valid-todo.spec.ts`).
   - File should contain a single test.
    - Test must be placed in a describe matching the top-level test plan item.
    - Test title must match the scenario name.

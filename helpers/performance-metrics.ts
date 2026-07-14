@@ -183,8 +183,8 @@ export class PerformanceMetrics {
 			last7Days: {
 				avgAccuracy: avgAccuracy.toFixed(2) + '%',
 				avgDuration: Math.round(avgDuration) + 'ms',
-				accuracyTrend: accuracyTrend > 0 ? `↑ ${accuracyTrend.toFixed(2)}%` : `↓ ${Math.abs(accuracyTrend).toFixed(2)}%`,
-				durationTrend: durationTrend > 0 ? `↑ ${Math.round(durationTrend)}ms` : `↓ ${Math.abs(Math.round(durationTrend))}ms`
+				accuracyTrend: accuracyTrend > 0 ? `up ${accuracyTrend.toFixed(2)}%` : `down ${Math.abs(accuracyTrend).toFixed(2)}%`,
+				durationTrend: durationTrend > 0 ? `up ${Math.round(durationTrend)}ms` : `down ${Math.abs(Math.round(durationTrend))}ms`
 			},
 			status: this.getHealthStatus(avgAccuracy, avgDuration)
 		}

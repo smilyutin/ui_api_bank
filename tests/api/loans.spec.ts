@@ -135,6 +135,48 @@ test.describe('API - Loan requests', () => {
       );
     }
   });
+
+  test('POST /request_loan should have no ceiling on the requested amount', async ({ baseURL }, testInfo) => {
+    if (!baseURL) throw new Error('baseURL is not defined');
+    const reporter = new SecurityReporter(testInfo);
+
+    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const session = await establishAccountSession(api, 'loan-ceiling');
+    if (!session) {
+      reporter.reportSkip('Could not establish an account session (register/login) on this target.');
+      await api.dispose();
+      test.skip(true, 'No account session available');
+      return;
+    }
+
+    // Unlike /transfer and bill payments, loans have no backing balance to
+    // check against at all (app.py's request_loan just inserts amount with
+    // no validation), so there isn't even an "insufficient X" rejection
+    // path to distinguish from a real ceiling — any positive amount should
+    // just succeed outright if there's no ceiling.
+    const amount = 999999999;
+    const res = await requestLoan(api, session.token, amount);
+    const status = res.status();
+    const body = await res.json().catch(() => null);
+    await api.dispose();
+
+    testInfo.attach('loan-ceiling-probe', { body: JSON.stringify({ amount, status, body }, null, 2), contentType: 'application/json' });
+
+    const acceptedWithNoCeiling = status === 200 && body?.status === 'success';
+
+    if (acceptedWithNoCeiling) {
+      reporter.reportVulnerability(
+        'API6_MASS_ASSIGNMENT',
+        { endpoint: '/request_loan', amountSubmitted: amount, responseStatus: status },
+        ['Apply a sane maximum loan amount to prevent unbounded liabilities from a single request, independent of the missing negative-amount validation already flagged above.']
+      );
+    } else {
+      reporter.reportPass(
+        `A very large loan request (${amount}) was rejected.`,
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    }
+  });
 });
 
 test.describe('API - Loan approval authorization', () => {

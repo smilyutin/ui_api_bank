@@ -1,4 +1,5 @@
 import { TestInfo } from '@playwright/test';
+import * as allure from 'allure-js-commons/sync';
 
 /**
  * Security Test Reporter
@@ -626,10 +627,17 @@ export class SecurityReporter {
 	}
   
 	/**
-	 * Add Allure-specific metadata for better visualization
+	 * Add Allure-specific metadata for better visualization.
+	 *
+	 * Uses the `allure-js-commons/sync` runtime API directly (not
+	 * `testInfo.annotations`) — allure-playwright only turns
+	 * `testInfo.annotations` into real Allure labels when the annotation
+	 * type is the `allure.label.<name>` string form; a bare type like
+	 * `'epic'` silently falls through to a fake "epic: ..." step instead
+	 * of an actual label/graph entry.
 	 */
 	private addAllureMetadata(result: SecurityTestResult) {
-		// Add severity label
+		// Severity label — drives the Allure "Severity" graph and blocker/critical filtering.
 		if (result.riskLevel) {
 			const severityMap = {
 				[SecurityRiskLevel.CRITICAL]: 'blocker',
@@ -638,41 +646,27 @@ export class SecurityReporter {
 				[SecurityRiskLevel.LOW]: 'minor',
 				[SecurityRiskLevel.INFO]: 'trivial'
 			};
-      
-			this.testInfo.annotations.push({
-				type: 'severity',
-				description: severityMap[result.riskLevel]
-			});
+
+			allure.severity(severityMap[result.riskLevel]);
 		}
-    
-		// Add OWASP category as tag
+
+		// OWASP category as a tag + epic — groups every OWASP-tagged check under one
+		// "OWASP API Security Top 10" branch in the Allure Behaviors graph.
 		if (result.owaspCategory && result.owaspCategory !== 'N/A') {
-			this.testInfo.annotations.push({
-				type: 'tag',
-				description: result.owaspCategory.split(':')[0] // e.g., "API3:2023" -> "API3"
-			});
-      
-			this.testInfo.annotations.push({
-				type: 'epic',
-				description: 'OWASP API Security Top 10'
-			});
+			allure.tag(result.owaspCategory.split(':')[0]); // e.g., "API3:2023" -> "API3"
+			allure.epic('OWASP API Security Top 10');
+			allure.story(result.owaspCategory);
 		}
-    
-		// Add links to OWASP documentation
+
+		// Links to OWASP documentation
 		if (result.references && result.references.length > 0) {
 			result.references.forEach((ref, idx) => {
-				this.testInfo.annotations.push({
-					type: 'link',
-					description: `OWASP Reference ${idx + 1}: ${ref}`
-				});
+				allure.link(ref, `OWASP Reference ${idx + 1}`);
 			});
 		}
-    
-		// Add feature label
+
+		// Feature label — the part of the test title before the first ':'.
 		const feature = result.testName.split(':')[0].trim();
-		this.testInfo.annotations.push({
-			type: 'feature',
-			description: feature
-		});
+		allure.feature(feature);
 	}
 }

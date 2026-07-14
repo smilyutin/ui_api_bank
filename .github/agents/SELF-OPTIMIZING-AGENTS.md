@@ -1,6 +1,6 @@
 # Self-Optimizing Agents
 
-How the Planner → Generator → Healer Playwright agents in this directory work together, and how to add or modify one. This repo already implements the pattern below as three concrete agents — this doc explains how they fit, it doesn't propose a new design.
+How the Planner, Generator, and Healer Playwright agents in this directory work together, and how to add or modify one. This repo already implements the pattern below as three concrete agents — this doc explains how they fit, it doesn't propose a new design.
 
 ## Goals
 - Continuous improvement: the Healer learns from real failure signals (`test_run`/`test_debug` output), not guesses.
@@ -55,7 +55,7 @@ Follow the frontmatter with plain-language behavior rules as a **sequential, num
 
 ## Optimization Loop (Healer)
 
-1. `test_run` to find failures. Zero failures → stop, report all-green.
+1. `test_run` to find failures. Zero failures: stop, report all-green.
 2. `test_debug` one failing test — don't start another until this one is fixed or marked `test.fixme()`.
 3. Diagnose root cause (stale selector, timing, changed app behavior, bad assertion) and fix with a minimal diff.
 4. Re-run the same test to verify the fix.
