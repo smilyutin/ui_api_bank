@@ -24,6 +24,17 @@ import { SecurityReporter } from '../utils/security-reporter';
  * so there is nothing for either check to probe.
  */
 type NpmAuditMetadata = {
+	metadata?: {
+		vulnerabilities?: {
+			info?: number;
+			low?: number;
+			moderate?: number;
+			high?: number;
+			critical?: number;
+			total?: number;
+		};
+	};
+	// Some npm versions also include a top-level vulnerabilities summary; keep this for compatibility.
 	vulnerabilities?: {
 		info?: number;
 		low?: number;
