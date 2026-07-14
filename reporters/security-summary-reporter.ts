@@ -49,7 +49,7 @@ class SecuritySummaryReporter implements Reporter {
 		const row = (testName: string, riskLevel: string, owaspCategory: string, count: string) =>
 			`${testName.padEnd(nameWidth)}  ${riskLevel.padEnd(riskWidth)}  ${owaspCategory.padEnd(categoryWidth)}  ${count}`;
 
-		console.log('\nSecurity findings (reportVulnerability) - tests still pass; see each test\'s attached report for full recommendations.');
+		console.log("\nSecurity findings (reportVulnerability) - tests still pass; see each test's attached report for full recommendations.");
 		console.log(row('Test', 'Risk', 'OWASP Category', 'Count'));
 		console.log('-'.repeat(nameWidth + riskWidth + categoryWidth + 12));
 		for (const f of rows) {

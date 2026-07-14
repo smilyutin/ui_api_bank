@@ -64,7 +64,13 @@ test.describe('Supply chain - Dependency vulnerabilities', () => {
       return;
     }
 
-    const counts = audit.vulnerabilities ?? {};
+    if (!audit.vulnerabilities) {
+      reporter.reportSkip('npm audit JSON did not include a vulnerabilities summary (unexpected output shape).');
+      test.skip(true, 'npm audit output shape unrecognised');
+      return;
+    }
+
+    const counts = audit.vulnerabilities;
     testInfo.attach('npm-audit-probe', { body: JSON.stringify(counts, null, 2), contentType: 'application/json' });
 
     const highOrCritical = (counts.high ?? 0) + (counts.critical ?? 0);
