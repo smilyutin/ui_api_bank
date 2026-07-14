@@ -64,7 +64,7 @@ test.describe('Supply chain - Dependency vulnerabilities', () => {
       return;
     }
 
-    const counts = audit.vulnerabilities ?? {};
+    const counts = audit.metadata?.vulnerabilities ?? audit.vulnerabilities ?? {};
     testInfo.attach('npm-audit-probe', { body: JSON.stringify(counts, null, 2), contentType: 'application/json' });
 
     const highOrCritical = (counts.high ?? 0) + (counts.critical ?? 0);
