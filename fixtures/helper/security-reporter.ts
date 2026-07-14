@@ -650,11 +650,43 @@ export class SecurityReporter {
 			allure.severity(severityMap[result.riskLevel]);
 		}
 
-		// OWASP category as a tag + epic — groups every OWASP-tagged check under one
-		// "OWASP API Security Top 10" branch in the Allure Behaviors graph.
-		if (result.owaspCategory && result.owaspCategory !== 'N/A') {
-			allure.tag(result.owaspCategory.split(':')[0]); // e.g., "API3:2023" -> "API3"
+		// reportVulnerability() never throws (see its own comment), so a real
+		// finding still shows as a green "Passed" test. reportWarning() only
+		// throws when SECURITY_SOFT isn't '1' — with it set, a warning shows
+		// green too. Either way Allure's status pill is tied to actual
+		// execution outcome and can't be recolored via a label. The Behaviors
+		// search box only matches tree node names (epic/feature/story), not
+		// tag values, so a plain tag isn't enough to make these discoverable
+		// there — route these to their own dedicated top-level Behaviors
+		// branch instead of "OWASP API Security Top 10".
+		//
+		// epic MUST be mutually exclusive (exactly one value per test): every
+		// Allure result gets one uid, and if the same result is placed at two
+		// tree locations (e.g. by pushing a second `epic` label), both copies
+		// share that uid — which silently breaks the Behaviors page's tree
+		// renderer (confirmed live: the tree comes back completely empty,
+		// with no console error, for the whole report, not just the
+		// duplicated nodes). Don't add a second epic/feature/story label to
+		// any test for any reason without verifying the Behaviors page still
+		// renders afterward.
+		const needsFix = result.status === SecurityTestStatus.FAIL || result.status === SecurityTestStatus.WARNING;
+		const hasOwaspCategory = result.owaspCategory && result.owaspCategory !== 'N/A';
+
+		if (needsFix) {
+			allure.tag('to-be-fixed');
+			allure.epic('To Be Fixed - Security Findings');
+		} else if (hasOwaspCategory) {
+			// Unchanged from before: only OWASP-tagged pass/skip checks get this
+			// epic — a plain reportPass()/reportSkip() with no owaspCategory
+			// still falls through to the file-path-based epic that
+			// scripts/annotate-allure-results.js assigns ("API Tests"/"UI Tests").
 			allure.epic('OWASP API Security Top 10');
+		}
+
+		// OWASP category as a tag + story — kept regardless of which epic branch
+		// this test landed in above.
+		if (hasOwaspCategory) {
+			allure.tag(result.owaspCategory.split(':')[0]); // e.g., "API3:2023" -> "API3"
 			allure.story(result.owaspCategory);
 		}
 
