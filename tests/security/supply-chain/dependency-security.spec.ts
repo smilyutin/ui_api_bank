@@ -24,17 +24,6 @@ import { SecurityReporter } from '../utils/security-reporter';
  * so there is nothing for either check to probe.
  */
 type NpmAuditMetadata = {
-	metadata?: {
-		vulnerabilities?: {
-			info?: number;
-			low?: number;
-			moderate?: number;
-			high?: number;
-			critical?: number;
-			total?: number;
-		};
-	};
-	// Some npm versions also include a top-level vulnerabilities summary; keep this for compatibility.
 	vulnerabilities?: {
 		info?: number;
 		low?: number;
@@ -75,7 +64,7 @@ test.describe('Supply chain - Dependency vulnerabilities', () => {
       return;
     }
 
-    const counts = audit.metadata?.vulnerabilities ?? audit.vulnerabilities ?? {};
+    const counts = audit.vulnerabilities ?? {};
     testInfo.attach('npm-audit-probe', { body: JSON.stringify(counts, null, 2), contentType: 'application/json' });
 
     const highOrCritical = (counts.high ?? 0) + (counts.critical ?? 0);

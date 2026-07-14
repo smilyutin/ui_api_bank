@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "pretest": "node -e \"require('fs').rmSync('allure-results', { recursive: true, force: true })\"",
     "test": "playwright test",
     "allure:annotate": "node scripts/annotate-allure-results.js",
     "allure:generate": "npm run allure:annotate && allure generate ./allure-results --clean -o ./allure-report",
