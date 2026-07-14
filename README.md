@@ -23,6 +23,36 @@ A deliberately vulnerable web application for practicing application security te
    docker compose down -v
    ```
 
+## Test Reporting (Allure)
+
+`npm test` also writes raw results to `allure-results/` (gitignored) alongside Playwright's own HTML report — a `pretest` script clears out `allure-results/` before every run, so it never mixes results from an older run with the current one. To turn those into a browsable report:
+
+```bash
+npm run allure:generate   # builds allure-report/ from allure-results/
+npm run allure:open       # serves allure-report/ in your browser
+npm run allure:report     # both steps in one command
+```
+
+### What's in it
+
+Click **Behaviors** in the left nav — it's a tree grouped into:
+
+- **API Tests** / **UI Tests** — every spec, grouped by feature.
+- **OWASP API Security Top 10** — every `SecurityReporter`-driven check that came back clean (secure behavior confirmed, nothing to fix).
+- **To Be Fixed - Security Findings** — every check that found a real vulnerability or a soft concern. This is the one branch to check for "what's actually wrong" with the app right now — everything else in the tree is either a functional test or a security check that passed cleanly.
+
+**Overview** shows the same branches with their totals in its own Behaviors panel, so you can see e.g. "63 To Be Fixed" without even opening the Behaviors page.
+
+Click into any individual test to read its full attached report: Description, Why this result, Evidence, and Recommendations for fixing it.
+
+### Why findings don't fail the build
+
+Reporting a real vulnerability (via `reportVulnerability()`) never fails the test — finding one in this deliberately-vulnerable app is the suite working correctly, not a bug to fix. So every test passes (green) regardless of what it finds; the Allure report (or the console table below) is where you see results, not the pass/fail status.
+
+### Console summary (no report needed)
+
+Every `npm test` run also prints a compact table of every finding straight to the terminal — test name, risk level, OWASP category, and count — so you can get the same picture without generating or opening anything.
+
 ## Setup steps file
 
 The repository also includes `.github/workflows/copilot-setup-steps.yml`, which documents the basic setup steps used by Copilot for this project.
