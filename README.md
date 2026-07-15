@@ -53,6 +53,15 @@ Reporting a real vulnerability (via `reportVulnerability()`) never fails the tes
 
 Every `npm test` run also prints a compact table of every finding straight to the terminal — test name, risk level, OWASP category, and count — so you can get the same picture without generating or opening anything.
 
+### Troubleshooting: Behaviors tab looks empty
+
+If **Behaviors** shows "There are no items" after regenerating, it's almost always stale browser state, not broken data — `allure open` tends to reuse the same port across runs, and the page can hang onto an old cached version of the report instead of loading the new one. Before assuming something's actually wrong:
+
+1. **Hard refresh** the tab (Cmd+Shift+R / Ctrl+Shift+R).
+2. If that doesn't help, open the report fresh in an **Incognito/Private window** — this has reliably fixed it every time so far.
+3. Don't click a row link from the **Overview** page's Behaviors panel to jump into a branch — that deep-links to a specific `#behaviors/<uid>` URL, which is broken in this Allure version and always shows empty, even with valid data. Click **Behaviors** in the left nav directly instead, then navigate into the branch from there.
+4. Make sure the search box at the top of Behaviors is empty — it only matches individual test names, not branch/epic names, so leftover search text (e.g. searching "To Be Fixed - Security Findings" itself) will also show "no items" even though the branch exists.
+
 ## Setup steps file
 
 The repository also includes `.github/workflows/copilot-setup-steps.yml`, which documents the basic setup steps used by Copilot for this project.

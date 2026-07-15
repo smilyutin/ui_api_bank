@@ -676,11 +676,11 @@ export class SecurityReporter {
 			allure.tag('to-be-fixed');
 			allure.epic('To Be Fixed - Security Findings');
 		} else if (hasOwaspCategory) {
-			// Unchanged from before: only OWASP-tagged pass checks get this epic —
-			// a plain reportPass() with no owaspCategory still falls through to the
-			// file-path-based epic that scripts/annotate-allure-results.js assigns
-			// ("API Tests"/"UI Tests").
-			// (reportSkip() doesn't call addAllureMetadata, so skips won't land here.)
+			// Unchanged from before: only OWASP-tagged pass/skip checks get this
+			// epic — a plain reportPass()/reportSkip() with no owaspCategory
+			// still falls through to the file-path-based epic that
+			// scripts/annotate-allure-results.js assigns ("API Tests"/"UI Tests").
+			allure.epic('OWASP API Security Top 10');
 		}
 
 		// OWASP category as a tag + story — kept regardless of which epic branch

@@ -28,13 +28,12 @@ class SecuritySummaryReporter implements Reporter {
 			const riskLevel = separatorIndex === -1 ? 'UNKNOWN' : description.slice(0, separatorIndex);
 			const owaspCategory = separatorIndex === -1 ? description : description.slice(separatorIndex + 2);
 
-			const testName = test.titlePath().join(' › ');
-			const key = `${testName}|${riskLevel}|${owaspCategory}`;
+			const key = `${test.title}|${riskLevel}|${owaspCategory}`;
 			const existing = this.findings.get(key);
 			if (existing) {
 				existing.count += 1;
 			} else {
-				this.findings.set(key, { testName, riskLevel, owaspCategory, count: 1 });
+				this.findings.set(key, { testName: test.title, riskLevel, owaspCategory, count: 1 });
 			}
 		}
 	}
@@ -50,7 +49,7 @@ class SecuritySummaryReporter implements Reporter {
 		const row = (testName: string, riskLevel: string, owaspCategory: string, count: string) =>
 			`${testName.padEnd(nameWidth)}  ${riskLevel.padEnd(riskWidth)}  ${owaspCategory.padEnd(categoryWidth)}  ${count}`;
 
-		console.log("\nSecurity findings (reportVulnerability) - tests still pass; see each test's attached report for full recommendations.");
+		console.log('\nSecurity findings (reportVulnerability) - tests still pass; see each test\'s attached report for full recommendations.');
 		console.log(row('Test', 'Risk', 'OWASP Category', 'Count'));
 		console.log('-'.repeat(nameWidth + riskWidth + categoryWidth + 12));
 		for (const f of rows) {
