@@ -7,7 +7,14 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
  * - `POST /api/ai/chat`               (authenticated, @ai_rate_limit + @token_required)
  * - `POST /api/ai/chat/anonymous`     (unauthenticated, @ai_rate_limit)
  * - `GET  /api/ai/system-info`        (unauthenticated, @ai_rate_limit)
+ * - `GET  /api/ai/chat-logs`          (unauthenticated, @ai_rate_limit; optional ?user_id=)
  * - `GET  /api/ai/rate-limit-status`  (unauthenticated, NOT rate-limited itself)
+ *
+ * The agent behind `/api/ai/chat*` is `FakeLLMAgent` (app.py) — a deterministic
+ * local rule-based agent (no external LLM/API key) that reproduces the root
+ * cause of prompt injection: its system prompt and the caller's message are
+ * concatenated with no structural boundary before pattern-matching. See
+ * `tests/api/ai-chat.spec.ts` for the exploitable scenarios this enables.
  *
  * The rate limiter (`ai_rate_limit` in app.py) is a single in-memory dict keyed
  * by client IP, shared across every test/run with no reset endpoint
@@ -19,6 +26,8 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
  * hardcoding seed ids.
  */
 
+export type AiToolCall = Record<string, unknown> & { tool: string };
+
 export type AiChatResponseBody = {
 	status: 'success' | 'error';
 	ai_response?: {
@@ -26,21 +35,41 @@ export type AiChatResponseBody = {
 		echo: string;
 		has_user_context: boolean;
 		context: Record<string, unknown>;
+		jailbroken: boolean;
+		tool_calls: AiToolCall[];
+		formatted_html: string | null;
 	};
 	mode?: 'authenticated' | 'anonymous';
 	user_context_included?: boolean;
 	warning?: string;
 	message?: string;
-	system_info?: { provider: string; model: string; note: string };
+	system_info?: { provider: string; model: string; model_version: string; note: string };
 };
 
 export type SystemInfoResponseBody = {
 	status: 'success' | 'error';
-	system_info?: { provider: string; model: string; note: string };
+	system_info?: { provider: string; model: string; model_version: string; note: string };
 	endpoints?: Record<string, string>;
 	modes?: Record<string, string>;
 	vulnerabilities?: string[];
 	demo_attacks?: string[];
+};
+
+export type ChatLogEntry = {
+	id: number;
+	user_id: number | null;
+	mode: string;
+	user_message: string;
+	jailbroken: boolean;
+	tool_calls: AiToolCall[];
+	ai_response: string;
+	created_at: string;
+};
+
+export type ChatLogsResponseBody = {
+	status: 'success' | 'error';
+	chat_logs?: ChatLogEntry[];
+	message?: string;
 };
 
 export type RateLimitStatusBody = {
@@ -73,6 +102,11 @@ export async function chatAnonymous(api: APIRequestContext, message: string): Pr
 
 export async function getSystemInfo(api: APIRequestContext): Promise<APIResponse> {
 	return api.get('/api/ai/system-info');
+}
+
+export async function getChatLogs(api: APIRequestContext, userId?: number | string): Promise<APIResponse> {
+	const query = userId !== undefined ? `?user_id=${encodeURIComponent(String(userId))}` : '';
+	return api.get(`/api/ai/chat-logs${query}`);
 }
 
 export async function getRateLimitStatus(
