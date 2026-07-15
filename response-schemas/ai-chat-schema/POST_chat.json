@@ -41,18 +41,33 @@
         "echo": {
           "type": "string"
         },
+        "formatted_html": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "has_user_context": {
+          "type": "boolean"
+        },
+        "jailbroken": {
           "type": "boolean"
         },
         "response": {
           "type": "string"
+        },
+        "tool_calls": {
+          "type": "array"
         }
       },
       "required": [
         "context",
         "echo",
+        "formatted_html",
         "has_user_context",
-        "response"
+        "jailbroken",
+        "response",
+        "tool_calls"
       ]
     },
     "mode": {
