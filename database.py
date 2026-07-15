@@ -1,8 +1,9 @@
 import os
 import psycopg2
-from psycopg2 import pool
+import psycopg2.pool
 from datetime import datetime
 import time
+from typing import overload, Literal, Optional, Sequence, Any
 
 # Vulnerable database configuration
 # CWE-259: Use of Hard-coded Password
@@ -183,6 +184,20 @@ def init_db():
                 )
             ''')
 
+            # Create AI chat logs table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS chat_logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,  -- NULL for anonymous mode
+                    mode TEXT NOT NULL,
+                    user_message TEXT,  -- Vulnerability: No input validation, stored verbatim
+                    jailbroken BOOLEAN DEFAULT FALSE,
+                    tool_calls TEXT,  -- JSON-encoded list of tool invocations
+                    ai_response TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+
             # Insert default bill categories
             cursor.execute("""
                 INSERT INTO bill_categories (name, description) 
@@ -218,6 +233,10 @@ def init_db():
     finally:
         return_connection(conn)
 
+@overload
+def execute_query(query: str, params: Optional[Sequence[Any]] = None, fetch: Literal[True] = True) -> list: ...
+@overload
+def execute_query(query: str, params: Optional[Sequence[Any]] = None, *, fetch: Literal[False]) -> None: ...
 def execute_query(query, params=None, fetch=True):
     """
     Execute a database query

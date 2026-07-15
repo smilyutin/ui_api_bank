@@ -1,0 +1,57 @@
+{
+    "type": "object",
+    "properties": {
+        "chat_logs": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "ai_response": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "integer"
+                    },
+                    "jailbroken": {
+                        "type": "boolean"
+                    },
+                    "mode": {
+                        "type": "string"
+                    },
+                    "tool_calls": {
+                        "type": "array"
+                    },
+                    "user_id": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "user_message": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "ai_response",
+                    "created_at",
+                    "id",
+                    "jailbroken",
+                    "mode",
+                    "tool_calls",
+                    "user_id",
+                    "user_message"
+                ]
+            }
+        },
+        "status": {
+            "type": "string"
+        }
+    },
+    "required": [
+        "chat_logs",
+        "status"
+    ]
+}
