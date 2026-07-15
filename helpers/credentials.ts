@@ -37,6 +37,7 @@ function writeFixture(fixture: UsersFixture) {
 		users: primaryUser ? [primaryUser] : [],
 	};
 
+	fs.mkdirSync(path.dirname(filePath), { recursive: true });
 	fs.writeFileSync(filePath, JSON.stringify(normalized, null, 2), 'utf-8');
 }
 
