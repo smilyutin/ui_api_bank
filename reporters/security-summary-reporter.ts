@@ -28,12 +28,13 @@ class SecuritySummaryReporter implements Reporter {
 			const riskLevel = separatorIndex === -1 ? 'UNKNOWN' : description.slice(0, separatorIndex);
 			const owaspCategory = separatorIndex === -1 ? description : description.slice(separatorIndex + 2);
 
-			const key = `${test.title}|${riskLevel}|${owaspCategory}`;
+			const testName = test.titlePath().join(' › ');
+			const key = `${testName}|${riskLevel}|${owaspCategory}`;
 			const existing = this.findings.get(key);
 			if (existing) {
 				existing.count += 1;
 			} else {
-				this.findings.set(key, { testName: test.title, riskLevel, owaspCategory, count: 1 });
+				this.findings.set(key, { testName, riskLevel, owaspCategory, count: 1 });
 			}
 		}
 	}
