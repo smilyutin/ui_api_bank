@@ -1,6 +1,6 @@
 # Test coverage gaps — from README vulnerability audit
 
-Source: coverage audit of `README.md` "Implemented Vulnerabilities" against `tests/api/*.spec.ts` and `tests/ui/specs/*.spec.ts`. Each item below has zero or only superficial test coverage today.
+Source: initial coverage audit of `README.md` "Implemented Vulnerabilities" against `tests/api/*.spec.ts` and `tests/ui/specs/*.spec.ts`, plus gaps found while expanding `tests/security/`. Unchecked items below have zero or only superficial test coverage today.
 
 ## New findings (from mirroring another project's `security/` test-suite layout — not in the original README audit)
 
