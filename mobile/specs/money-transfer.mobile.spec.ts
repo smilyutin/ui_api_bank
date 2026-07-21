@@ -13,7 +13,10 @@ describe('Mobile money transfer', () => {
 		const pm = new MobilePageManager();
 		await pm.dashboard().waitForLoad();
 
-		await browser.url(new URL('/transfer', baseURL()).toString());
+		// The transfer form (#transferForm) lives inline on /dashboard and is
+		// submitted via fetch() to POST /transfer (templates/dashboard.html) -
+		// GET /transfer has no route, so navigating there directly never
+		// renders #to_account.
 		await pm.moneyTransfer().fillRecipient('1000000001');
 		await pm.moneyTransfer().fillAmount('1');
 		await pm.moneyTransfer().fillDescription('Appium mobile smoke test');
