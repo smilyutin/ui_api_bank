@@ -116,9 +116,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Appium drivers
-        run: npx appium driver install uiautomator2
-
       - name: Build and start Docker stack
         run: docker compose up -d --build
 
