@@ -77,7 +77,7 @@ k6 run --summary-export=perf/results/money-movement.json perf/k6/scenarios/money
 k6 run --summary-export=perf/results/dashboard-read.json perf/k6/scenarios/dashboard-read.js
 ```
 
-CI runs this too: a `performance` job in `.github/workflows/playwright.yml` builds the Docker stack, runs `smoke.js` as a real gate, then runs the three scenarios above with `continue-on-error: true` (degradation past ~10 VUs is expected, not a bug — see above) and uploads the `--summary-export` JSON as the `k6-results` artifact.
+CI runs this too: a `performance` job in `.github/workflows/playwright.yml` builds the Docker stack, runs `smoke.js` as a real gate, then runs the three scenarios above with `continue-on-error: true` (degradation past ~10 VUs is expected, not a bug — see above) and uploads the `--summary-export` JSON as the `k6-results` artifact. Like the mobile job, it only runs on `workflow_dispatch` or when a push/PR touches `perf/**` or the app/infra files k6 exercises (`app.py`, `auth.py`, `database.py`, `docker-compose*.yml`, `Dockerfile`, `requirements.txt`), so unrelated changes don't pay for the ~9-10 minute k6 ramp.
 
 ## Mobile Testing (Appium)
 
