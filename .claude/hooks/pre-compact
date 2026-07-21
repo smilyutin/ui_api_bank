@@ -1,0 +1,2 @@
+#!/bin/sh
+npx -y @jigyasudham/veto veto_session_save --auto_summarize=true

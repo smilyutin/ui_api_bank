@@ -1,0 +1,140 @@
+meta {
+  name: AI Customer Support Chat (Authenticated)
+  type: http
+  seq: 1
+  tags: [
+    ai-agent
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/ai/chat
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "message": "What is my account balance?"
+  }
+}
+
+docs {
+  Chat with the AI customer support agent using authenticated mode. **VULNERABLE:** Includes user context, prompt injection, information disclosure, database access. User data sent to external API.
+}
+
+example {
+  name: 200 Response
+  description: AI response generated successfully
+  
+  request: {
+    url: {{baseUrl}}/api/ai/chat
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "message": "What is my account balance?"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      Content-Type: application/json
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "status": "success",
+          "ai_response": {
+            "response": "",
+            "timestamp": "",
+            "model": "deepseek-chat",
+            "api_used": "deepseek"
+          },
+          "mode": "authenticated",
+          "user_context_included": true
+        }
+      '''
+    }
+  }
+}
+
+example {
+  name: 400 Response
+  description: Message is required
+  
+  request: {
+    url: {{baseUrl}}/api/ai/chat
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "message": "What is my account balance?"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 400
+      text: Bad Request
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 500 Response
+  description: AI chat error with system information exposure
+  
+  request: {
+    url: {{baseUrl}}/api/ai/chat
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "message": "What is my account balance?"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      Content-Type: application/json
+    }
+  
+    status: {
+      code: 500
+      text: Internal Server Error
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "status": "error",
+          "message": "",
+          "system_info": {}
+        }
+      '''
+    }
+  }
+}

@@ -3,6 +3,7 @@ import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 import { SecurityReporter } from '../../../fixtures/helper/security-reporter';
 import { TRANSFER_DESCRIPTION_XSS_PAYLOAD, XSS_MARKER } from '../../../fixtures/api/xss.helpers';
+import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
 
 /**
  * UI - Stored XSS via transfer description
@@ -24,7 +25,7 @@ import { TRANSFER_DESCRIPTION_XSS_PAYLOAD, XSS_MARKER } from '../../../fixtures/
  * only reachable through a real browser, so this test reports it directly.
  */
 test.describe('UI - Stored XSS via transfer description', () => {
-  test('a script-bearing transfer description should not execute when the transaction list renders', async ({ page, baseURL }, testInfo) => {
+  test('a script-bearing transfer description should not execute when the transaction list renders', async ({ page, baseURL, request }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
@@ -33,6 +34,11 @@ test.describe('UI - Stored XSS via transfer description', () => {
       role: 'user',
       fallbackUserPrefix: 'xss-ui',
     });
+
+    // A real, freshly created recipient account instead of a hardcoded
+    // number that /transfer just happens not to validate today.
+    const recipient = await establishAccountSession(request, 'xss-ui-recipient');
+    if (!recipient) throw new Error('Could not establish a recipient account for the transfer');
 
     const pm = new PageManager(page);
     const dash = pm.dashboard();
@@ -49,12 +55,12 @@ test.describe('UI - Stored XSS via transfer description', () => {
 
     const mt = pm.moneyTransfer();
     const amount = '1.00';
-    await mt.fillRecipient('1234567890');
+    await mt.fillRecipient(recipient.accountNumber);
     await mt.fillAmount(amount);
     await mt.fillDescription(TRANSFER_DESCRIPTION_XSS_PAYLOAD);
     await mt.submit();
 
-    const transferOk = await mt.waitForSuccess(amount, 5000);
+    const transferOk = await mt.waitForSuccess();
     expect(transferOk).toBeTruthy();
 
     const fired = await page

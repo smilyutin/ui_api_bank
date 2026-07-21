@@ -1,0 +1,54 @@
+meta {
+  name: Toggle card freeze status
+  type: http
+  seq: 3
+  tags: [
+    virtual-cards
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/virtual-cards/:card_id/toggle-freeze
+  body: none
+  auth: bearer
+}
+
+params:path {
+  card_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Toggle freeze/unfreeze status of a virtual card. Vulnerable to BOLA.
+}
+
+example {
+  name: 200 Response
+  description: Card status toggled successfully
+  
+  request: {
+    url: {{baseUrl}}/api/virtual-cards/:card_id/toggle-freeze
+    method: POST
+    mode: none
+    params:path: {
+      card_id: 
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

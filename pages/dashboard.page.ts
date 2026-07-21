@@ -1,12 +1,7 @@
-import { Page, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { HelperBase } from './helper-base.page';
 
-export class DashboardPage {
-	readonly page: Page;
-
-	constructor(page: Page) {
-		this.page = page;
-	}
-
+export class DashboardPage extends HelperBase {
 	async goto(baseURL: string) {
 		await this.page.goto(new URL('/dashboard', baseURL).toString());
 	}
@@ -78,57 +73,28 @@ export class DashboardPage {
 		return out;
 	}
 
-	async getAccountBalance() {
-		// Try several selectors that might contain balance, ordered by specificity
-		const balanceSelectors = [
-			'[data-testid*="balance"]',
-			'[data-testid*="account-balance"]',
-			'.account-balance',
-			'.main-balance',
-			'#balance',
-			'#account-balance',
-			'.balance:first-of-type',
-			'text=/balance:\\s*[$€£]\\d+(\\.\\d{2})?/i'
-		];
-		for (const selector of balanceSelectors) {
-			const el = this.page.locator(selector);
-			if (await el.count()) {
-				// Handle multiple matches by taking the first one
-				const text = await el.first().innerText();
-				// Extract number from text
-				const match = text.match(/[$€£]?\s*(\d+(\.\d{2})?)/);
-				return match ? parseFloat(match[1]) : null;
-			}
-		}
+	async getAccountNumber(): Promise<string | null> {
+		const el = this.page.locator('#account-number');
+		if (await el.count()) return (await el.innerText()).trim();
 		return null;
 	}
 
+	async hasEmptyTransactionsMessage(): Promise<boolean> {
+		return (await this.page.getByText('No transactions found', { exact: true }).count()) > 0;
+	}
+
+	async getAccountBalance(): Promise<number | null> {
+		const el = this.page.locator('#balance');
+		if (!(await el.count())) return null;
+		const text = await el.innerText();
+		const match = text.match(/[$€£]?\s*(\d+(\.\d{2})?)/);
+		return match ? parseFloat(match[1]) : null;
+	}
+
+	// static/dashboard.js renders each transaction as a .transaction-item
+	// inside #transaction-list (see fetchTransactions()).
 	async getRecentTransactions() {
-		// Look for a transactions list/table
-		const txnSelectors = [
-			'[data-testid*="transactions"]',
-			'table:has-text("transactions")',
-			'.transactions',
-			'#transactions',
-			'.transaction-list',
-			'.transaction-history'
-		];
-		for (const selector of txnSelectors) {
-			const el = this.page.locator(selector);
-			if (await el.count()) {
-				// If it's a table, get rows
-				const rows = el.locator('tr');
-				if (await rows.count()) {
-					return rows.all();
-				}
-				// If it's a list, get items
-				const items = el.locator('li, .transaction-item');
-				if (await items.count()) {
-					return items.all();
-				}
-			}
-		}
-		return [];
+		return this.page.locator('#transaction-list .transaction-item').all();
 	}
 
 	async getTransactionData() {
@@ -153,70 +119,37 @@ export class DashboardPage {
 	}
 
 	async verifyBalanceAccuracy() {
-		// Get displayed balance
 		const displayedBalance = await this.getAccountBalance();
+		const accountNumber = await this.getAccountNumber();
 
-		// Try to verify against API if available
-		try {
-			const apiResponse = await this.page.request.get('/api/account/balance');
-			if (apiResponse.ok()) {
-				const apiData = await apiResponse.json();
-				const apiBalance = apiData.balance || apiData.amount || apiData.value;
-
-				return {
-					displayed: displayedBalance,
-					api: apiBalance,
-					matches: Math.abs((displayedBalance || 0) - (apiBalance || 0)) < 0.01
-				};
-			}
-		} catch (e) {
-			// API might not be available
+		if (!accountNumber) {
+			return { displayed: displayedBalance, api: null, matches: null };
 		}
+
+		// /check_balance/<account_number> is a real, unauthenticated app route
+		// (see app.py) that returns the account's balance independent of the
+		// dashboard's own rendering, so it's a valid cross-check.
+		const apiResponse = await this.page.request.get(`/check_balance/${accountNumber}`);
+		if (!apiResponse.ok()) {
+			return { displayed: displayedBalance, api: null, matches: null };
+		}
+
+		const apiData = await apiResponse.json();
+		const apiBalance = typeof apiData.balance === 'number' ? apiData.balance : null;
 
 		return {
 			displayed: displayedBalance,
-			api: null,
-			matches: null
+			api: apiBalance,
+			matches: apiBalance !== null ? Math.abs((displayedBalance || 0) - apiBalance) < 0.01 : null
 		};
 	}
 
+	// templates/dashboard.html's side-panel Logout link is a static,
+	// always-present `<a href="#" onclick="logout()">Logout</a>`.
 	async logout() {
-			// Try role=button with logout text
-			const logoutBtn = this.page.getByRole('button', { name: /log ?out|sign ?out/i });
-			if (await logoutBtn.count()) {
-				await logoutBtn.click();
-				return true;
-			}
-
-			// Try link with logout text
-			const logoutLink = this.page.getByRole('link', { name: /log ?out|sign ?out/i });
-			if (await logoutLink.count()) {
-				await logoutLink.click();
-				return true;
-			}
-
-			// Try text matching
-			const logoutText = this.page.getByText(/log ?out|sign ?out/i);
-			if (await logoutText.count()) {
-				await logoutText.click();
-				return true;
-			}
-
-			// Try other common selectors
-			const otherSelectors = [
-				'[data-testid*="logout"]',
-				'.logout',
-				'#logout',
-				'button[type="button"]'
-			];
-			for (const selector of otherSelectors) {
-				const el = this.page.locator(selector);
-				if (await el.count()) {
-					await el.click();
-					return true;
-				}
-			}
-
-			return false;
+		const logoutLink = this.page.getByRole('link', { name: /log ?out/i });
+		if (!(await logoutLink.count())) return false;
+		await logoutLink.click();
+		return true;
 	}
 }

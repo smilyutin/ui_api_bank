@@ -1,0 +1,88 @@
+meta {
+  name: Upload profile picture by URL (Intentionally Vulnerable)
+  type: http
+  seq: 2
+  tags: [
+    users
+  ]
+}
+
+post {
+  url: {{baseUrl}}/upload_profile_picture_url
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "image_url": "http://127.0.0.1:8080/image.png"
+  }
+}
+
+docs {
+  Fetches an image from a user-provided URL and saves it as the profile picture. Vulnerable to SSRF and unsafe download behaviors (no allowlist, follows redirects, SSL verify disabled, no content-type/size validation).
+}
+
+example {
+  name: 200 Response
+  description: Image fetched and saved
+  
+  request: {
+    url: {{baseUrl}}/upload_profile_picture_url
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "image_url": "http://127.0.0.1:8080/image.png"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 400 Response
+  description: Invalid or unreachable URL
+  
+  request: {
+    url: {{baseUrl}}/upload_profile_picture_url
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "image_url": "http://127.0.0.1:8080/image.png"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 400
+      text: Bad Request
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

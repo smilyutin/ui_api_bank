@@ -1,0 +1,66 @@
+meta {
+  name: Get billers by category
+  type: http
+  seq: 2
+  tags: [
+    bill-payments
+  ]
+}
+
+get {
+  url: {{baseUrl}}/api/billers/by-category/:category_id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  category_id: 
+}
+
+docs {
+  Retrieve billers for a specific category. Vulnerable to SQL injection.
+}
+
+example {
+  name: 200 Response
+  description: List of billers retrieved successfully
+  
+  request: {
+    url: {{baseUrl}}/api/billers/by-category/:category_id
+    method: GET
+    mode: none
+    params:path: {
+      category_id: 
+    }
+  }
+  
+  response: {
+    headers: {
+      Content-Type: application/json
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "status": "",
+          "billers": [
+            {
+              "id": 0,
+              "name": "",
+              "account_number": "",
+              "description": "",
+              "minimum_amount": 0,
+              "maximum_amount": 0
+            }
+          ]
+        }
+      '''
+    }
+  }
+}

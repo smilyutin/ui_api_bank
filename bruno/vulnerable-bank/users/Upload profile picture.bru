@@ -1,0 +1,54 @@
+meta {
+  name: Upload profile picture
+  type: http
+  seq: 1
+  tags: [
+    users
+  ]
+}
+
+post {
+  url: {{baseUrl}}/upload_profile_picture
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:multipart-form {
+  profile_picture: @file()
+}
+
+docs {
+  Upload user profile picture. Multiple file upload vulnerabilities.
+}
+
+example {
+  name: 200 Response
+  description: Upload successful
+  
+  request: {
+    url: {{baseUrl}}/upload_profile_picture
+    method: POST
+    mode: multipartForm
+    body:multipart-form: {
+      profile_picture: @file()
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
