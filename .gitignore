@@ -45,6 +45,9 @@ playwright-report/
 allure-results/
 allure-report/
 
+## k6 performance testing (perf/)
+perf/results/
+
 ## Node
 node_modules/
 npm-debug.log*
