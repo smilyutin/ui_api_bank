@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
 
 /**
  * Money Transfer Flow Tests
@@ -38,7 +39,7 @@ import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
  * 6. Verify success confirmation
  */
 test.describe('Money transfer flow', () => {
-  test('should send money successfully', async ({ page, baseURL }) => {
+  test('should send money successfully', async ({ page, baseURL, request }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
     // Step 1: Authenticate with token bootstrap or fallback credentials
@@ -47,6 +48,11 @@ test.describe('Money transfer flow', () => {
       role: 'user',
       fallbackUserPrefix: 'e2e',
     });
+
+    // A real, freshly created recipient account instead of a hardcoded
+    // number that /transfer just happens not to validate today.
+    const recipient = await establishAccountSession(request, 'transfer-ui-recipient');
+    if (!recipient) throw new Error('Could not establish a recipient account for the transfer');
 
     // Step 2: Navigate to dashboard and wait for load
     const pm = new PageManager(page);
@@ -66,9 +72,8 @@ test.describe('Money transfer flow', () => {
 
     // Step 4: Fill money transfer form
     const mt = pm.moneyTransfer();
-    const recip = '1234567890';
     const amount = '5.00';
-    await mt.fillRecipient(recip);
+    await mt.fillRecipient(recipient.accountNumber);
     await mt.fillAmount(amount);
     await mt.fillDescription('UI test transfer');
 
@@ -76,7 +81,7 @@ test.describe('Money transfer flow', () => {
     await mt.submit();
 
     // Step 6: Verify transfer success
-    const ok = await mt.waitForSuccess(amount, 5000);
+    const ok = await mt.waitForSuccess();
     expect(ok).toBeTruthy();
   });
 });

@@ -1,0 +1,68 @@
+meta {
+  name: Cloud metadata root (mock)
+  type: http
+  seq: 3
+  tags: [
+    internal
+  ]
+}
+
+get {
+  url: {{baseUrl}}/latest/meta-data/
+  body: none
+  auth: inherit
+}
+
+docs {
+  Mimics a cloud instance metadata service root directory.
+}
+
+example {
+  name: 200 Response
+  description: Directory listing returned
+  
+  request: {
+    url: {{baseUrl}}/latest/meta-data/
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 403 Response
+  description: Forbidden (non-loopback)
+  
+  request: {
+    url: {{baseUrl}}/latest/meta-data/
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 403
+      text: Forbidden
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

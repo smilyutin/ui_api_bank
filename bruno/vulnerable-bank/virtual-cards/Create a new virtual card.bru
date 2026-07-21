@@ -1,0 +1,68 @@
+meta {
+  name: Create a new virtual card
+  type: http
+  seq: 1
+  tags: [
+    virtual-cards
+  ]
+}
+
+post {
+  url: {{baseUrl}}/api/virtual-cards/create
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "card_limit": 1000,
+    "card_type": "standard"
+  }
+}
+
+docs {
+  Create a new virtual card with specified limit and type. Vulnerable to multiple security issues.
+}
+
+example {
+  name: 200 Response
+  description: Card created successfully
+  
+  request: {
+    url: {{baseUrl}}/api/virtual-cards/create
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "card_limit": 1000,
+        "card_type": "standard"
+      }
+    }
+  }
+  
+  response: {
+    headers: {
+      Content-Type: application/json
+    }
+  
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: json
+      content: '''
+        {
+          "status": "",
+          "message": "",
+          "card_details": {}
+        }
+      '''
+    }
+  }
+}

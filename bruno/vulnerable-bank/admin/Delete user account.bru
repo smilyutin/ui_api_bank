@@ -1,0 +1,82 @@
+meta {
+  name: Delete user account
+  type: http
+  seq: 3
+  tags: [
+    admin
+  ]
+}
+
+post {
+  url: {{baseUrl}}/admin/delete_account/:user_id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  user_id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Delete a user account. Requires admin privileges.
+}
+
+example {
+  name: 200 Response
+  description: Account deleted successfully
+  
+  request: {
+    url: {{baseUrl}}/admin/delete_account/:user_id
+    method: POST
+    mode: none
+    params:path: {
+      user_id: 
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 403 Response
+  description: Access denied - requires admin privileges
+  
+  request: {
+    url: {{baseUrl}}/admin/delete_account/:user_id
+    method: POST
+    mode: none
+    params:path: {
+      user_id: 
+    }
+  }
+  
+  response: {
+    status: {
+      code: 403
+      text: Forbidden
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

@@ -1,0 +1,91 @@
+meta {
+  name: Create new admin user
+  type: http
+  seq: 2
+  tags: [
+    admin
+  ]
+}
+
+post {
+  url: {{baseUrl}}/admin/create_admin
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "username": "newadmin",
+    "password": "adminpass123"
+  }
+}
+
+docs {
+  Create a new admin account. Requires admin privileges.
+}
+
+example {
+  name: 200 Response
+  description: Admin user created successfully
+  
+  request: {
+    url: {{baseUrl}}/admin/create_admin
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "username": "newadmin",
+        "password": "adminpass123"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 403 Response
+  description: Access denied - requires admin privileges
+  
+  request: {
+    url: {{baseUrl}}/admin/create_admin
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "username": "newadmin",
+        "password": "adminpass123"
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 403
+      text: Forbidden
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

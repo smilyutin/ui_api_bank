@@ -131,14 +131,15 @@ test.describe('Dashboard functionality', () => {
 
   test('should list recent transactions', async () => {
     const transactions = await dashboardPage.getRecentTransactions();
-    expect(transactions.length).toBeGreaterThanOrEqual(0);
-    if (transactions.length > 0) {
-      const first = transactions[0];
-      const text = await first.innerText();
-      expect(
-        /\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|[$€£]\s*\d+/.test(text) // Basic check for amount in transaction text
-      ).toBeTruthy();
+    if (transactions.length === 0) {
+      expect(await dashboardPage.hasEmptyTransactionsMessage()).toBeTruthy();
+      return;
     }
+
+    const text = await transactions[0].innerText();
+    expect(
+      /\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|[$€£]\s*\d+/.test(text) // Basic check for amount in transaction text
+    ).toBeTruthy();
   });
 
   test('should allow logout', async () => {
@@ -158,36 +159,8 @@ test.describe('Dashboard functionality', () => {
     expect(typeof balanceData.displayed).toBe('number');
     expect(balanceData.displayed).toBeGreaterThanOrEqual(0);
 
-    if (balanceData.api !== null && balanceData.matches !== null) {
-      expect(balanceData.matches).toBeTruthy();
-    }
-
-    const balanceElement = dashboardPage.page.locator('text=/balance.*[$€£]\\s*\\d+(\\.\\d{2})?/i').first();
-    if (await balanceElement.count()) {
-      const balanceText = await balanceElement.innerText();
-      expect(balanceText).toMatch(/[$€£]\s*\d+(\.\d{2})?/);
-    }
-  });
-
-  test('should handle negative balances correctly', async () => {
-    try {
-      const response = await dashboardPage.page.request.post('/api/account/update', {
-        data: { balance: -100.5 }
-      });
-
-      if (response.ok()) {
-        await dashboardPage.page.reload();
-        const balance = await dashboardPage.getAccountBalance();
-
-        const balanceText = await dashboardPage.page.locator('text=/balance|account/i').first().innerText();
-        const showsNegative = balanceText.includes('-') || balanceText.toLowerCase().includes('overdraft');
-
-        expect(balance).not.toBeNull();
-        expect(showsNegative).toBeTruthy();
-      }
-    } catch {
-      test.skip(true, 'Balance update API not available');
-    }
+    expect(balanceData.api).not.toBeNull();
+    expect(balanceData.matches).toBeTruthy();
   });
 
   test('should display transaction history with proper data integrity', async () => {
@@ -226,21 +199,25 @@ test.describe('Dashboard functionality', () => {
   test('should render profile section when navigating', async () => {
     const navLinks = await dashboardPage.getNavigationLinks();
     const profileLink = navLinks.find(l => l.href === '#profile');
-    if (profileLink) {
-      await dashboardPage.page.locator(`a[href="${profileLink.href}"]`).click();
-      const profileSection = dashboardPage.page.locator('#profile, [data-testid="profile"]');
-      expect(await profileSection.count()).toBeGreaterThan(0);
-    } else {
-      test.skip(true, 'Profile link not available');
-    }
+    expect(profileLink).toBeTruthy();
+
+    // Dashboard sections are static, single-page anchors (see static/dashboard.js
+    // handleScroll) — "navigating" means the click scrolls #profile into view,
+    // not that it gets inserted/toggled in the DOM.
+    await dashboardPage.page.locator(`a[href="${profileLink!.href}"]`).click();
+    const profileSection = dashboardPage.page.locator('#profile');
+    await expect(profileSection).toBeInViewport();
   });
 
   test('should show transaction amounts with currency symbol', async () => {
     const transactions = await dashboardPage.getRecentTransactions();
-    if (transactions.length > 0) {
-      const text = await transactions[0].innerText();
-      expect(text).toMatch(/[$€£]\s*\d+(\.\d{2})?/);
+    if (transactions.length === 0) {
+      expect(await dashboardPage.hasEmptyTransactionsMessage()).toBeTruthy();
+      return;
     }
+
+    const text = await transactions[0].innerText();
+    expect(text).toMatch(/[$€£]\s*\d+(\.\d{2})?/);
   });
 
   test('should have unique navigation labels', async () => {

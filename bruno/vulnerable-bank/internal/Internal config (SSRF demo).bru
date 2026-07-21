@@ -1,0 +1,68 @@
+meta {
+  name: Internal config (SSRF demo)
+  type: http
+  seq: 2
+  tags: [
+    internal
+  ]
+}
+
+get {
+  url: {{baseUrl}}/internal/config.json
+  body: none
+  auth: inherit
+}
+
+docs {
+  Returns app configuration JSON. Intended for SSRF demonstrations.
+}
+
+example {
+  name: 200 Response
+  description: Config returned
+  
+  request: {
+    url: {{baseUrl}}/internal/config.json
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}
+
+example {
+  name: 403 Response
+  description: Forbidden (non-loopback)
+  
+  request: {
+    url: {{baseUrl}}/internal/config.json
+    method: GET
+    mode: none
+  }
+  
+  response: {
+    status: {
+      code: 403
+      text: Forbidden
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

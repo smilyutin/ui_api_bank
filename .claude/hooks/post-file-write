@@ -1,0 +1,2 @@
+#!/bin/sh
+./.claude/hooks/veto-secrets-scan.sh "$1"

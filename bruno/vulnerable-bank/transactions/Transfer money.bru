@@ -1,0 +1,62 @@
+meta {
+  name: Transfer money
+  type: http
+  seq: 2
+  tags: [
+    transactions
+  ]
+}
+
+post {
+  url: {{baseUrl}}/transfer
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "to_account": "",
+    "amount": 0,
+    "description": ""
+  }
+}
+
+docs {
+  Transfer money between accounts. Vulnerable to race conditions.
+}
+
+example {
+  name: 200 Response
+  description: Transfer successful
+  
+  request: {
+    url: {{baseUrl}}/transfer
+    method: POST
+    mode: json
+    body:json: {
+      {
+        "to_account": "",
+        "amount": 0,
+        "description": ""
+      }
+    }
+  }
+  
+  response: {
+    status: {
+      code: 200
+      text: OK
+    }
+  
+    body: {
+      type: text
+      content: '''
+  
+      '''
+    }
+  }
+}

@@ -28,7 +28,6 @@ async function safeText(res: APIResponse): Promise<string> {
 async function tryApiLogin(api: APIRequestContext, user: User): Promise<boolean> {
   // Common candidates (mirrors tests/api/login.spec.ts but kept local to avoid cross-test coupling)
   const loginCandidates = ['/api/auth/login', '/api/login', '/login', '/api/session'];
-// Removed invalid call to validateSchema with undefined responseBody
   for (const p of loginCandidates) {
     // form-like body
     try {
