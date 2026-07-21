@@ -7,6 +7,12 @@ import { config as baseConfig } from './wdio.conf';
 export const config: WebdriverIO.Config = {
 	...baseConfig,
 	port: 4723,
+	// Android emulators alias the host machine's loopback as 10.0.2.2, not
+	// localhost - inside the AVD, 'localhost' resolves to the emulator itself,
+	// so Chrome there can never reach the Flask app bound to the host's
+	// localhost:5001 (CI and local docker compose alike). Real devices don't
+	// have this alias, so an explicit BASE_URL still wins for that case.
+	baseUrl: process.env.BASE_URL ?? 'http://10.0.2.2:5001',
 	services: [
 		[
 			'appium',
