@@ -73,7 +73,15 @@ async function mintFreshUserToken(
 }
 
 async function applyTokenBootstrap(baseURL: string, token: string) {
-	await browser.url(baseURL);
+	// Navigate to /login rather than the bare origin: templates/index.html's
+	// hero image has an onerror fallback to a since-defunct
+	// via.placeholder.com URL. static/uploads/ is gitignored, so on a fresh
+	// CI checkout that image 404s and Chrome tries that dead external host,
+	// hanging the full page load (browser.url waits for it) until the
+	// renderer itself times out. /login has no such fallback and is proven
+	// fast/reliable (see login.mobile.spec.ts) - it's just being used here to
+	// establish same-origin storage, not for anything on the page.
+	await browser.url(new URL('/login', baseURL).toString());
 	await browser.execute(
 		(injectedToken: string, keys: string[]) => {
 			for (const key of keys) {
