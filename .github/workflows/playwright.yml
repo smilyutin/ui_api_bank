@@ -8,6 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            mobile:
+              - 'mobile/**'
+
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
@@ -76,11 +89,15 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # Manually triggered until the Appium/Android path has proven stable in
-  # practice (see mobile/ and the "Mobile testing" README section) - not
-  # wired to push/pull_request yet to avoid destabilizing the main gate.
+  # Runs on workflow_dispatch (manual trigger, any branch) or automatically
+  # on push/pull_request when the diff touches mobile/** - the IPv4 loopback
+  # bind fix (mobile/wdio.android.conf.ts) has been verified locally, so
+  # this no longer needs to stay fully manual, but it's still scoped to
+  # mobile/** changes rather than every push/PR to avoid slowing those down
+  # with an Android emulator boot for unrelated changes.
   mobile-android:
-    if: github.event_name == 'workflow_dispatch'
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.mobile == 'true'
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
