@@ -1,16 +1,18 @@
 import { browser, expect } from '@wdio/globals';
 import { MobilePageManager } from '../pages/mobile-page-manager';
-import { findOrCreateUser } from '../../helpers/credentials';
+import { createRandomUser } from '../../helpers/credentials';
 import { registerUser } from '../fixtures/mobile-auth';
 
 describe('Mobile login', () => {
 	it('logs in via the real login form on a mobile browser engine', async () => {
 		const baseURL = browser.options.baseUrl!;
 		const pm = new MobilePageManager();
-		const user = findOrCreateUser('mobile');
+		// Never persisted: a brand-new account every run, same rationale as
+		// ensureDashboardAuthenticated in mobile-auth.ts.
+		const user = createRandomUser('mobile', false);
 		const identifier = user.username || user.email!;
 
-		// findOrCreateUser only fabricates credentials locally; register them
+		// createRandomUser only fabricates credentials locally; register them
 		// for real, since this suite doesn't run after a Playwright pass that
 		// would otherwise have created the account (see mobile-auth.ts).
 		await registerUser(baseURL.replace('10.0.2.2', 'localhost'), user);

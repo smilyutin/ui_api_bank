@@ -1,5 +1,5 @@
 import { browser } from '@wdio/globals';
-import { findOrCreateUser, loadStoredToken, saveStoredToken } from '../../helpers/credentials';
+import { createRandomUser, type User } from '../../helpers/credentials';
 import { LoginPage } from '../pages/login.page';
 import { DashboardPage } from '../pages/dashboard.page';
 
@@ -15,13 +15,15 @@ export type MobileAuthResult = {
 	identifier: string;
 };
 
-// findOrCreateUser only fabricates a plausible username/password locally; it
-// never creates that account in the database. The Playwright suite gets away
-// with this because some earlier spec in the same `npm test` run registers a
-// real user and persists it to test-data/users.json (gitignored) for later
-// specs to reuse. The mobile-android CI job runs in isolation on a fresh
-// checkout with no such prior run, so without this call every login attempt
-// here would 401 against a user that was never registered.
+// Deliberately unpersisted (createRandomUser(..., false)): unlike the
+// Playwright suite, this suite never reuses a shared account across runs.
+// test-data/users.json persists on disk across local runs, and this app's
+// JWT_SECRET/Postgres data can both be reset independently of that file
+// (container rebuild, fresh volume) - a stale shared token/account then
+// causes hard-to-diagnose failures (invalid token, or a real but
+// long-since-drained balance from earlier money-transfer runs against the
+// same account). Registering a fresh account every call sidesteps all of
+// that at the cost of one extra POST /register per test.
 export async function registerUser(baseURL: string, user: { username?: string; password: string }) {
 	try {
 		await fetch(new URL('/register', baseURL).toString(), {
@@ -35,16 +37,11 @@ export async function registerUser(baseURL: string, user: { username?: string; p
 	}
 }
 
-async function mintFreshUserToken(
+async function mintUserToken(
 	baseURL: string,
-	fallbackUserPrefix: string
-): Promise<{ token: string; identifier: string } | null> {
-	const user = findOrCreateUser(fallbackUserPrefix);
-	const identifier = user.username || user.email;
-	if (!identifier) return null;
-
-	await registerUser(baseURL, user);
-
+	user: User,
+	identifier: string
+): Promise<string | null> {
 	const variants: Record<string, string>[] = [
 		{ username: identifier, password: user.password },
 		{ email: identifier, password: user.password },
@@ -61,7 +58,7 @@ async function mintFreshUserToken(
 				if (LOGIN_SUCCESS_STATUSES.includes(res.status)) {
 					const json = await res.json().catch(() => null);
 					const token = json?.token || json?.jwt_token || json?.jwt || json?.access_token;
-					if (token) return { token: String(token), identifier };
+					if (token) return String(token);
 				}
 			} catch {
 				// try the next candidate route
@@ -100,8 +97,9 @@ async function applyTokenBootstrap(baseURL: string, token: string) {
 
 /**
  * Mobile-browser equivalent of helpers/auth-bootstrap.ts's
- * ensureDashboardAuthenticated: try token injection first, fall back to
- * driving the real login form. Reuses the same test-data/users.json store.
+ * ensureDashboardAuthenticated: mints a brand-new, never-persisted user for
+ * every call, then tries token injection first, falling back to driving the
+ * real login form with that same account if the token doesn't stick.
  */
 export async function ensureDashboardAuthenticated(options: {
 	baseURL: string;
@@ -111,50 +109,40 @@ export async function ensureDashboardAuthenticated(options: {
 	const fallbackUserPrefix = options.fallbackUserPrefix ?? 'mobile';
 	const dash = new DashboardPage();
 
-	// mintFreshUserToken/registerUser run in the WebdriverIO/Node process (the
-	// CI runner or your machine), not inside the browser under test. On
-	// Android that process can't reach 10.0.2.2 - that alias only resolves
-	// from inside the emulator's own network namespace - so swap it back to
+	// registerUser/mintUserToken run in the WebdriverIO/Node process (the CI
+	// runner or your machine), not inside the browser under test. On Android
+	// that process can't reach 10.0.2.2 - that alias only resolves from
+	// inside the emulator's own network namespace - so swap it back to
 	// localhost for these Node-side calls. Browser navigation keeps using
 	// baseURL as-is.
 	const nodeReachableURL = baseURL.replace('10.0.2.2', 'localhost');
 
-	let token = loadStoredToken('user') || process.env.API_AUTH_TOKEN?.trim() || null;
-	let identifier: string | null = null;
-
-	if (!token) {
-		const minted = await mintFreshUserToken(nodeReachableURL, fallbackUserPrefix);
-		if (minted) {
-			token = minted.token;
-			identifier = minted.identifier;
-			saveStoredToken(minted.token, 'user');
-		}
+	const user = createRandomUser(fallbackUserPrefix, false);
+	const identifier = user.username || user.email;
+	if (!identifier) {
+		throw new Error('No username or email found in generated user');
 	}
+	await registerUser(nodeReachableURL, user);
+
+	const token = process.env.API_AUTH_TOKEN?.trim() || (await mintUserToken(nodeReachableURL, user, identifier));
 
 	if (token) {
 		await applyTokenBootstrap(baseURL, token);
 		await dash.goto(baseURL);
 		try {
 			await dash.waitForLoad();
-			return { mode: 'token', identifier: identifier ?? 'token-user' };
+			return { mode: 'token', identifier };
 		} catch {
 			// Token bootstrap didn't stick (e.g. Safari's storage partitioning) - fall through to credentials.
 		}
 	}
 
-	const user = findOrCreateUser(fallbackUserPrefix);
-	const foundIdentifier = user.username || user.email;
-	if (!foundIdentifier) {
-		throw new Error('No username or email found in user credentials');
-	}
-	await registerUser(nodeReachableURL, user);
-
 	const login = new LoginPage();
 	await login.goto(baseURL);
-	await login.fillEmail(foundIdentifier);
+	await login.fillEmail(identifier);
 	await login.fillPassword(user.password);
 	await login.submit();
 	await dash.waitForLoad();
 
-	return { mode: 'credentials', identifier: foundIdentifier };
+	return { mode: 'credentials', identifier };
 }
