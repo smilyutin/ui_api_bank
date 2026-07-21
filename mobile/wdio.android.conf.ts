@@ -26,6 +26,10 @@ export const config: WebdriverIO.Config = {
 			'appium:deviceName': 'Android Emulator',
 			browserName: 'Chrome',
 			'appium:newCommandTimeout': 240,
+			// The emulator image ships an old system Chrome (e.g. 109.x) with no
+			// matching Chromedriver bundled in Appium; let Appium fetch one that
+			// matches instead of failing session creation.
+			'appium:chromedriverAutodownload': true,
 		},
 	],
 };
