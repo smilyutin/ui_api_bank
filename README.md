@@ -77,6 +77,24 @@ k6 run --summary-export=perf/results/money-movement.json perf/k6/scenarios/money
 k6 run --summary-export=perf/results/dashboard-read.json perf/k6/scenarios/dashboard-read.js
 ```
 
+## Mobile Testing (Appium)
+
+`mobile/` holds a WebdriverIO + Appium suite, kept separate from the Playwright suite in `tests/` — it drives real mobile browser engines (Chrome on an Android emulator/device via UiAutomator2, Safari on an iOS simulator/device via XCUITest) against the same Flask app, rather than Playwright's Chromium-only device emulation. This catches real-engine bugs (touch events, mobile Safari quirks, viewport-driven CSS bugs) in the app's genuine responsive breakpoints (`static/dashboard.css`, `static/auth.css`, `static/admin.css`, `templates/index.html`).
+
+Prerequisites:
+- **Android**: Android SDK with `emulator`/`avdmanager` on `PATH`, `ANDROID_HOME` set, and one AVD with Chrome preinstalled (e.g. `Pixel_6_API_33`).
+- **iOS** (macOS only): Xcode with an iOS Simulator runtime, plus a booted device (e.g. `xcrun simctl boot "iPhone 15"`).
+- Appium server and drivers: `npx appium driver install uiautomator2` and/or `npx appium driver install xcuitest`.
+
+Quick start (app must already be running via `docker compose up -d --build`, and an emulator/simulator already booted):
+
+```bash
+npm run test:mobile:android   # Chrome on a booted Android emulator/device
+npm run test:mobile:ios       # Safari on a booted iOS Simulator (macOS only)
+```
+
+Results land in `allure-results/` alongside the Playwright suite's, so `npm run allure:generate`/`allure:open` show both in one report. See `.claude/skills/appium-mobile-bank/SKILL.md` for suite conventions.
+
 ## Setup steps file
 
 The repository also includes `.github/workflows/copilot-setup-steps.yml`, which documents the basic setup steps used by Copilot for this project.

@@ -8,6 +8,7 @@ This repo has two halves:
 
 1. **Vulnerable Bank** (`app.py`, `auth.py`, `database.py`, `templates/`, `static/`) — a deliberately vulnerable Flask + PostgreSQL banking app used for security-testing education (SQL injection, BOLA/BOPLA, weak JWT, mass assignment, SSRF, prompt injection, etc.). See `README.md` for the full list of intentional vulnerabilities and manual testing flows — do not "fix" these unless explicitly asked, they are the point of the app.
 2. **Playwright TypeScript test suite** (`tests/`, `pages/`, `fixtures/`, `helpers/`) — UI and API automation against that app, including OWASP-style security assertions.
+3. **Appium mobile-web suite** (`mobile/`) — a separate WebdriverIO/Appium framework (not Playwright) that drives real Chrome/Safari mobile browser engines against the same app. See `README.md`'s "Mobile Testing (Appium)" section and `.claude/skills/appium-mobile-bank/SKILL.md`.
 
 Most Claude Code work in this repo is on the test suite, not the vulnerable app itself.
 
@@ -32,6 +33,9 @@ npx playwright show-report                        # open HTML report after a run
 npm run allure:generate                           # build Allure report from allure-results/ into allure-report/
 npm run allure:open                                # serve the generated Allure report
 npm run allure:report                              # generate + open in one step
+
+npm run test:mobile:android                        # Appium/WebdriverIO suite: Chrome on a booted Android emulator/device
+npm run test:mobile:ios                             # Appium/WebdriverIO suite: Safari on a booted iOS Simulator (macOS only)
 ```
 
 ## Test suite architecture
@@ -51,11 +55,13 @@ No barrel/`index.ts` files — import each module directly.
 
 **Before writing or editing any test, read `.claude/skills/playwright-vulnerable-bank/SKILL.md`** — the detailed reference (conventions, auth/schema/security workflows, feature checklist). Keep new detail there, not here.
 
+**For the Appium suite specifically, read `.claude/skills/appium-mobile-bank/SKILL.md` instead** — it mirrors the same Page Object Model / no-barrel-files conventions but documents WebdriverIO-specific APIs (`mobile/wdio*.conf.ts`, `mobile/pages/`, `mobile/fixtures/mobile-auth.ts`).
+
 ## Environment
 
 - `.env` (not committed) configures `DB_NAME`/`DB_USER`/`DB_PASSWORD`/`DB_HOST`/`DB_PORT` for Postgres. Copy `.env.example` to `.env` for local runs. `DB_HOST=db` is for Docker; use `localhost` for a local Postgres install.
 - Test-only env vars: `BASE_URL` (target app), `API_AUTH_TOKEN`/`ADMIN_AUTH_TOKEN` (skip token minting), `ADMIN_USERNAME`/`ADMIN_EMAIL`/`ADMIN_IDENTIFIER` + `ADMIN_PASSWORD` (admin UI fallback login), `SECURITY_SOFT=1` (downgrade `SecurityReporter.reportWarning` from throwing to warning-only), `UPDATE_SCHEMAS=1` (regenerate mismatched/missing `response-schemas/` files instead of failing — see SKILL.md "Schema Validation").
-- CI (`.github/workflows/playwright.yml`) builds the Docker stack, polls `http://localhost:5001` until ready, then runs `npm test` and uploads both the Playwright HTML report and the generated Allure report as artifacts.
+- CI (`.github/workflows/playwright.yml`) builds the Docker stack, polls `http://localhost:5001` until ready, then runs `npm test` and uploads both the Playwright HTML report and the generated Allure report as artifacts. A separate `mobile-android` job in the same workflow runs the Appium suite against an Android emulator, but is `workflow_dispatch`-only for now (not wired to push/pull_request) until it's proven stable.
 - Allure: `playwright.config.ts` runs the `allure-playwright` reporter alongside `html`/`list`, writing raw results to `allure-results/` (gitignored). `package.json`'s `pretest` script clears `allure-results/` before every `npm test` run, so results never mix across runs. Run `npm run allure:generate` to build `allure-report/` (gitignored) from those results, then `npm run allure:open` to view it — both dirs are per-run output, not committed.
 
 ## Claude Code permissions policy (3Cs)
