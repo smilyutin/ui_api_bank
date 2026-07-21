@@ -85,7 +85,13 @@ export async function ensureDashboardAuthenticated(options: {
 	let identifier: string | null = null;
 
 	if (!token) {
-		const minted = await mintFreshUserToken(baseURL, fallbackUserPrefix);
+		// mintFreshUserToken runs in the WebdriverIO/Node process (the CI runner
+		// or your machine), not inside the browser under test. On Android that
+		// process can't reach 10.0.2.2 - that alias only resolves from inside
+		// the emulator's own network namespace - so swap it back to localhost
+		// for this Node-side call. Browser navigation keeps using baseURL as-is.
+		const nodeReachableURL = baseURL.replace('10.0.2.2', 'localhost');
+		const minted = await mintFreshUserToken(nodeReachableURL, fallbackUserPrefix);
 		if (minted) {
 			token = minted.token;
 			identifier = minted.identifier;
