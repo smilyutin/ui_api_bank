@@ -15,7 +15,15 @@ export const config: WebdriverIO.Config = {
 			// IPv6 only while WebdriverIO's client connects on 127.0.0.1,
 			// producing an immediate ECONNREFUSED.
 			{
-				args: { address: '127.0.0.1', port: 4723 },
+				args: {
+					address: '127.0.0.1',
+					port: 4723,
+					// chromedriver_autodownload is an Appium 2.x "insecure feature":
+					// setting the appium:chromedriverAutodownload capability alone
+					// is not enough, the server must also allow it or session
+					// creation fails with "No Chromedriver found".
+					allowInsecure: 'chromedriver_autodownload',
+				},
 			},
 		],
 	],
