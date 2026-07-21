@@ -89,6 +89,81 @@ jobs:
         if: always()
         run: docker compose down -v
 
+  performance:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+
+      - name: Build and start Docker stack
+        run: docker compose up -d --build
+
+      - name: Wait for app to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:5001 >/dev/null; then
+              echo "App is ready"
+              exit 0
+            fi
+            echo "Waiting for app... ($i/30)"
+            sleep 2
+          done
+          echo "App never became ready"
+          docker compose logs --no-color
+          exit 1
+
+      # Real gate: 1 VU / 1 iteration through every flow. A failure here means
+      # a payload-shape mismatch, not load-related degradation.
+      - name: Run k6 smoke test
+        run: k6 run perf/k6/smoke.js
+        env:
+          BASE_URL: http://localhost:5001
+
+      # Full scenarios are informational, not gates: perf/README.md documents
+      # that the ramp intentionally exceeds the DB connection pool (max=10),
+      # so rising latency/error rate past ~10 VUs is an expected finding to
+      # review, not a build failure to chase.
+      - name: Run k6 auth scenario
+        continue-on-error: true
+        run: |
+          mkdir -p perf/results
+          k6 run --summary-export=perf/results/auth.json perf/k6/scenarios/auth.js
+        env:
+          BASE_URL: http://localhost:5001
+
+      - name: Run k6 money-movement scenario
+        continue-on-error: true
+        run: k6 run --summary-export=perf/results/money-movement.json perf/k6/scenarios/money-movement.js
+        env:
+          BASE_URL: http://localhost:5001
+
+      - name: Run k6 dashboard-read scenario
+        continue-on-error: true
+        run: k6 run --summary-export=perf/results/dashboard-read.json perf/k6/scenarios/dashboard-read.js
+        env:
+          BASE_URL: http://localhost:5001
+
+      - name: Upload k6 results
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: k6-results
+          path: perf/results/
+          retention-days: 30
+
+      - name: Tear down Docker stack
+        if: always()
+        run: docker compose down -v
+
   # Runs on workflow_dispatch (manual trigger, any branch) or automatically
   # on push/pull_request when the diff touches mobile/** - the IPv4 loopback
   # bind fix (mobile/wdio.android.conf.ts) has been verified locally, so
