@@ -62,6 +62,21 @@ If **Behaviors** shows "There are no items" after regenerating, it's almost alwa
 3. Don't click a row link from the **Overview** page's Behaviors panel to jump into a branch — that deep-links to a specific `#behaviors/<uid>` URL, which is broken in this Allure version and always shows empty, even with valid data. Click **Behaviors** in the left nav directly instead, then navigate into the branch from there.
 4. Make sure the search box at the top of Behaviors is empty — it only matches individual test names, not branch/epic names, so leftover search text (e.g. searching "To Be Fixed - Security Findings" itself) will also show "no items" even though the branch exists.
 
+## Performance Testing (k6)
+
+`perf/` holds k6 load-testing scripts, kept separate from the Playwright suite in `tests/` — they measure throughput and latency under concurrent load (auth flows, money movement, read-heavy dashboard endpoints) rather than functional/security correctness. See `perf/README.md` for full details: Docker-based k6 run instructions (no local `k6` install needed), why latency is expected to degrade past ~10 concurrent DB-touching requests (the connection pool is intentionally small), and threshold definitions.
+
+Quick start (app must already be running via `docker compose up -d --build`):
+
+```bash
+k6 run perf/k6/smoke.js   # always run first: 1 VU / 1 iteration sanity check across every flow
+
+mkdir -p perf/results
+k6 run --summary-export=perf/results/auth.json perf/k6/scenarios/auth.js
+k6 run --summary-export=perf/results/money-movement.json perf/k6/scenarios/money-movement.js
+k6 run --summary-export=perf/results/dashboard-read.json perf/k6/scenarios/dashboard-read.js
+```
+
 ## Setup steps file
 
 The repository also includes `.github/workflows/copilot-setup-steps.yml`, which documents the basic setup steps used by Copilot for this project.
@@ -119,6 +134,12 @@ ui_api_bank/
 │   ├── profile.page.ts
 │   ├── register.page.ts
 │   └── virtual-cards.page.ts
+├── perf/                               # k6 load-testing scripts — see perf/README.md
+│   ├── k6/
+│   │   ├── lib/                        # config.js (BASE_URL, thresholds, ramp stages), auth.js
+│   │   ├── scenarios/                  # auth.js, money-movement.js, dashboard-read.js
+│   │   └── smoke.js                    # 1 VU / 1 iteration sanity check across all flows
+│   └── results/                        # gitignored k6 --summary-export output
 ├── response-schemas/                   # Ajv/JSON-Schema files, one subdir per feature
 │   ├── ai-chat-schema/
 │   ├── bill-payments-schema/
