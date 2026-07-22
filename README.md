@@ -77,9 +77,48 @@ k6 run --summary-export=perf/results/money-movement.json perf/k6/scenarios/money
 k6 run --summary-export=perf/results/dashboard-read.json perf/k6/scenarios/dashboard-read.js
 ```
 
+CI runs this too: a `performance` job in `.github/workflows/playwright.yml` builds the Docker stack, runs `smoke.js` as a real gate, then runs the three scenarios above with `continue-on-error: true` (degradation past ~10 VUs is expected, not a bug — see above) and uploads the `--summary-export` JSON as the `k6-results` artifact. Like the mobile job, it only runs on `workflow_dispatch` or when a push/PR touches `perf/**` or the app/infra files k6 exercises (`app.py`, `auth.py`, `database.py`, `docker-compose*.yml`, `Dockerfile`, `requirements.txt`), so unrelated changes don't pay for the ~9-10 minute k6 ramp.
+
+## Mobile Testing (Appium)
+
+`mobile/` holds a WebdriverIO + Appium suite, kept separate from the Playwright suite in `tests/` — it drives real mobile browser engines (Chrome on an Android emulator/device via UiAutomator2, Safari on an iOS simulator/device via XCUITest) against the same Flask app, rather than Playwright's Chromium-only device emulation. This catches real-engine bugs (touch events, mobile Safari quirks, viewport-driven CSS bugs) in the app's genuine responsive breakpoints (`static/dashboard.css`, `static/auth.css`, `static/admin.css`, `templates/index.html`).
+
+Prerequisites:
+- **Android**: Android SDK with `emulator`/`avdmanager` on `PATH`, `ANDROID_HOME` set, and one AVD with Chrome preinstalled (e.g. `Pixel_6_API_33`).
+- **iOS** (macOS only): Xcode with an iOS Simulator runtime, plus a booted device (e.g. `xcrun simctl boot "iPhone 15"`).
+- Appium server and drivers: `npx appium driver install uiautomator2` and/or `npx appium driver install xcuitest`.
+
+Quick start (app must already be running via `docker compose up -d --build`, and an emulator/simulator already booted):
+
+```bash
+npm run test:mobile:android   # Chrome on a booted Android emulator/device
+npm run test:mobile:ios       # Safari on a booted iOS Simulator (macOS only)
+```
+
+Results land in `allure-results/` alongside the Playwright suite's, so `npm run allure:generate`/`allure:open` show both in one report. See `.claude/skills/appium-mobile-bank/SKILL.md` for suite conventions.
+
 ## Setup steps file
 
 The repository also includes `.github/workflows/copilot-setup-steps.yml`, which documents the basic setup steps used by Copilot for this project.
+
+## MCP usage (Veto)
+
+`.mcp.json` (committed, project-scoped) configures the [Veto](https://www.npmjs.com/package/@jigyasudham/veto) MCP server for Claude Code — an agent routing/memory/council-debate tool that layers on top of a Claude Code session. It launches via `npx`, so no local install is required; Claude Code starts it automatically for anyone who opens this repo, once they approve the project's `.mcp.json` on first use (`claude` prompts for this the first time a project-scoped MCP server is detected).
+
+Available tools (call with `mcp__veto__<name>`, or ask Claude to run the `veto_*` action by name):
+
+- `veto_route_task` — route a task description to the most suitable available agent/tool combination.
+- `veto_council_debate` — run a multi-agent debate over a decision before committing to an approach.
+- `veto_find_tools` — search Veto's tool registry for something matching a capability.
+- `veto_call` — invoke a specific tool Veto has discovered.
+- `veto_memory_search` — search Veto's own memory store (separate from Claude Code's per-project memory).
+- `veto_session_save` / `veto_session_restore` — checkpoint and resume Veto's working state across sessions.
+- `veto_record_outcome` — log whether a routed task succeeded, to improve future routing.
+- `veto_status` — check the Veto server's health/config.
+
+These are live MCP tools — when a `veto_*` action is requested, Claude Code calls the tool directly rather than approximating its behavior by reading Veto's source or touching its local state files (e.g. `~/.veto/veto.db`) by hand.
+
+Optional: run `veto statusline install` to add an always-on Claude Code status line showing the latest council verdict, top router-pattern confidence, daily token-budget usage, and memory entry count. It backs up `settings.json` first and is reversible with `veto statusline uninstall`.
 
 ## Project structure
 
@@ -89,6 +128,7 @@ Here’s the rebuilt layout now that the shared helpers, page objects, and fixtu
 ui_api_bank/
 ├── .claude/
 │   └── skills/
+│       ├── appium-mobile-bank/SKILL.md
 │       └── playwright-vulnerable-bank/SKILL.md
 ├── .cursor/
 │   ├── rules/
@@ -123,6 +163,24 @@ ui_api_bank/
 │   ├── credentials.ts
 │   ├── performance-metrics.ts
 │   └── schema-validator.ts             # validateSchema() — see CLAUDE.md "Schema validation"
+├── mobile/                             # WebdriverIO + Appium suite — see CLAUDE.md "Mobile Testing (Appium)"
+│   ├── fixtures/
+│   │   └── mobile-auth.ts
+│   ├── pages/                          # Page Object Model, extend MobileHelperBase
+│   │   ├── dashboard.page.ts
+│   │   ├── login.page.ts
+│   │   ├── mobile-helper-base.ts
+│   │   ├── mobile-page-manager.ts
+│   │   └── money-transfer.page.ts
+│   ├── specs/
+│   │   ├── dashboard.mobile.spec.ts
+│   │   ├── login.mobile.spec.ts
+│   │   ├── money-transfer.mobile.spec.ts
+│   │   └── responsive-layout.mobile.spec.ts
+│   ├── tsconfig.json
+│   ├── wdio.conf.ts                    # shared WebdriverIO config
+│   ├── wdio.android.conf.ts            # Chrome via UiAutomator2
+│   └── wdio.ios.conf.ts                # Safari via XCUITest
 ├── pages/                              # Page Object Model, extend HelperBase
 │   ├── bill-payments.page.ts
 │   ├── dashboard.page.ts

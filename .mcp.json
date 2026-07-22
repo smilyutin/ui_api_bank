@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "veto": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "-p", "@jigyasudham/veto", "veto-server"],
+      "env": {
+        "VETO_COMPACT": "1"
+      }
+    }
+  }
+}
