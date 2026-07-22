@@ -26,9 +26,24 @@ export class DashboardPage extends MobileHelperBase {
 		return match ? parseFloat(match[1]) : null;
 	}
 
+	// static/dashboard.css's @media (max-width: 768px) rule slides .side-panel
+	// (which wraps <nav>) off-screen via transform: translateX(-100%) and only
+	// reveals .menu-toggle ("Menu", display: none by default) at that width -
+	// toggleSidePanel() in dashboard.js adds the .active class that undoes the
+	// transform. At phone width (this suite's whole point) the nav links are
+	// off-canvas until that button is tapped, so getText() on them reads as
+	// empty. .menu-toggle is a no-op (not displayed) above 768px.
+	async openMenu() {
+		const toggle = $('.menu-toggle');
+		if ((await toggle.isExisting()) && (await toggle.isDisplayed())) {
+			await toggle.click();
+		}
+	}
+
 	async getNavigationTexts(): Promise<string[]> {
 		const nav = $('nav');
 		if (!(await nav.isExisting())) return [];
+		await this.openMenu();
 		const links = await nav.$$('a, button, [role="link"]');
 		const texts: string[] = [];
 		for (const link of links) {
