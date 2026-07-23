@@ -1,4 +1,5 @@
 import { HelperBase } from './helper-base.page';
+import { LocatorFactory } from './locator-factory';
 
 export class LoginPage extends HelperBase {
 	async goto(baseURL: string) {
@@ -6,17 +7,32 @@ export class LoginPage extends HelperBase {
 	}
 
 	async fillEmail(email: string) {
-		await this.page.locator('input[name="username"]').fill(email);
+		const usernameInput = await LocatorFactory.find(
+			this.page.getByTestId('username'),
+			this.page.getByPlaceholder(/username/i),
+			this.page.locator('input[name="username"]'),
+		);
+		await usernameInput.fill(email);
 		return true;
 	}
 
 	async fillPassword(password: string) {
-		await this.page.locator('input[name="password"]').fill(password);
+		const passwordInput = await LocatorFactory.find(
+			this.page.getByTestId('password'),
+			this.page.getByPlaceholder(/password/i),
+			this.page.locator('input[name="password"]'),
+		);
+		await passwordInput.fill(password);
 		return true;
 	}
 
 	async submit() {
-		await this.page.locator('#loginForm button[type="submit"]').click();
+		const submitButton = await LocatorFactory.find(
+			this.page.getByTestId('login-submit'),
+			this.page.getByRole('button', { name: 'Login' }),
+			this.page.locator('#loginForm button[type="submit"]'),
+		);
+		await submitButton.click();
 		return true;
 	}
 }

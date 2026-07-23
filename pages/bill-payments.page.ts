@@ -1,14 +1,24 @@
 import { expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
+import { LocatorFactory } from './locator-factory';
 
 export class BillPaymentsPage extends HelperBase {
 	async openPayBillModal() {
-		await this.page.getByRole('button', { name: 'Pay Bill' }).click();
+		const payBillButton = await LocatorFactory.find(
+			this.page.getByTestId('open-pay-bill'),
+			this.page.getByRole('button', { name: 'Pay Bill' }),
+		);
+		await payBillButton.click();
 		await expect(this.page.locator('#payBillModal')).toBeVisible();
 	}
 
 	async selectCategory(categoryName: string) {
-		await this.page.locator('#billCategory').selectOption({ label: categoryName });
+		const categorySelect = await LocatorFactory.find(
+			this.page.getByTestId('bill-category'),
+			this.page.getByLabel('Bill Category'),
+			this.page.locator('#billCategory'),
+		);
+		await categorySelect.selectOption({ label: categoryName });
 		// #biller is populated asynchronously by the category's onchange handler
 		// and starts disabled, so wait for it to become usable before selecting.
 		await expect(this.page.locator('#biller')).toBeEnabled({ timeout: 7000 });
@@ -21,7 +31,12 @@ export class BillPaymentsPage extends HelperBase {
 	}
 
 	async selectBiller(billerName: string) {
-		await this.page.locator('#biller').selectOption({ label: billerName });
+		const billerSelect = await LocatorFactory.find(
+			this.page.getByTestId('biller'),
+			this.page.getByLabel('Biller'),
+			this.page.locator('#biller'),
+		);
+		await billerSelect.selectOption({ label: billerName });
 	}
 
 	async selectFirstBiller() {
@@ -36,19 +51,36 @@ export class BillPaymentsPage extends HelperBase {
 		return value ? parseFloat(value) : null;
 	}
 
+	// #bill_amount/#bill_description labels are duplicated by the always-in-DOM
+	// (just hidden) transfer form, so label-based lookups here are scoped to
+	// #payBillModal to avoid a strict-mode match against both forms.
 	async fillAmount(amount: string) {
-		await this.page.locator('#bill_amount').fill(amount);
+		const amountInput = await LocatorFactory.find(
+			this.page.getByTestId('bill-amount'),
+			this.page.locator('#payBillModal').getByLabel('Amount', { exact: true }),
+			this.page.locator('#bill_amount'),
+		);
+		await amountInput.fill(amount);
 	}
 
 	async selectPaymentMethod(method: 'balance' | 'virtual_card') {
-		await this.page.locator('#payment_method').selectOption(method);
+		const paymentMethodSelect = await LocatorFactory.find(
+			this.page.getByTestId('payment-method'),
+			this.page.getByLabel('Payment Method'),
+			this.page.locator('#payment_method'),
+		);
+		await paymentMethodSelect.selectOption(method);
 		if (method === 'virtual_card') {
 			await expect(this.page.locator('#cardSelection')).toBeVisible();
 		}
 	}
 
 	async selectCard(labelPattern: RegExp) {
-		const select = this.page.locator('select[name="card_id"]');
+		const select = await LocatorFactory.find(
+			this.page.getByTestId('card-id'),
+			this.page.getByLabel('Select Card'),
+			this.page.locator('select[name="card_id"]'),
+		);
 		const option = select.locator('option').filter({ hasText: labelPattern }).first();
 		const value = await option.getAttribute('value');
 		if (!value) throw new Error(`No card option matched ${labelPattern}`);
@@ -56,11 +88,21 @@ export class BillPaymentsPage extends HelperBase {
 	}
 
 	async fillDescription(description: string) {
-		await this.page.locator('#bill_description').fill(description);
+		const descriptionInput = await LocatorFactory.find(
+			this.page.getByTestId('bill-description'),
+			this.page.locator('#payBillModal').getByLabel(/description/i),
+			this.page.locator('#bill_description'),
+		);
+		await descriptionInput.fill(description);
 	}
 
 	async submit() {
-		await this.page.locator('#payBillForm button[type="submit"]').click();
+		const submitButton = await LocatorFactory.find(
+			this.page.getByTestId('bill-submit'),
+			this.page.getByRole('button', { name: 'Pay Now' }),
+			this.page.locator('#payBillForm button[type="submit"]'),
+		);
+		await submitButton.click();
 	}
 
 	async waitForMessage(pattern: RegExp, timeout = 7000) {

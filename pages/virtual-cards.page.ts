@@ -1,18 +1,42 @@
 import { expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
+import { LocatorFactory } from './locator-factory';
 
 export class VirtualCardsPage extends HelperBase {
 	async openCreateCardModal() {
-		await this.page.getByRole('button', { name: 'Create New Card' }).click();
+		const createCardButton = await LocatorFactory.find(
+			this.page.getByTestId('open-create-card'),
+			this.page.getByRole('button', { name: 'Create New Card' }),
+		);
+		await createCardButton.click();
 	}
 
+	// #card_limit's "Card Limit" label is duplicated by #card_limit_update once
+	// the update-limit modal has been opened, so this is scoped to
+	// #createCardForm to avoid a strict-mode match against both fields.
 	async createCard(limit: string, cardType?: 'standard' | 'premium') {
 		await this.openCreateCardModal();
-		await this.page.locator('#card_limit').fill(limit);
+		const createForm = this.page.locator('#createCardForm');
+		const limitInput = await LocatorFactory.find(
+			this.page.getByTestId('card-limit'),
+			createForm.getByLabel('Card Limit'),
+			this.page.locator('#card_limit'),
+		);
+		await limitInput.fill(limit);
 		if (cardType) {
-			await this.page.locator('#card_type').selectOption(cardType);
+			const typeSelect = await LocatorFactory.find(
+				this.page.getByTestId('card-type'),
+				createForm.getByLabel('Card Type'),
+				this.page.locator('#card_type'),
+			);
+			await typeSelect.selectOption(cardType);
 		}
-		await this.page.locator('#createCardForm button[type="submit"]').click();
+		const submitButton = await LocatorFactory.find(
+			this.page.getByTestId('create-card-submit'),
+			createForm.getByRole('button', { name: 'Create Card' }),
+			this.page.locator('#createCardForm button[type="submit"]'),
+		);
+		await submitButton.click();
 	}
 
 	async waitForMessage(pattern: RegExp, timeout = 7000) {
@@ -58,7 +82,18 @@ export class VirtualCardsPage extends HelperBase {
 	}
 
 	async submitUpdateLimit(newLimit: string) {
-		await this.page.locator('#card_limit_update').fill(newLimit);
-		await this.page.locator('#updateCardForm button[type="submit"]').click();
+		const updateForm = this.page.locator('#updateCardForm');
+		const limitInput = await LocatorFactory.find(
+			this.page.getByTestId('card-limit-update'),
+			updateForm.getByLabel('Card Limit'),
+			this.page.locator('#card_limit_update'),
+		);
+		await limitInput.fill(newLimit);
+		const submitButton = await LocatorFactory.find(
+			this.page.getByTestId('update-limit-submit'),
+			updateForm.getByRole('button', { name: 'Update Limit', exact: true }),
+			this.page.locator('#updateCardForm button[type="submit"]'),
+		);
+		await submitButton.click();
 	}
 }
