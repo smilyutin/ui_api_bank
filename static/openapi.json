@@ -11,8 +11,8 @@
   },
   "servers": [
     {
-      "url": "https://vulnbank.org",
-      "description": "Controlled Production Server"
+      "url": "http://localhost:5001",
+      "description": "Local Docker server"
     }
   ],
   "tags": [

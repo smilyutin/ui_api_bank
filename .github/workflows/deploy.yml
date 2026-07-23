@@ -1,64 +1,33 @@
 name: Deploy VulnBank
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy to Server
-
-    environment:
-      name: production
-      url: https://vulnbank.org
+    name: Build and smoke-test (local Docker only)
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Sync code to server
+      - name: Build and start stack locally
         run: |
-          rsync -avz --delete \
-            --exclude '.env' \
-            -e "ssh -o StrictHostKeyChecking=no" \
-            ./ \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }}:/home/${{ secrets.USERNAME }}/vuln-bank/
+          cp .env.example .env
+          docker compose up -d --build
 
-      - name: Deploy on server
+      - name: Health check (localhost only)
         run: |
-          ssh -o StrictHostKeyChecking=no \
-            ${{ secrets.USERNAME }}@${{ secrets.HOST }} << 'EOF'
-            set -e
-
-            cd /home/${USER}/vuln-bank
-
-            # ensure .env exists (bootstrap on first deploy)
-            if [ ! -f .env ]; then
-              cp .env.example .env
+          for i in $(seq 1 15); do
+            if curl -fs http://localhost:5001; then
+              echo "App is up"
+              exit 0
             fi
+            sleep 2
+          done
+          echo "Health check failed" && exit 1
 
-            # stop any running containers
-            docker compose down
-
-            # rebuild & restart
-            docker compose up -d --build
-
-            # remove dangling images
-            docker image prune -f
-
-            # show status
-            docker compose ps
-          EOF
-
-      - name: Health Check
-        run: |
-          sleep 20
-          curl -f https://vulnbank.org || (echo "Health check failed" && exit 1)
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
