@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
+import { LocatorFactory } from './locator-factory';
 
 export class DashboardPage extends HelperBase {
 	async goto(baseURL: string) {
@@ -147,8 +148,15 @@ export class DashboardPage extends HelperBase {
 	// templates/dashboard.html's side-panel Logout link is a static,
 	// always-present `<a href="#" onclick="logout()">Logout</a>`.
 	async logout() {
-		const logoutLink = this.page.getByRole('link', { name: /log ?out/i });
-		if (!(await logoutLink.count())) return false;
+		let logoutLink;
+		try {
+			logoutLink = await LocatorFactory.find(
+				this.page.getByTestId('logout'),
+				this.page.getByRole('link', { name: /log ?out/i }),
+			);
+		} catch {
+			return false;
+		}
 		await logoutLink.click();
 		return true;
 	}

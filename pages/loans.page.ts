@@ -1,15 +1,26 @@
 import { expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
+import { LocatorFactory } from './locator-factory';
 
 export type LoanRow = { amount: string; status: string };
 
 export class LoansPage extends HelperBase {
 	async fillAmount(amount: string) {
-		await this.page.locator('#loan_amount').fill(amount);
+		const amountInput = await LocatorFactory.find(
+			this.page.getByTestId('loan-amount'),
+			this.page.getByLabel('Loan Amount'),
+			this.page.locator('#loan_amount'),
+		);
+		await amountInput.fill(amount);
 	}
 
 	async submit() {
-		await this.page.locator('#loanForm button[type="submit"]').click();
+		const submitButton = await LocatorFactory.find(
+			this.page.getByTestId('loan-submit'),
+			this.page.getByRole('button', { name: 'Submit Loan Request' }),
+			this.page.locator('#loanForm button[type="submit"]'),
+		);
+		await submitButton.click();
 	}
 
 	async getMessage() {
