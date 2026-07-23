@@ -24,7 +24,10 @@
       "Bash(git log*)",
       "Bash(git branch --show-current)",
       "Bash(npm install)",
-      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/minime/Projects/ui_api_bank/.claude/settings.json'\\)\\)\")"
+      "Bash(python3 -c \"import json; json.load\\(open\\('/Users/minime/Projects/ui_api_bank/.claude/settings.json'\\)\\)\")",
+      "Bash(BASE_URL=http://localhost:5001 npx playwright test tests/api --project=chromium)",
+      "Bash(adb devices *)",
+      "Bash(xcrun simctl *)"
     ],
     "ask": [
       "Edit(app.py)",
