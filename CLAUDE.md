@@ -12,6 +12,8 @@ This repo has two halves:
 
 Most Claude Code work in this repo is on the test suite, not the vulnerable app itself.
 
+Adding a *new* automation framework or suite (beyond Playwright/Appium)? Start with `.claude/skills/framework-onboarding/SKILL.md` — it walks through identifying the workflow, drafting the skill, and integrating it the same way the two suites above were built.
+
 Do not use emoji anywhere in this repo — docs, code, commit messages, or app UI (`templates/`). Existing emoji were stripped project-wide; don't reintroduce them in new files or edits.
 
 ## Commands
@@ -56,6 +58,8 @@ No barrel/`index.ts` files — import each module directly.
 **Before writing or editing any test, read `.claude/skills/playwright-vulnerable-bank/SKILL.md`** — the detailed reference (conventions, auth/schema/security workflows, feature checklist). Keep new detail there, not here.
 
 **For the Appium suite specifically, read `.claude/skills/appium-mobile-bank/SKILL.md` instead** — it mirrors the same Page Object Model / no-barrel-files conventions but documents WebdriverIO-specific APIs (`mobile/wdio*.conf.ts`, `mobile/pages/`, `mobile/fixtures/mobile-auth.ts`).
+
+**Onboarding a third framework/suite?** See `.claude/skills/framework-onboarding/SKILL.md` — the meta-skill for identifying the workflow, drafting a new `SKILL.md`, and wiring it into this file, `.claude/settings.json`, and CI the way the two suites above were done.
 
 ## Environment
 
