@@ -1,0 +1,34 @@
+name: Wait for app to be ready
+description: Poll the app endpoint until it responds or timeout is exceeded
+
+inputs:
+  url:
+    description: App URL to poll
+    required: false
+    default: http://localhost:5001
+  max-attempts:
+    description: Maximum number of polling attempts
+    required: false
+    default: '30'
+  delay:
+    description: Delay between attempts in seconds
+    required: false
+    default: '2'
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for app to be ready
+      shell: bash
+      run: |
+        for i in $(seq 1 ${{ inputs.max-attempts }}); do
+          if curl -fsS ${{ inputs.url }} >/dev/null; then
+            echo "App is ready"
+            exit 0
+          fi
+          echo "Waiting for app... ($i/${{ inputs.max-attempts }})"
+          sleep ${{ inputs.delay }}
+        done
+        echo "App never became ready"
+        docker compose logs --no-color
+        exit 1
