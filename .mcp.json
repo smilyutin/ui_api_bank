@@ -1,12 +1,11 @@
 {
   "mcpServers": {
-    "veto": {
-      "type": "stdio",
+    "playwright-test": {
       "command": "npx",
-      "args": ["-y", "-p", "@jigyasudham/veto", "veto-server"],
-      "env": {
-        "VETO_COMPACT": "1"
-      }
+      "args": [
+        "playwright",
+        "run-test-mcp-server"
+      ]
     }
   }
 }
