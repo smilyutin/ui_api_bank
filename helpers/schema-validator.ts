@@ -61,12 +61,18 @@ export async function validateSchema(dirName: string, fileName: string, response
 			success = false
 			errorType = validate.errors?.[0]?.keyword || 'unknown'
 			throw new Error(
-				`Schema validation ${fileName}_schema.json failed:\n` +
-				`${JSON.stringify(validate.errors, null, 4)})\n\n` +
-				`Actual response body: \n` +
-				`${JSON.stringify(responseBody, null, 4)}\n\n` +
-				`If this shape change is intentional (part of app development, not a bug), ` +
-				`re-run with UPDATE_SCHEMAS=1 to regenerate the schema from the current response.`
+				`Schema validation ${fileName}_schema.json failed:\n\n` +
+				formatSchemaError(validate.errors, schema, responseBody) +
+				`\n\nTO FIX:\n` +
+				`If this shape change is intentional (part of app development, not a bug):\n\n` +
+				`1. Regenerate the schema from the current response:\n` +
+				`   UPDATE_SCHEMAS=1 npm test\n\n` +
+				`2. Review the schema changes:\n` +
+				`   git diff response-schemas/\n\n` +
+				`3. If changes look correct, commit them:\n` +
+				`   git add response-schemas/\n` +
+				`   git commit -m "Update schemas for endpoint response changes"\n\n` +
+				`Note: This does a full replace — old schema is discarded, not merged.`
 			)
 		}
 	} catch (error) {
@@ -124,6 +130,124 @@ async function resolveSchemaPath(schemaPath: string) {
 
 		throw new Error(`ENOENT: no such file or directory, open '${schemaPath}'`)
 	}
+}
+
+function formatSchemaError(errors: any[], schema: any, responseBody: object): string {
+	if (!errors || errors.length === 0) return 'Unknown validation error'
+
+	const errorsByPath = new Map<string, any[]>()
+	const mismatchedFields: Array<{ path: string; expected: string; actual: string; actualType: string }> = []
+
+	// Group errors by path and extract mismatch info
+	errors.forEach((error) => {
+		const path = error.instancePath || 'root'
+		if (!errorsByPath.has(path)) {
+			errorsByPath.set(path, [])
+		}
+		errorsByPath.get(path)!.push(error)
+
+		const actualValue = getValueByPath(responseBody, path)
+		const expectedSchema = getSchemaByPath(schema, path)
+		const expectedStr = expectedSchema ? formatSchema(expectedSchema) : 'unknown'
+		const actualType = getTypeOf(actualValue)
+		const actualStr = JSON.stringify(actualValue)
+
+		mismatchedFields.push({
+			path: path || 'root',
+			expected: expectedStr,
+			actual: actualStr,
+			actualType,
+		})
+	})
+
+	let output = 'MISMATCHED FIELDS:\n'
+	output += '┌─ Field ─────────────────────────┬─ Expected ────────┬─ Actual ──────────────────┐\n'
+
+	const uniqueFields = Array.from(
+		new Map(mismatchedFields.map((f) => [f.path, f])).values()
+	)
+
+	uniqueFields.forEach((field) => {
+		const fieldPart = field.path.padEnd(30)
+		const expectedPart = field.expected.substring(0, 15).padEnd(15)
+		const actualPart = field.actualType.substring(0, 22)
+		output += `│ ${fieldPart} │ ${expectedPart} │ ${actualPart} │\n`
+	})
+
+	output += '└──────────────────────────────────┴───────────────────┴───────────────────────────┘\n'
+
+	output += '\nDETAILED VALIDATION ERRORS:\n'
+	let errorIndex = 1
+	errorsByPath.forEach((pathErrors, path) => {
+		const actualValue = getValueByPath(responseBody, path)
+		const expectedSchema = getSchemaByPath(schema, path)
+		const actualType = getTypeOf(actualValue)
+
+		output += `\n[${errorIndex}] ${path || 'root'}\n`
+		pathErrors.forEach((error) => {
+			output += `  • ${error.keyword}: ${error.message}\n`
+		})
+		if (expectedSchema) {
+			output += `  Expected: ${formatSchema(expectedSchema)}\n`
+		}
+		output += `  Actual:   ${actualType}`
+		if (actualValue !== undefined && actualType !== 'null' && actualType !== 'undefined') {
+			output += ` ${JSON.stringify(actualValue)}`
+		}
+		output += '\n'
+		errorIndex++
+	})
+
+	output += '\n---\n'
+	output += 'FULL RESPONSE BODY:\n'
+	output += JSON.stringify(responseBody, null, 2)
+
+	return output
+}
+
+function getTypeOf(value: any): string {
+	if (value === null) return 'null'
+	if (value === undefined) return 'undefined'
+	if (Array.isArray(value)) return 'array'
+	if (value instanceof Date) return 'date'
+	return typeof value
+}
+
+function getValueByPath(obj: any, path: string): any {
+	if (!path || path === '') return obj
+	const keys = path.split('/').filter(k => k)
+	return keys.reduce((current, key) => current?.[key], obj)
+}
+
+function getSchemaByPath(schema: any, path: string): any {
+	if (!path || path === '') return schema
+	const keys = path.split('/').filter(k => k)
+	let current = schema
+	for (const key of keys) {
+		if (current.properties?.[key]) {
+			current = current.properties[key]
+		} else if (current.items) {
+			current = current.items
+		} else {
+			return null
+		}
+	}
+	return current
+}
+
+function formatSchema(schema: any): string {
+	if (!schema) return 'unknown'
+	if (schema.type) {
+		if (Array.isArray(schema.type)) {
+			return schema.type.join(' | ')
+		}
+		let typeStr = schema.type
+		if (schema.format) typeStr += `<${schema.format}>`
+		return typeStr
+	}
+	if (schema.enum) return `enum: ${JSON.stringify(schema.enum)}`
+	if (schema.const) return `const: ${JSON.stringify(schema.const)}`
+	return JSON.stringify(schema, null, 2).split('\n')[0]
 }
 
 function applyDateTimeFormats(schema: any) {
