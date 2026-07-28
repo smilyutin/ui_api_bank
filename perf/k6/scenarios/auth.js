@@ -23,5 +23,5 @@ export default function () {
   const creds = uniqueCredentials('auth-scenario');
   register(creds);
   login(creds);
-  sleep(1);
+  sleep(0.2);
 }

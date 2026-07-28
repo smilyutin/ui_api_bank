@@ -40,16 +40,21 @@ export function login(creds) {
   check(res, { 'login: 200': (r) => r.status === 200 });
 
   let body = null;
+  let token = null;
+  let accountNumber = null;
+
   try {
     body = res.json();
-  } catch {
-    body = null;
+    token = body?.token || null;
+    accountNumber = body?.accountNumber || null;
+  } catch (e) {
+    check(false, { 'login: JSON parse error': () => false });
   }
 
   return {
     res,
-    token: body?.token || null,
-    accountNumber: body?.accountNumber || null,
+    token,
+    accountNumber,
   };
 }
 
