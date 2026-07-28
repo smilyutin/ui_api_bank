@@ -12,7 +12,7 @@ import { check, sleep } from 'k6';
 import { BASE_URL, RAMP_STAGES, WRITE_THRESHOLDS } from '../lib/config.js';
 import { registerAndLogin, authHeaders } from '../lib/auth.js';
 
-const POOL_SIZE = 20;
+const POOL_SIZE = 30;
 
 export const options = {
   scenarios: {
@@ -64,5 +64,5 @@ export default function (data) {
     check(billRes, { 'bill-payment: 2xx': (r) => r.status >= 200 && r.status < 300 });
   }
 
-  sleep(1);
+  sleep(0.2);
 }

@@ -1,5 +1,5 @@
 name: Wait for app to be ready
-description: Poll the app endpoint until it responds or timeout is exceeded
+description: 'Poll the app endpoint until it responds or timeout is exceeded'
 
 inputs:
   url:

@@ -41,5 +41,5 @@ export default function (data) {
   const cardsRes = http.get(`${BASE_URL}/api/virtual-cards`, authHeaders(token));
   check(cardsRes, { 'api/virtual-cards: 200': (r) => r.status === 200 });
 
-  sleep(1);
+  sleep(0.2);
 }
