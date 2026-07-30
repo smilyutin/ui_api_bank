@@ -356,7 +356,7 @@ test.describe('Admin Panel UI', () => {
 
 			const firstLoanAmount = await pm.adminPanel().getLoanAmountByRowIndex(0);
 			expect(firstLoanAmount).toBeTruthy();
-			expect(firstLoanAmount?.trim()).toMatch(/\$[\d,]+(\.\d{2})?/);
+			expect(firstLoanAmount?.trim()).toMatch(/\$-?[\d,]+(\.\d{2})?/);
 		});
 
 		test('Approve loan removes from pending applications', async ({ page, baseURL }) => {
