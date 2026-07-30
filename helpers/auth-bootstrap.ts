@@ -199,8 +199,8 @@ function getAdminCredentialsFromEnv(): { identifier: string; password: string } 
 		process.env.ADMIN_USERNAME?.trim() ||
 		process.env.ADMIN_EMAIL?.trim() ||
 		process.env.ADMIN_IDENTIFIER?.trim() ||
-		'';
-	const password = process.env.ADMIN_PASSWORD?.trim() || '';
+		'admin';
+	const password = process.env.ADMIN_PASSWORD?.trim() || 'admin123';
 
 	if (!identifier || !password) return null;
 	return { identifier, password };

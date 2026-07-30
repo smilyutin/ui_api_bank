@@ -39,7 +39,11 @@ export class AdminPanelPage extends HelperBase {
 	async deleteUserById(userId: number) {
 		const deleteForm = this.page.locator(`form[data-user-id="${userId}"]`);
 		const deleteButton = deleteForm.getByRole('button', { name: /Delete/i });
-		await deleteButton.click();
+		try {
+			await deleteButton.click({ timeout: 5000 });
+		} catch {
+			throw new Error(`Could not find delete button for user ${userId}`);
+		}
 	}
 
 	// Create Admin Form Actions

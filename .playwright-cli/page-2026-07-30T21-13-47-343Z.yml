@@ -1,0 +1,94 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - heading "Vulnerable Bank" [level=1] [ref=f3e4]
+    - navigation [ref=f3e5]:
+      - link "Profile" [ref=f3e6] [cursor=pointer]:
+        - /url: "#profile"
+      - link "Money Transfer" [ref=f3e7] [cursor=pointer]:
+        - /url: "#transfers"
+      - link "Loans" [ref=f3e8] [cursor=pointer]:
+        - /url: "#loans"
+      - link "Transaction History" [ref=f3e9] [cursor=pointer]:
+        - /url: "#transactions"
+      - link "Virtual Cards" [ref=f3e10] [cursor=pointer]:
+        - /url: "#virtual-cards"
+      - link "Bill Payments" [ref=f3e11] [cursor=pointer]:
+        - /url: "#bill-payments"
+      - link "Admin Panel" [ref=f3e12] [cursor=pointer]:
+        - /url: /sup3r_s3cr3t_admin
+      - link "Logout" [ref=f3e13] [cursor=pointer]:
+        - /url: "#"
+  - generic [ref=f3e14]:
+    - generic [ref=f3e15]:
+      - generic [ref=f3e16]:
+        - heading "Welcome back, admin" [level=1] [ref=f3e17]
+        - paragraph [ref=f3e18]: Thursday, July 30, 2026
+      - generic [ref=f3e19]:
+        - generic [ref=f3e20]: Current Balance
+        - generic [ref=f3e21]: $1000000.0
+        - generic [ref=f3e22]: "Account Number: ADMIN001"
+    - generic [ref=f3e23]:
+      - generic [ref=f3e24] [cursor=pointer]:
+        - generic [ref=f3e26]: Send Money
+        - generic [ref=f3e27]: Transfer money to another account quickly and securely.
+      - generic [ref=f3e28] [cursor=pointer]:
+        - generic [ref=f3e30]: Request Loan
+        - generic [ref=f3e31]: Need funds? Apply for a loan with competitive rates.
+      - generic [ref=f3e32] [cursor=pointer]:
+        - generic [ref=f3e34]: Virtual Cards
+        - generic [ref=f3e35]: Create and manage your virtual payment cards.
+      - generic [ref=f3e36] [cursor=pointer]:
+        - generic [ref=f3e38]: Pay Bills
+        - generic [ref=f3e39]: Pay your bills easily from your account.
+    - generic [ref=f3e40]:
+      - heading "Profile" [level=2] [ref=f3e42]
+      - generic [ref=f3e43]:
+        - img "Profile Picture" [ref=f3e44]
+        - generic [ref=f3e45] [cursor=pointer]: Edit
+      - generic [ref=f3e46]:
+        - button "Change Profile Picture" [ref=f3e47] [cursor=pointer]
+        - button "Import from URL" [ref=f3e48] [cursor=pointer]
+    - generic [ref=f3e49]:
+      - heading "Money Transfer" [level=2] [ref=f3e51]
+      - generic [ref=f3e52]:
+        - generic [ref=f3e53]:
+          - generic [ref=f3e54]: Recipient Account Number
+          - textbox "Recipient Account Number" [ref=f3e55]:
+            - /placeholder: Enter recipient's account number
+        - generic [ref=f3e56]:
+          - generic [ref=f3e57]: Amount
+          - spinbutton "Amount" [ref=f3e58]
+        - generic [ref=f3e59]:
+          - generic [ref=f3e60]: Description (optional)
+          - textbox "Description (optional)" [ref=f3e61]:
+            - /placeholder: Add a note about this transfer
+        - button "Send Money" [ref=f3e62] [cursor=pointer]
+    - generic [ref=f3e63]:
+      - heading "Request a Loan" [level=2] [ref=f3e65]
+      - generic [ref=f3e66]:
+        - generic [ref=f3e67]:
+          - generic [ref=f3e68]: Loan Amount
+          - spinbutton "Loan Amount" [ref=f3e69]
+        - button "Submit Loan Request" [ref=f3e70] [cursor=pointer]
+      - generic [ref=f3e71]:
+        - heading "Your Loan Applications" [level=3] [ref=f3e72]
+        - table [ref=f3e73]:
+          - rowgroup [ref=f3e74]:
+            - row [ref=f3e75]:
+              - columnheader "Amount" [ref=f3e76]
+              - columnheader "Status" [ref=f3e77]
+          - rowgroup [ref=f3e78]:
+            - row [ref=f3e79]:
+              - cell "$-500.00" [ref=f3e80]
+              - cell "pending" [ref=f3e81]
+    - generic [ref=f3e82]:
+      - heading "Transaction History" [level=2] [ref=f3e84]
+      - paragraph [ref=f3e88]: Loading transactions...
+    - generic [ref=f3e90]:
+      - heading "Virtual Cards" [level=2] [ref=f3e91]
+      - button "Create New Card" [ref=f3e92] [cursor=pointer]
+    - generic [ref=f3e93]:
+      - generic [ref=f3e94]:
+        - heading "Bill Payments" [level=2] [ref=f3e95]
+        - button "Pay Bill" [ref=f3e96] [cursor=pointer]
+      - paragraph [ref=f3e100]: Loading bill payment history...

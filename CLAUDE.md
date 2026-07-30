@@ -27,14 +27,15 @@ docker compose exec db psql -U postgres -d vulnerable_bank   # inspect DB
 
 Run tests (app must already be running):
 ```bash
-BASE_URL=http://localhost:5001 npm test          # full suite, all browsers (chromium/firefox/webkit)
-npx playwright test tests/api/login.spec.ts       # single file
-npx playwright test -g "should allow logout"      # single test by name
-npx playwright test --project=chromium            # single browser
-npx playwright show-report                        # open HTML report after a run
-npm run allure:generate                           # build Allure report from allure-results/ into allure-report/
-npm run allure:open                                # serve the generated Allure report
-npm run allure:report                              # generate + open in one step
+BASE_URL=http://localhost:5001 npm test                                    # full suite, all browsers (chromium/firefox/webkit)
+ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/admin-panel.spec.ts  # admin UI tests (66 tests)
+npx playwright test tests/api/login.spec.ts                                # single file
+npx playwright test -g "should allow logout"                               # single test by name
+npx playwright test --project=chromium                                     # single browser
+npx playwright show-report                                                 # open HTML report after a run
+npm run allure:generate                                                    # build Allure report from allure-results/ into allure-report/
+npm run allure:open                                                         # serve the generated Allure report
+npm run allure:report                                                       # generate + open in one step
 
 npm run test:mobile:android                        # Appium/WebdriverIO suite: Chrome on a booted Android emulator/device
 npm run test:mobile:ios                             # Appium/WebdriverIO suite: Safari on a booted iOS Simulator (macOS only)
@@ -44,12 +45,14 @@ npm run test:mobile:ios                             # Appium/WebdriverIO suite: 
 
 ```
 pages/             Page Object Model, extend HelperBase; page-manager.ts owns all instances
+  admin-panel.page.ts     AdminPanelPage — admin control panel UI interactions
 fixtures/api/      API request helpers (one <feature>.helpers.ts per endpoint group)
 fixtures/helper/   SecurityReporter — OWASP-tagged pass/fail/warning reporting
 helpers/           auth bootstrap, credential persistence, schema validation, perf metrics
 response-schemas/  Ajv schemas, one subdir per feature
 test-data/         users.json — shared test user + tokens
 tests/api/         API specs · tests/ui/specs/  UI specs
+  admin-panel.spec.ts     66 admin panel tests across 3 phases (core, error handling, advanced)
 tests/security/    OWASP-style checks by category (auth, CORS, CSRF, headers, file upload, abuse, supply-chain)
 ```
 

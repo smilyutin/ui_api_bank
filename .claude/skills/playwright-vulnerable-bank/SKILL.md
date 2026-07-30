@@ -258,6 +258,34 @@ The script also writes `allure-results/categories.json` (buckets failures into "
 
 `SecurityReporter`'s report attachments show up inline (no download click needed — see the `text/plain` note above) in both the Playwright HTML report and the Allure report; the "## Why this result" section in each attachment is the pass/fail explanation, and "## Recommendations" / "## Remediation Steps" are the security suggestions. Playwright's own auto-attached `error-context` files on failure are `text/markdown` (Playwright's choice, not ours) and would normally show as a download-only link in Allure for the same reason — `scripts/annotate-allure-results.js` also walks every result's attachments (including nested ones inside "Before Hooks"/"After Hooks" steps) and rewrites any `text/markdown` to `text/plain`, so nothing in the Allure report requires a download click. Allure additionally groups by suite/feature/epic and shows history/trend if you keep `allure-results` across runs (CI doesn't; it regenerates from a clean job each time). CI uploads both `playwright-report/` and `allure-report/` as workflow artifacts.
 
+## Admin Panel Test Suite
+
+**Reference Implementation:** `tests/ui/specs/admin-panel.spec.ts` (66 tests across 3 phases)
+
+The admin panel suite is a complete example of comprehensive, phased test coverage for a complex feature:
+
+- **Phase 1** (18 tests) — core functionality: authentication, user management, account creation, loan approvals, navigation, message feedback
+- **Phase 2** (22 tests) — error handling & validation: form edge cases (empty/long inputs, special characters), duplicate detection, error recovery, input security (XSS/SQL injection)
+- **Phase 3** (26 tests) — advanced scenarios: responsive design (mobile/tablet/desktop), performance metrics, data exposure, concurrent operations, OWASP compliance, edge cases
+
+**Page Object:** `pages/admin-panel.page.ts` — 30+ methods for table interactions, form management, message feedback, navigation, and verification
+
+**PageManager Integration:** accessor added to `pages/page-manager.ts` — `pm.adminPanel()`
+
+**Run the suite:**
+```bash
+ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/admin-panel.spec.ts
+```
+
+**Key patterns demonstrated:**
+
+- **Pagination handling:** tables limited to 25 items per page; test IDs enable reliable navigation
+- **Form validation:** separate tests for empty fields, long inputs, special characters, duplication
+- **Error scenarios:** tests handle edge cases gracefully (skips when data unavailable, robust error checking)
+- **Security coverage:** XSS/SQL injection payload testing, sensitive data exposure checks, OWASP categories (API1, API3, API4, API6, API8)
+- **Responsive design:** tests at mobile (375x667), tablet (768x1024), and desktop (1920x1080) breakpoints
+- **Concurrent operations:** form submission while message showing, pagination during form visibility
+
 ## Adding a New Feature (checklist)
 
 When wiring up tests for an endpoint/page that doesn't have coverage yet:
@@ -267,3 +295,8 @@ When wiring up tests for an endpoint/page that doesn't have coverage yet:
 3. Write the API spec in `tests/api/<feature>.spec.ts`: cover functional/non-functional/security angles per "Test Design" above, call `validateSchema(...)` on success responses, and report security checks via `SecurityReporter`.
 4. Do one `UPDATE_SCHEMAS=1` run to generate `response-schemas/<feature>-schema/`, then review and commit the generated JSON.
 5. Write the UI spec in `tests/ui/specs/<feature>.spec.ts` using `ensureDashboardAuthenticated` in `beforeEach` and the `PageManager`.
+
+Consider the **three-phase approach** used in the admin panel suite:
+- **Phase 1:** Core happy path and basic functionality (18 tests covering auth, CRUD, navigation)
+- **Phase 2:** Error handling, validation, and security basics (22 tests covering form validation, error recovery, input security)
+- **Phase 3:** Advanced scenarios, responsive design, and OWASP compliance (26 tests covering all breakpoints, concurrent ops, compliance)
