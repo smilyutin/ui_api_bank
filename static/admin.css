@@ -233,18 +233,62 @@ a.button {
     text-align: center;
 }
 
+/* Pagination */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+
+.pagination a, .pagination span {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: white;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.pagination a:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.pagination span {
+    cursor: default;
+    background-color: #f5f7fa;
+    border-color: #e0e0e0;
+    color: var(--text-dark);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .container {
         padding: 1rem;
     }
-    
+
     table {
         display: block;
         overflow-x: auto;
     }
-    
+
     .admin-header {
         padding: 1.5rem;
+    }
+
+    .pagination {
+        gap: 0.3rem;
+    }
+
+    .pagination a, .pagination span {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.9rem;
     }
 }

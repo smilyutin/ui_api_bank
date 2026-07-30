@@ -18,6 +18,13 @@ A deliberately vulnerable web application for practicing application security te
    BASE_URL=http://localhost:5001 npm test
    ```
 
+   Or run just the admin panel UI tests (66 comprehensive tests across 3 phases):
+   ```bash
+   ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/admin-panel.spec.ts
+   ```
+
+   See `ADMIN_PANEL_TESTS.md` for detailed admin panel test documentation.
+
 3. Stop everything when you’re done:
    ```bash
    docker compose down -v

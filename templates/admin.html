@@ -10,24 +10,25 @@
 </head>
 <body>
     <div class="container">
-        <div id="message"></div>
+        <div id="message" data-testid="admin-message"></div>
 
         <div class="admin-header">
-            <h1 class="admin-title">Admin Control Panel</h1>
+            <h1 class="admin-title" data-testid="admin-panel-title">Admin Control Panel</h1>
         </div>
 
         <div class="profile-section">
             <!-- Vulnerability: Fixed path to admin image -->
-            <img class="profile-picture" 
-                 src="{{ url_for('static', filename='uploads/admin.png') }}" 
-                 alt="Admin Profile">
-            <h2>System Administrator</h2>
+            <img class="profile-picture"
+                 src="{{ url_for('static', filename='uploads/admin.png') }}"
+                 alt="Admin Profile"
+                 data-testid="admin-profile-picture">
+            <h2 data-testid="admin-profile-name">System Administrator</h2>
         </div>
         
         <div class="section">
-            <h2>User Management</h2>
+            <h2>User Management ({{ users_total }} total)</h2>
             <!-- Vulnerability: Sensitive data exposure in table -->
-            <table>
+            <table data-testid="user-management-table">
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -40,7 +41,7 @@
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
+                    <tr data-testid="user-row-{{ user[0] }}">
                         <td>{{ user[0] }}</td>
                         <td>{{ user[1] }}</td>
                         <td>{{ user[3] }}</td>
@@ -48,7 +49,7 @@
                         <td>{{ user[5] }}</td>
                         <td>
                             <!-- Vulnerability: No confirmation for delete -->
-                            <form class="delete-account-form" data-user-id="{{ user[0] }}">
+                            <form class="delete-account-form" data-user-id="{{ user[0] }}" data-testid="delete-user-{{ user[0] }}">
                                 <button type="submit">Delete</button>
                             </form>
                         </td>
@@ -56,29 +57,42 @@
                     {% endfor %}
                 </tbody>
             </table>
+            {% if users_total_pages > 1 %}
+            <div class="pagination" data-testid="user-pagination">
+                {% if users_page > 1 %}
+                <a href="?users_page=1&loans_page={{ loans_page }}">First</a>
+                <a href="?users_page={{ users_page - 1 }}&loans_page={{ loans_page }}">Previous</a>
+                {% endif %}
+                <span>Page {{ users_page }} of {{ users_total_pages }}</span>
+                {% if users_page < users_total_pages %}
+                <a href="?users_page={{ users_page + 1 }}&loans_page={{ loans_page }}">Next</a>
+                <a href="?users_page={{ users_total_pages }}&loans_page={{ loans_page }}">Last</a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
 
         <div class="section">
             <h2>Create Admin Account</h2>
             <!-- Vulnerability: No password complexity requirements -->
             <!-- Vulnerability: No CSRF protection -->
-            <form id="createAdminForm">
+            <form id="createAdminForm" data-testid="create-admin-form">
                 <div class="form-group">
                     <label for="admin_username">Username</label>
-                    <input type="text" id="admin_username" name="username" placeholder="Enter admin username" required>
+                    <input type="text" id="admin_username" name="username" placeholder="Enter admin username" required data-testid="admin-username-input">
                 </div>
                 <div class="form-group">
                     <label for="admin_password">Password</label>
-                    <input type="password" id="admin_password" name="password" placeholder="Enter admin password" required>
+                    <input type="password" id="admin_password" name="password" placeholder="Enter admin password" required data-testid="admin-password-input">
                 </div>
-                <button type="submit">Create Admin</button>
+                <button type="submit" data-testid="create-admin-button">Create Admin</button>
             </form>
         </div>
 
         <div class="section">
-            <h2>Pending Loan Applications</h2>
+            <h2>Pending Loan Applications ({{ loans_total }} pending)</h2>
             <!-- Vulnerability: No validation of loan approval -->
-            <table>
+            <table data-testid="pending-loans-table">
                 <thead>
                     <tr>
                         <th>Loan ID</th>
@@ -89,25 +103,44 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% if pending_loans|length == 0 %}
+                    <tr data-testid="no-pending-loans-message">
+                        <td colspan="5">No pending loan applications</td>
+                    </tr>
+                    {% else %}
                     {% for loan in pending_loans %}
-                    <tr>
+                    <tr data-testid="loan-row-{{ loan[0] }}">
                         <td>{{ loan[0] }}</td>
                         <td>{{ loan[1] }}</td>
                         <td>${{ loan[2] }}</td>
                         <td>{{ loan[3] }}</td>
                         <td>
                             <!-- Vulnerability: No approval confirmation -->
-                            <form class="approve-loan-form" data-loan-id="{{ loan[0] }}">
+                            <form class="approve-loan-form" data-loan-id="{{ loan[0] }}" data-testid="approve-loan-{{ loan[0] }}">
                                 <button type="submit">Approve</button>
                             </form>
                         </td>
                     </tr>
                     {% endfor %}
+                    {% endif %}
                 </tbody>
             </table>
+            {% if loans_total_pages > 1 %}
+            <div class="pagination" data-testid="loan-pagination">
+                {% if loans_page > 1 %}
+                <a href="?users_page={{ users_page }}&loans_page=1">First</a>
+                <a href="?users_page={{ users_page }}&loans_page={{ loans_page - 1 }}">Previous</a>
+                {% endif %}
+                <span>Page {{ loans_page }} of {{ loans_total_pages }}</span>
+                {% if loans_page < loans_total_pages %}
+                <a href="?users_page={{ users_page }}&loans_page={{ loans_page + 1 }}">Next</a>
+                <a href="?users_page={{ users_page }}&loans_page={{ loans_total_pages }}">Last</a>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
         
-        <a href="{{ url_for('dashboard') }}" class="button">Back to Dashboard</a>
+        <a href="{{ url_for('dashboard') }}" class="button" data-testid="back-to-dashboard">Back to Dashboard</a>
     </div>
 
     <script>

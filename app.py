@@ -966,11 +966,41 @@ def request_loan(current_user):
 def admin_panel(current_user):
     if not current_user['is_admin']:
         return "Access Denied", 403
-        
-    users = execute_query("SELECT * FROM users")
-    pending_loans = execute_query("SELECT * FROM loans WHERE status='pending'")
-    
-    return render_template('admin.html', users=users, pending_loans=pending_loans)
+
+    users_page = request.args.get('users_page', 1, type=int)
+    loans_page = request.args.get('loans_page', 1, type=int)
+    page_size = 25
+
+    users_offset = (users_page - 1) * page_size
+    loans_offset = (loans_page - 1) * page_size
+
+    users = execute_query(
+        "SELECT * FROM users ORDER BY id ASC LIMIT %s OFFSET %s",
+        (page_size, users_offset),
+        fetch=True
+    )
+    users_total = execute_query("SELECT COUNT(*) FROM users", fetch=True)[0][0]
+
+    pending_loans = execute_query(
+        "SELECT * FROM loans WHERE status='pending' ORDER BY id ASC LIMIT %s OFFSET %s",
+        (page_size, loans_offset),
+        fetch=True
+    )
+    loans_total = execute_query("SELECT COUNT(*) FROM loans WHERE status='pending'", fetch=True)[0][0]
+
+    users_total_pages = (users_total + page_size - 1) // page_size
+    loans_total_pages = (loans_total + page_size - 1) // page_size
+
+    return render_template('admin.html',
+                         users=users,
+                         pending_loans=pending_loans,
+                         users_page=users_page,
+                         loans_page=loans_page,
+                         users_total_pages=users_total_pages,
+                         loans_total_pages=loans_total_pages,
+                         users_total=users_total,
+                         loans_total=loans_total,
+                         page_size=page_size)
 
 @app.route('/admin/approve_loan/<int:loan_id>', methods=['POST'])
 @token_required

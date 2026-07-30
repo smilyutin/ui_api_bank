@@ -8,6 +8,8 @@
     "types": ["node", "@playwright/test"]
   },
   "include": [
+    "global-setup.ts",
+    "global-teardown.ts",
     "playwright.config.ts",
     "config/**/*.ts",
     "enums/**/*.ts",

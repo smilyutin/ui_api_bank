@@ -1,0 +1,172 @@
+- generic [ref=f3e2]:
+  - heading "Admin Control Panel" [level=1] [ref=f3e5]
+  - generic [ref=f3e6]:
+    - img "Admin Profile" [ref=f3e7]
+    - heading "System Administrator" [level=2] [ref=f3e8]
+  - generic [ref=f3e9]:
+    - heading "User Management (16 total)" [level=2] [ref=f3e10]
+    - table [ref=f3e11]:
+      - rowgroup [ref=f3e12]:
+        - row [ref=f3e13]:
+          - columnheader "ID" [ref=f3e14]
+          - columnheader "Username" [ref=f3e15]
+          - columnheader "Account Number" [ref=f3e16]
+          - columnheader "Balance" [ref=f3e17]
+          - columnheader "Admin" [ref=f3e18]
+          - columnheader "Actions" [ref=f3e19]
+      - rowgroup [ref=f3e20]:
+        - row [ref=f3e21]:
+          - cell "1" [ref=f3e22]
+          - cell "admin" [ref=f3e23]
+          - cell "ADMIN001" [ref=f3e24]
+          - cell "$1000000.00" [ref=f3e25]
+          - cell "True" [ref=f3e26]
+          - cell [ref=f3e27]:
+            - button "Delete" [ref=f3e29] [cursor=pointer]
+        - row [ref=f3e30]:
+          - cell "2" [ref=f3e31]
+          - cell "admin-panel-non-admin-checkb67gwg4b" [ref=f3e32]
+          - cell "5054523544" [ref=f3e33]
+          - cell "$1000.00" [ref=f3e34]
+          - cell "False" [ref=f3e35]
+          - cell [ref=f3e36]:
+            - button "Delete" [ref=f3e38] [cursor=pointer]
+        - row [ref=f3e39]:
+          - cell "4" [ref=f3e40]
+          - cell "admin-test-1785447262605" [ref=f3e41]
+          - cell "7662064811" [ref=f3e42]
+          - cell "$1000.00" [ref=f3e43]
+          - cell "True" [ref=f3e44]
+          - cell [ref=f3e45]:
+            - button "Delete" [ref=f3e47] [cursor=pointer]
+        - row [ref=f3e48]:
+          - cell "5" [ref=f3e49]
+          - cell "admin-form-clear-1785447262886" [ref=f3e50]
+          - cell "8839915839" [ref=f3e51]
+          - cell "$1000.00" [ref=f3e52]
+          - cell "True" [ref=f3e53]
+          - cell [ref=f3e54]:
+            - button "Delete" [ref=f3e56] [cursor=pointer]
+        - row [ref=f3e57]:
+          - cell "6" [ref=f3e58]
+          - cell "admin-msg-success-1785447263869" [ref=f3e59]
+          - cell "8565499994" [ref=f3e60]
+          - cell "$1000.00" [ref=f3e61]
+          - cell "True" [ref=f3e62]
+          - cell [ref=f3e63]:
+            - button "Delete" [ref=f3e65] [cursor=pointer]
+        - row [ref=f3e66]:
+          - cell "7" [ref=f3e67]
+          - cell "admin-msg-content-1785447263866" [ref=f3e68]
+          - cell "5634373821" [ref=f3e69]
+          - cell "$1000.00" [ref=f3e70]
+          - cell "True" [ref=f3e71]
+          - cell [ref=f3e72]:
+            - button "Delete" [ref=f3e74] [cursor=pointer]
+        - row [ref=f3e75]:
+          - cell "8" [ref=f3e76]
+          - cell "admin-panel-non-admin-checkkjx6idkj" [ref=f3e77]
+          - cell "8019435054" [ref=f3e78]
+          - cell "$1000.00" [ref=f3e79]
+          - cell "False" [ref=f3e80]
+          - cell [ref=f3e81]:
+            - button "Delete" [ref=f3e83] [cursor=pointer]
+        - row [ref=f3e84]:
+          - cell "10" [ref=f3e85]
+          - cell "admin-test-1785447565389" [ref=f3e86]
+          - cell "3259969447" [ref=f3e87]
+          - cell "$1000.00" [ref=f3e88]
+          - cell "True" [ref=f3e89]
+          - cell [ref=f3e90]:
+            - button "Delete" [ref=f3e92] [cursor=pointer]
+        - row [ref=f3e93]:
+          - cell "11" [ref=f3e94]
+          - cell "admin-form-clear-1785447565373" [ref=f3e95]
+          - cell "3847092577" [ref=f3e96]
+          - cell "$1000.00" [ref=f3e97]
+          - cell "True" [ref=f3e98]
+          - cell [ref=f3e99]:
+            - button "Delete" [ref=f3e101] [cursor=pointer]
+        - row [ref=f3e102]:
+          - cell "12" [ref=f3e103]
+          - cell "admin-msg-success-1785447566358" [ref=f3e104]
+          - cell "8226381325" [ref=f3e105]
+          - cell "$1000.00" [ref=f3e106]
+          - cell "True" [ref=f3e107]
+          - cell [ref=f3e108]:
+            - button "Delete" [ref=f3e110] [cursor=pointer]
+        - row [ref=f3e111]:
+          - cell "13" [ref=f3e112]
+          - cell "admin-msg-content-1785447566492" [ref=f3e113]
+          - cell "9962827888" [ref=f3e114]
+          - cell "$1000.00" [ref=f3e115]
+          - cell "True" [ref=f3e116]
+          - cell [ref=f3e117]:
+            - button "Delete" [ref=f3e119] [cursor=pointer]
+        - row [ref=f3e120]:
+          - cell "14" [ref=f3e121]
+          - cell "admin-panel-non-admin-checks4jgt4qr" [ref=f3e122]
+          - cell "2334733118" [ref=f3e123]
+          - cell "$1000.00" [ref=f3e124]
+          - cell "False" [ref=f3e125]
+          - cell [ref=f3e126]:
+            - button "Delete" [ref=f3e128] [cursor=pointer]
+        - row [ref=f3e129]:
+          - cell "16" [ref=f3e130]
+          - cell "admin-form-clear-1785447586773" [ref=f3e131]
+          - cell "3361907871" [ref=f3e132]
+          - cell "$1000.00" [ref=f3e133]
+          - cell "True" [ref=f3e134]
+          - cell [ref=f3e135]:
+            - button "Delete" [ref=f3e137] [cursor=pointer]
+        - row [ref=f3e138]:
+          - cell "17" [ref=f3e139]
+          - cell "admin-test-1785447586753" [ref=f3e140]
+          - cell "7280062234" [ref=f3e141]
+          - cell "$1000.00" [ref=f3e142]
+          - cell "True" [ref=f3e143]
+          - cell [ref=f3e144]:
+            - button "Delete" [ref=f3e146] [cursor=pointer]
+        - row [ref=f3e147]:
+          - cell "18" [ref=f3e148]
+          - cell "admin-msg-content-1785447587561" [ref=f3e149]
+          - cell "3262623467" [ref=f3e150]
+          - cell "$1000.00" [ref=f3e151]
+          - cell "True" [ref=f3e152]
+          - cell [ref=f3e153]:
+            - button "Delete" [ref=f3e155] [cursor=pointer]
+        - row [ref=f3e156]:
+          - cell "19" [ref=f3e157]
+          - cell "admin-msg-success-1785447587566" [ref=f3e158]
+          - cell "0276665128" [ref=f3e159]
+          - cell "$1000.00" [ref=f3e160]
+          - cell "True" [ref=f3e161]
+          - cell [ref=f3e162]:
+            - button "Delete" [ref=f3e164] [cursor=pointer]
+  - generic [ref=f3e165]:
+    - heading "Create Admin Account" [level=2] [ref=f3e166]
+    - generic [ref=f3e167]:
+      - generic [ref=f3e168]:
+        - generic [ref=f3e169]: Username
+        - textbox "Username" [ref=f3e170]:
+          - /placeholder: Enter admin username
+      - generic [ref=f3e171]:
+        - generic [ref=f3e172]: Password
+        - textbox "Password" [ref=f3e173]:
+          - /placeholder: Enter admin password
+      - button "Create Admin" [ref=f3e174] [cursor=pointer]
+  - generic [ref=f3e175]:
+    - heading "Pending Loan Applications (0 pending)" [level=2] [ref=f3e176]
+    - table [ref=f3e177]:
+      - rowgroup [ref=f3e178]:
+        - row [ref=f3e179]:
+          - columnheader "Loan ID" [ref=f3e180]
+          - columnheader "User ID" [ref=f3e181]
+          - columnheader "Amount" [ref=f3e182]
+          - columnheader "Status" [ref=f3e183]
+          - columnheader "Actions" [ref=f3e184]
+      - rowgroup [ref=f3e185]:
+        - row [ref=f3e186]:
+          - cell "No pending loan applications" [ref=f3e187]
+  - link "Back to Dashboard" [ref=f3e188] [cursor=pointer]:
+    - /url: /dashboard

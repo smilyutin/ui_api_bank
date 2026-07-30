@@ -1,4 +1,5 @@
 import { Page } from '@playwright/test';
+import { AdminPanelPage } from './admin-panel.page';
 import { DashboardPage } from './dashboard.page';
 import { LoansPage } from './loans.page';
 import { LoginPage } from './login.page';
@@ -17,6 +18,7 @@ import { BillPaymentsPage } from './bill-payments.page';
  */
 export class PageManager {
 	private readonly page: Page;
+	private readonly adminPanelPage: AdminPanelPage;
 	private readonly dashboardPage: DashboardPage;
 	private readonly loansPage: LoansPage;
 	private readonly loginPage: LoginPage;
@@ -28,6 +30,7 @@ export class PageManager {
 
 	constructor(page: Page) {
 		this.page = page;
+		this.adminPanelPage = new AdminPanelPage(page);
 		this.dashboardPage = new DashboardPage(page);
 		this.loansPage = new LoansPage(page);
 		this.loginPage = new LoginPage(page);
@@ -40,6 +43,11 @@ export class PageManager {
 
 	public getPage(): Page {
 		return this.page;
+	}
+
+	// Admin control panel: user management, create admin, pending loans.
+	adminPanel() {
+		return this.adminPanelPage;
 	}
 
 	// Dashboard shell: balance, navigation, transaction list.

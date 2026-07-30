@@ -68,21 +68,22 @@ Full conventions (Page Object rules, Page Manager, readiness-check pattern, auth
 
 ## 8. Feature Coverage Matrix
 
-| Feature | API spec | UI spec | Schema dir |
-|---|---|---|---|
-| Login / auth | `login.spec.ts` | — (covered via `auth-bootstrap`) | `login-schema/` |
-| Registration | `create-user.spec.ts` | `create-user.spec.ts` | `register-schema/` |
-| Dashboard / balance | `dashboard.spec.ts` | `dashboard.spec.ts` | `dashboard-schema/` |
-| Transactions | `transactions.spec.ts` | — (rendered inside dashboard spec) | `transactions-schema/` |
-| Money transfer | `money-transfer.spec.ts` | `money-transfer.spec.ts` | `money-transfer-schema/` |
-| Loans | `loans.spec.ts` | `loans.spec.ts` | `loans-schema/` |
-| Profile picture upload | `profile.spec.ts` | `profile.spec.ts` | `profile-schema/` |
-| Virtual cards | `virtual-cards.spec.ts` | `virtual-cards.spec.ts` | `virtual-cards-schema/` |
-| Bill payments | `bill-payments.spec.ts` | `bill-payments.spec.ts` | `bill-payments-schema/` |
-| AI customer support | `ai-chat.spec.ts` | — (no UI spec drives the chat widget) | `ai-chat-schema/` |
-| Left nav / visual | — | `visual-leftmenu.spec.ts` | — |
+| Feature | API spec | UI spec | Schema dir | Test Count |
+|---|---|---|---|---|
+| Login / auth | `login.spec.ts` | — (covered via `auth-bootstrap`) | `login-schema/` | ~12 |
+| Registration | `create-user.spec.ts` | `create-user.spec.ts` | `register-schema/` | ~10 |
+| Dashboard / balance | `dashboard.spec.ts` | `dashboard.spec.ts` | `dashboard-schema/` | ~8 |
+| Transactions | `transactions.spec.ts` | — (rendered inside dashboard spec) | `transactions-schema/` | ~6 |
+| Money transfer | `money-transfer.spec.ts` | `money-transfer.spec.ts` | `money-transfer-schema/` | ~10 |
+| Loans | `loans.spec.ts` | `loans.spec.ts` | `loans-schema/` | ~15 |
+| Profile picture upload | `profile.spec.ts` | `profile.spec.ts` | `profile-schema/` | ~8 |
+| Virtual cards | `virtual-cards.spec.ts` | `virtual-cards.spec.ts` | `virtual-cards-schema/` | ~12 |
+| Bill payments | `bill-payments.spec.ts` | `bill-payments.spec.ts` | `bill-payments-schema/` | ~10 |
+| AI customer support | `ai-chat.spec.ts` | — (no UI spec drives the chat widget) | `ai-chat-schema/` | ~8 |
+| Admin panel | `admin.spec.ts` (API) | `admin-panel.spec.ts` (UI, **66 tests**) | — | **66** |
+| Left nav / visual | — | `visual-leftmenu.spec.ts` | — | ~4 |
 
-Every feature has an API spec with schema validation; UI coverage exists for everything except transactions (subsumed by dashboard) and the AI chat widget (API-only today). `tests/security/` is organized by OWASP category rather than by feature, so it isn't reflected as its own column here — see section 9 for its coverage.
+Every feature has an API spec with schema validation; UI coverage is comprehensive for most features. The Admin panel features a complete three-phase UI test suite (22 core + 22 error handling + 22 advanced tests) demonstrating comprehensive test design best practices: functional/non-functional/security angles, responsive design across three breakpoints (mobile/tablet/desktop), error recovery, and OWASP compliance checks. `tests/security/` is organized by OWASP category rather than by feature, so it isn't reflected as its own column here — see section 9 for its coverage.
 
 ## 9. Security Coverage Summary
 
@@ -111,6 +112,13 @@ Single shared primary user + tokens persisted in `test-data/users.json` via `hel
 ## 12. Adding Coverage for a New Feature
 
 See SKILL.md's "Adding a New Feature (checklist)": API helper, then page object + `PageManager` registration, then API spec (functional/non-functional/security angles + schema validation), then `UPDATE_SCHEMAS=1` run, then UI spec using `ensureDashboardAuthenticated` + `PageManager`.
+
+**Reference Implementation:** The Admin Panel UI test suite (`tests/ui/specs/admin-panel.spec.ts`, 66 tests) is a complete example of comprehensive feature coverage. It demonstrates the three-phase approach:
+- **Phase 1** (22 tests): core happy-path functionality (auth, CRUD operations, navigation)
+- **Phase 2** (22 tests): error handling, validation, and input security (edge cases, XSS/SQL injection, error recovery)
+- **Phase 3** (22 tests): advanced scenarios (responsive design across 3 breakpoints, performance, OWASP compliance, concurrent operations, edge cases)
+
+See `ADMIN_PANEL_TESTS.md` for detailed coverage and best practices demonstrated in this implementation.
 
 ## 13. Open Items
 

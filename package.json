@@ -19,7 +19,7 @@
   "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.5",
     "@wdio/allure-reporter": "^9.4.0",
     "@wdio/appium-service": "^9.4.0",
     "@wdio/cli": "^9.4.0",

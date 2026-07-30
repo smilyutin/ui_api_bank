@@ -28,6 +28,10 @@ export default defineConfig({
     ['allure-playwright', { outputFolder: 'allure-results', detail: true, suiteTitle: false }],
     ['./reporters/security-summary-reporter.ts'],
   ],
+  /* Global setup runs once before all tests */
+  globalSetup: './global-setup.ts',
+  /* Global teardown runs once after all tests - cleans up test data */
+  globalTeardown: './global-teardown.ts',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
@@ -41,7 +45,14 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/admin-panel.spec.ts',
       use: { ...devices['Desktop Chrome'] },
+    },
+
+    {
+      name: 'chromium-admin',
+      testMatch: '**/admin-panel.spec.ts',
+      use: { ...devices['Desktop Chrome'], storageState: 'storage/admin-auth.json' },
     },
 
     // {

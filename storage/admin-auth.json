@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc4NTQ1MzE3OX0.aSsU2LObWtBhw_rAWfEo8-rwZU6AuElnETfty5Ebc2s",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "http://localhost:5001",
+      "localStorage": [
+        {
+          "name": "jwt_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc4NTQ1MzE3OX0.aSsU2LObWtBhw_rAWfEo8-rwZU6AuElnETfty5Ebc2s"
+        }
+      ]
+    }
+  ]
+}
