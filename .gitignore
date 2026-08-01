@@ -37,6 +37,9 @@ nosetests.xml
 # Generated per test run by helpers/credentials.ts (holds live tokens/creds)
 test-data/users.json
 
+# Generated per test run by global-setup.ts (auth storage state — regenerated fresh each run)
+storage/
+
 ## Playwright / test runner
 .playwright/
 playwright-report/
