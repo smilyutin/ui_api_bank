@@ -25,6 +25,8 @@ A deliberately vulnerable web application for practicing application security te
 
    See `ADMIN_PANEL_TESTS.md` for detailed admin panel test documentation.
 
+   **Automatic Setup & Cleanup:** Admin tests use a global setup to authenticate once (storing the session in `storage/admin-auth.json`) and a global teardown to automatically delete all test-created users — no manual cleanup needed, and no per-test authentication overhead.
+
 3. Stop everything when you’re done:
    ```bash
    docker compose down -v

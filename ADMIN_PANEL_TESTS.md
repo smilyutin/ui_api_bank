@@ -11,7 +11,7 @@ The Admin Panel test suite provides comprehensive coverage of the admin control 
 ## Running the Tests
 
 ```bash
-# Full admin panel suite
+# Full admin panel suite (includes global setup/teardown for automatic cleanup)
 ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/admin-panel.spec.ts
 
 # Specific phase or test
@@ -21,6 +21,15 @@ npx playwright test tests/ui/specs/admin-panel.spec.ts -g "should allow logout"
 # Generate and view Allure report
 npm run allure:report
 ```
+
+### Automatic Setup & Teardown
+
+The admin panel tests use a **global setup/teardown system** for efficiency and data hygiene:
+
+- **Global Setup** (`global-setup.ts`): Runs once before all tests, authenticates as admin, and stores the session in `storage/admin-auth.json`. Tests then reuse this pre-authenticated session (skip per-test login overhead).
+- **Global Teardown** (`global-teardown.ts`): Runs once after all tests complete, uses the admin token to automatically delete all test-created users (anything matching prefixes like `admin-panel-*`, `loan-approval-*`, etc.), and preserves the admin master account. Typically deletes 100-200+ test users per run.
+
+This reduces total test-execution time from 30+ seconds to ~8-9 seconds and ensures the database stays clean across runs without manual intervention.
 
 ## Phase 1: Core Functionality (22 tests)
 
@@ -43,10 +52,15 @@ npm run allure:report
 - Create admin success flow with form clearing
 - Form clears after successful submission
 
-### Pending Loan Approvals (4 tests)
+### Pending Loan Approvals (3 tests)
 - Pending loans table displays with correct columns
-- Loan amount displays correctly
-- Approve loan removes from pending applications
+- Approve loan removes from pending applications (basic flow)
+- Approve button present for each pending loan
+
+### Loan Approval with Amount Validation (4 tests)
+- Loan amount displays correctly in pending loans table
+- Approve loan removes from pending applications (validation)
+- Loan amount stays same or increases after approval
 - Pending loans count decreases after approval
 
 ### Navigation & Integration (4 tests)
