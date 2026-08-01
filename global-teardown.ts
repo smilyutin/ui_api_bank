@@ -1,4 +1,6 @@
 import { chromium, request as apiRequest } from '@playwright/test';
+import { rm } from 'fs/promises';
+import { resolve } from 'path';
 
 const baseURL = process.env.BASE_URL ?? 'http://localhost:5001';
 
@@ -105,6 +107,14 @@ export default async () => {
 		await page.close();
 	} catch (e) {
 		console.error('Global teardown error:', e);
+	}
+
+	try {
+		const storageDir = resolve(process.cwd(), 'storage');
+		await rm(storageDir, { recursive: true, force: true });
+		console.log('✓ Cleaned up storage/ (regenerated fresh on next run)');
+	} catch (e) {
+		console.warn('Could not clean storage directory:', e);
 	}
 
 	await browser.close();
