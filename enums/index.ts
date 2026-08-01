@@ -1,3 +1,4 @@
+// Environment context: where tests run (local dev, CI, staging, test).
 export const EnvironmentName = {
   local: 'local',
   ci: 'ci',

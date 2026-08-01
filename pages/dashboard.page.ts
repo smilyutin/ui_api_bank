@@ -2,23 +2,25 @@ import { expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
 import { LocatorFactory } from './locator-factory';
 
+// User dashboard: account balance, transactions, navigation, and logout.
+// Provides both UI assertions and API cross-checks for data accuracy.
 export class DashboardPage extends HelperBase {
 	async goto(baseURL: string) {
 		await this.page.goto(new URL('/dashboard', baseURL).toString());
 	}
 
 	async isLoggedIn() {
-			// Check URL is dashboard and elements exist
-			const url = this.page.url();
-			const onDashboard = url.toLowerCase().includes('/dashboard');
-			if (!onDashboard) return false;
+		// Check both URL and presence of dashboard-like elements to verify logged-in state.
+		const url = this.page.url();
+		const onDashboard = url.toLowerCase().includes('/dashboard');
+		if (!onDashboard) return false;
 
-			// Look for typical dashboard elements
-			const hasElements = await this.page.getByRole('heading', { name: /dashboard|welcome/i }).count() > 0 ||
-				await this.page.getByRole('navigation').count() > 0 ||
-				await this.page.getByRole('main').count() > 0;
+		// Look for typical dashboard elements
+		const hasElements = await this.page.getByRole('heading', { name: /dashboard|welcome/i }).count() > 0 ||
+			await this.page.getByRole('navigation').count() > 0 ||
+			await this.page.getByRole('main').count() > 0;
 
-			return hasElements;
+		return hasElements;
 	}
 
 	async getWelcomeMessage() {
@@ -28,8 +30,8 @@ export class DashboardPage extends HelperBase {
 	}
 
 	async waitForLoad() {
-		// The dashboard performs several fetches on load, so `networkidle` is
-		// not a reliable readiness signal here. Wait for the actual UI instead.
+		// Wait for dashboard readiness. The app performs multiple async fetches on load,
+		// so networkidle is unreliable. Poll the actual UI elements instead (heading + balance).
 		await expect(this.page).toHaveURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
 		await expect(this.page.getByRole('heading', { name: /welcome back/i })).toBeVisible({ timeout: 7000 });
 		await expect(this.page.locator('#balance')).toBeVisible({ timeout: 7000 });
@@ -43,7 +45,7 @@ export class DashboardPage extends HelperBase {
 		return [];
 	}
 
-	// Return visible navigation item texts in order
+	// Collect visible navigation item texts (links, buttons) in document order.
 	async getNavigationTexts(): Promise<string[]> {
 		const nav = this.page.getByRole('navigation');
 		if (!(await nav.count())) return [];
@@ -58,7 +60,7 @@ export class DashboardPage extends HelperBase {
 		return out;
 	}
 
-	// Return visible navigation items with hrefs (text, href) in order
+	// Collect visible navigation links with text labels and href attributes.
 	async getNavigationLinks(): Promise<Array<{ text: string; href: string }>> {
 		const nav = this.page.getByRole('navigation');
 		if (!(await nav.count())) return [];
@@ -85,6 +87,7 @@ export class DashboardPage extends HelperBase {
 	}
 
 	async getAccountBalance(): Promise<number | null> {
+		// Extract numeric balance from #balance element, removing currency symbols.
 		const el = this.page.locator('#balance');
 		if (!(await el.count())) return null;
 		const text = await el.innerText();
@@ -92,13 +95,13 @@ export class DashboardPage extends HelperBase {
 		return match ? parseFloat(match[1]) : null;
 	}
 
-	// static/dashboard.js renders each transaction as a .transaction-item
-	// inside #transaction-list (see fetchTransactions()).
+	// Fetch transaction items rendered by static/dashboard.js into #transaction-list.
 	async getRecentTransactions() {
 		return this.page.locator('#transaction-list .transaction-item').all();
 	}
 
 	async getTransactionData() {
+		// Parse transaction elements: extract amount and date using regex patterns.
 		const transactions = await this.getRecentTransactions();
 		const txnData = [];
 
@@ -120,6 +123,8 @@ export class DashboardPage extends HelperBase {
 	}
 
 	async verifyBalanceAccuracy() {
+		// Cross-check UI balance against /check_balance API to detect render bugs.
+		// /check_balance returns the canonical balance independent of UI rendering.
 		const displayedBalance = await this.getAccountBalance();
 		const accountNumber = await this.getAccountNumber();
 
@@ -127,9 +132,6 @@ export class DashboardPage extends HelperBase {
 			return { displayed: displayedBalance, api: null, matches: null };
 		}
 
-		// /check_balance/<account_number> is a real, unauthenticated app route
-		// (see app.py) that returns the account's balance independent of the
-		// dashboard's own rendering, so it's a valid cross-check.
 		const apiResponse = await this.page.request.get(`/check_balance/${accountNumber}`);
 		if (!apiResponse.ok()) {
 			return { displayed: displayedBalance, api: null, matches: null };
@@ -145,8 +147,8 @@ export class DashboardPage extends HelperBase {
 		};
 	}
 
-	// templates/dashboard.html's side-panel Logout link is a static,
-	// always-present `<a href="#" onclick="logout()">Logout</a>`.
+	// Click logout link using flexible locators.
+	// The side-panel logout is a static <a> tag triggered via onclick="logout()".
 	async logout() {
 		let logoutLink;
 		try {

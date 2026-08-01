@@ -4,6 +4,7 @@ import { LocatorFactory } from './locator-factory';
 
 export type LoanRow = { amount: string; status: string };
 
+// Loan request form: submit requests and verify pending loans.
 export class LoansPage extends HelperBase {
 	async fillAmount(amount: string) {
 		const amountInput = await LocatorFactory.find(
@@ -32,6 +33,7 @@ export class LoansPage extends HelperBase {
 	}
 
 	async getLoanRows(): Promise<LoanRow[]> {
+		// Parse all loan rows in the pending loans table: amount and status columns.
 		const rows = this.page.locator('.loans-section tbody tr');
 		const count = await rows.count();
 		const out: LoanRow[] = [];
@@ -45,6 +47,7 @@ export class LoansPage extends HelperBase {
 	}
 
 	async waitForLoanRow(amount: string, statusPattern: RegExp, timeout = 7000) {
+		// Wait for a loan to appear in the table with matching amount and status.
 		const row = this.page
 			.locator('.loans-section tbody tr')
 			.filter({ hasText: amount })

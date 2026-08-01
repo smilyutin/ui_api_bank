@@ -3,8 +3,10 @@ import { createRandomUser, type User } from '../../helpers/credentials';
 import { LoginPage } from '../pages/login.page';
 import { DashboardPage } from '../pages/dashboard.page';
 
-// Same storage keys/cookie names/candidate routes as helpers/auth-bootstrap.ts,
-// ported to WebdriverIO's fetch + browser.setCookies/executeScript APIs.
+// Mobile suite authentication via WebdriverIO/Appium (real Chrome/Safari engines).
+// Token-first bootstrap with credential fallback, analogous to helpers/auth-bootstrap.ts
+// but using WebdriverIO's browser.setCookies/executeScript instead of Playwright APIs.
+
 const TOKEN_STORAGE_KEYS = ['token', 'jwt', 'jwt_token', 'auth', 'access_token', 'id_token'];
 const TOKEN_COOKIE_NAMES = ['token', 'jwt', 'access_token', 'auth_token'];
 const LOGIN_CANDIDATES = ['/api/auth/login', '/api/login', '/login', '/api/session'];
@@ -37,6 +39,7 @@ export async function registerUser(baseURL: string, user: { username?: string; p
 	}
 }
 
+// Mint a fresh JWT by POSTing to login endpoints. Runs in Node (not the browser).
 async function mintUserToken(
 	baseURL: string,
 	user: User,
@@ -69,15 +72,10 @@ async function mintUserToken(
 	return null;
 }
 
+// Inject token into localStorage, sessionStorage, and cookies via browser APIs.
 async function applyTokenBootstrap(baseURL: string, token: string) {
-	// Navigate to /login rather than the bare origin: templates/index.html's
-	// hero image has an onerror fallback to a since-defunct
-	// via.placeholder.com URL. static/uploads/ is gitignored, so on a fresh
-	// CI checkout that image 404s and Chrome tries that dead external host,
-	// hanging the full page load (browser.url waits for it) until the
-	// renderer itself times out. /login has no such fallback and is proven
-	// fast/reliable (see login.mobile.spec.ts) - it's just being used here to
-	// establish same-origin storage, not for anything on the page.
+	// Navigate to /login to establish same-origin storage (not for the page itself).
+	// /login is fast/reliable; the root has an external image that can hang the load.
 	await browser.url(new URL('/login', baseURL).toString());
 	await browser.execute(
 		(injectedToken: string, keys: string[]) => {

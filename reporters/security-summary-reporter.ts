@@ -15,9 +15,12 @@ interface Finding {
 	count: number;
 }
 
+// Prints a compact summary table of all security findings after test run.
+// Aggregates reportVulnerability() calls by test/risk/category.
 class SecuritySummaryReporter implements Reporter {
 	private findings = new Map<string, Finding>();
 
+	// Parse security annotations and aggregate by test/risk/category.
 	onTestEnd(test: TestCase, result: TestResult) {
 		for (const annotation of result.annotations) {
 			if (annotation.type !== 'security-vulnerability') continue;
@@ -38,6 +41,7 @@ class SecuritySummaryReporter implements Reporter {
 		}
 	}
 
+	// Print aggregated findings table to console.
 	onEnd(_result: FullResult) {
 		if (this.findings.size === 0) return;
 

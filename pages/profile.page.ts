@@ -4,21 +4,23 @@ import { LocatorFactory } from './locator-factory';
 
 export type UploadFile = { name: string; mimeType: string; buffer: Buffer };
 
+// User profile: upload/import profile pictures and verify upload success.
 export class ProfilePage extends HelperBase {
 	async getProfilePictureSrc() {
 		return this.page.locator('#profile-picture').getAttribute('src');
 	}
 
 	async uploadPicture(file: string | UploadFile) {
+		// Upload picture file. The dashboard auto-submits the form on file input change.
 		const fileInput = await LocatorFactory.find(
 			this.page.getByTestId('profile-picture-upload'),
 			this.page.locator('#profile_picture'),
 		);
-		// The dashboard auto-submits the upload form on file input change.
 		await fileInput.setInputFiles(file);
 	}
 
 	async importFromUrl(imageUrl: string) {
+		// Import picture from URL. Handles the URL prompt dialog.
 		this.page.once('dialog', (dialog) => dialog.accept(imageUrl));
 		const importButton = await LocatorFactory.find(
 			this.page.getByTestId('import-picture-url'),

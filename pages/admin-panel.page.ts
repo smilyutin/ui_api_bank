@@ -1,6 +1,9 @@
 import { Page, expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
 
+// Admin panel control interface for managing users and loans.
+// Provides table navigation, form interactions, and message verification
+// for the /sup3r_s3cr3t_admin endpoint.
 export class AdminPanelPage extends HelperBase {
 	constructor(page: Page) {
 		super(page);
@@ -11,13 +14,15 @@ export class AdminPanelPage extends HelperBase {
 	}
 
 	async waitForLoad() {
+		// Wait for the admin panel heading and first table (user management) to render.
+		// Network requests may be in flight; we poll the actual DOM elements, not networkidle.
 		await expect(this.page.getByRole('heading', { name: /Admin Control Panel/i })).toBeVisible({
 			timeout: 10000,
 		});
 		await expect(this.page.locator('table').first()).toBeVisible({ timeout: 10000 });
 	}
 
-	// User Management Table Actions
+	// User management table: navigate rows, fetch user data, delete accounts
 	async getUserTableRows() {
 		return await this.page.locator('table').first().locator('tbody tr').all();
 	}
@@ -46,7 +51,7 @@ export class AdminPanelPage extends HelperBase {
 		}
 	}
 
-	// Create Admin Form Actions
+	// Admin account creation via form submission
 	async fillCreateAdminForm(username: string, password: string) {
 		await this.page.locator('#admin_username').fill(username);
 		await this.page.locator('#admin_password').fill(password);
@@ -65,7 +70,7 @@ export class AdminPanelPage extends HelperBase {
 		return await this.page.locator('#createAdminForm').isVisible();
 	}
 
-	// Pending Loans Table Actions
+	// Pending loans table: navigate rows, approve loans, extract loan amounts and status
 	async getPendingLoansTableRows() {
 		return await this.page.locator('[data-testid="pending-loans-table"]').locator('tbody tr').all();
 	}
@@ -91,6 +96,7 @@ export class AdminPanelPage extends HelperBase {
 	}
 
 	async getLoanAmountByRowIndex(rowIndex: number): Promise<string | null> {
+		// Extract amount from third column (index 2) of pending loans table row.
 		const rows = await this.getPendingLoansTableRows();
 		if (rowIndex >= rows.length) return null;
 
@@ -129,6 +135,7 @@ export class AdminPanelPage extends HelperBase {
 	}
 
 	async waitForSuccessMessage(expectedText?: string, timeout = 5000) {
+		// Verify success feedback message and optionally check for specific text.
 		const message = this.page.locator('#message');
 		await expect(message).toBeVisible({ timeout });
 		if (expectedText) {
@@ -138,6 +145,7 @@ export class AdminPanelPage extends HelperBase {
 	}
 
 	async waitForErrorMessage(expectedText?: string, timeout = 5000) {
+		// Verify error feedback message and optionally check for specific text.
 		const message = this.page.locator('#message');
 		await expect(message).toBeVisible({ timeout });
 		if (expectedText) {
@@ -146,7 +154,7 @@ export class AdminPanelPage extends HelperBase {
 		await expect(message).toHaveClass(/error/);
 	}
 
-	// Navigation Actions
+	// Page navigation: back to dashboard, logout
 	async navigateBackToDashboard() {
 		await this.page.getByRole('link', { name: /Back to Dashboard/i }).click();
 	}
@@ -155,7 +163,7 @@ export class AdminPanelPage extends HelperBase {
 		await this.page.getByRole('link', { name: /Logout/i }).click();
 	}
 
-	// Verification Methods
+	// Visibility and state checks: tables, messages, page elements
 	async isUserManagementTableVisible() {
 		return await this.page.locator('table').first().isVisible();
 	}

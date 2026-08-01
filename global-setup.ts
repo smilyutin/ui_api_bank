@@ -1,5 +1,9 @@
 import { chromium } from '@playwright/test';
 
+// Global setup (before all tests): Authenticate as admin, cache session for admin tests.
+// Reused by all tests that need admin role via storageState: 'storage/admin-auth.json'.
+// See CLAUDE.md and ADMIN_PANEL_TESTS.md for details.
+
 const baseURL = process.env.BASE_URL ?? 'http://localhost:5001';
 
 export default async () => {

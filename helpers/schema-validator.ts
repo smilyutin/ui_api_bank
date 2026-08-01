@@ -5,24 +5,19 @@ import { createSchema } from 'genson-js'
 import addFormats from 'ajv-formats'
 import { PerformanceMetrics } from './performance-metrics'
 
+// API response validation via JSON Schema (Ajv).
+// Validates API responses against schemas in response-schemas/*.json.
+// Supports UPDATE_SCHEMAS mode for intentional shape changes (like --updateSnapshot).
+
 const SCHEMA_BASE_PATH = './response-schemas'
 const ajv = new Ajv({ allErrors: true })
 addFormats(ajv)
 
-/**
- * Opt-in "update mode" for intentional response-shape changes (a deliberate
- * part of app development, not a bug). Set UPDATE_SCHEMAS=1 locally when
- * you've changed an endpoint's response on purpose: a schema mismatch then
- * *regenerates* the schema file from scratch, from only the current
- * response — discarding whatever the old schema allowed — instead of
- * failing the test. This is a full replace, not a merge: stale types/fields
- * from before the change do not linger. Same "update the snapshot, then
- * review the diff" workflow as Jest's --updateSnapshot. Leave unset for
- * normal runs, where a shape mismatch is treated as a real regression and
- * fails the test as before.
- */
+// UPDATE_SCHEMAS=1 mode: regenerate schemas from current responses (e.g., after intentional endpoint changes).
+// Normal mode: fail on shape mismatches (regression detection). Like Jest's --updateSnapshot.
 const UPDATE_SCHEMAS = process.env.UPDATE_SCHEMAS === '1'
 
+// Validate a response body against its JSON schema. Optionally regenerate under UPDATE_SCHEMAS=1.
 export async function validateSchema(dirName: string, fileName: string, responseBody: object, createSchemaFlag: boolean = false) {
 	const schemaPath = path.join(SCHEMA_BASE_PATH, dirName, `${fileName}.json`)
 	const startTime = Date.now()
@@ -93,6 +88,7 @@ export async function validateSchema(dirName: string, fileName: string, response
 	}
 }
 
+// Load a JSON schema from disk. Throws if file not found.
 async function loadSchema(schemaPath: string) {
 	try {
 		const resolvedSchemaPath = await resolveSchemaPath(schemaPath)
@@ -104,6 +100,7 @@ async function loadSchema(schemaPath: string) {
 	}
 }
 
+// Resolve schema file with flexible naming: .json, .JSON, _schema.json, etc.
 async function resolveSchemaPath(schemaPath: string) {
 	try {
 		await fs.access(schemaPath)
@@ -132,6 +129,7 @@ async function resolveSchemaPath(schemaPath: string) {
 	}
 }
 
+// Format validation errors into a detailed table showing field mismatches.
 function formatSchemaError(errors: any[], schema: any, responseBody: object): string {
 	if (!errors || errors.length === 0) return 'Unknown validation error'
 
@@ -205,6 +203,7 @@ function formatSchemaError(errors: any[], schema: any, responseBody: object): st
 	return output
 }
 
+// Get the type of a value (handles null, array, date).
 function getTypeOf(value: any): string {
 	if (value === null) return 'null'
 	if (value === undefined) return 'undefined'
@@ -213,12 +212,14 @@ function getTypeOf(value: any): string {
 	return typeof value
 }
 
+// Navigate a nested object by JSON pointer path (e.g., /properties/field).
 function getValueByPath(obj: any, path: string): any {
 	if (!path || path === '') return obj
 	const keys = path.split('/').filter(k => k)
 	return keys.reduce((current, key) => current?.[key], obj)
 }
 
+// Navigate a schema object to find the type constraint at a given path.
 function getSchemaByPath(schema: any, path: string): any {
 	if (!path || path === '') return schema
 	const keys = path.split('/').filter(k => k)
@@ -235,6 +236,7 @@ function getSchemaByPath(schema: any, path: string): any {
 	return current
 }
 
+// Convert schema type info to a human-readable string.
 function formatSchema(schema: any): string {
 	if (!schema) return 'unknown'
 	if (schema.type) {
@@ -250,6 +252,7 @@ function formatSchema(schema: any): string {
 	return JSON.stringify(schema, null, 2).split('\n')[0]
 }
 
+// Auto-mark createdAt/updatedAt fields as date-time format in generated schemas.
 function applyDateTimeFormats(schema: any) {
 	const targets = new Set(['createdAt', 'updatedAt'])
 
@@ -286,6 +289,7 @@ function applyDateTimeFormats(schema: any) {
 	visit(schema)
 }
 
+// Generate a JSON schema from a response body and write it to disk.
 async function generateNewSchema(responseBody: object, schemaPath: string) {
 	try {
 		const generatedSchema: any = await createSchema(responseBody)

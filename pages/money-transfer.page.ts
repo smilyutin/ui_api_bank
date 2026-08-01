@@ -1,11 +1,15 @@
 import { HelperBase } from './helper-base.page';
 import { LocatorFactory } from './locator-factory';
 
+// Money transfer form: fill recipient, amount, description, and submit.
+// Uses form-scoped locators to avoid clashes with the bill-payment modal.
 export class MoneyTransferPage extends HelperBase {
 	// #amount/#description labels are duplicated by the always-in-DOM (just
 	// hidden) bill-payment modal, so label-based lookups here are scoped to
 	// #transferForm to avoid a strict-mode match against both forms.
 	async fillRecipient(account: string) {
+		// Fill recipient account number. Form-scoped locators prevent
+		// matching the hidden bill-payment modal form.
 		const recipientInput = await LocatorFactory.find(
 			this.page.getByTestId('to-account'),
 			this.page.locator('#transferForm').getByLabel('Recipient Account Number'),
@@ -15,6 +19,7 @@ export class MoneyTransferPage extends HelperBase {
 	}
 
 	async fillAmount(amount: string) {
+		// Fill transfer amount.
 		const amountInput = await LocatorFactory.find(
 			this.page.getByTestId('transfer-amount'),
 			this.page.locator('#transferForm').getByLabel('Amount', { exact: true }),
@@ -24,6 +29,7 @@ export class MoneyTransferPage extends HelperBase {
 	}
 
 	async fillDescription(text: string) {
+		// Fill optional transfer description.
 		const descriptionInput = await LocatorFactory.find(
 			this.page.getByTestId('transfer-description'),
 			this.page.locator('#transferForm').getByLabel(/description/i),
@@ -41,11 +47,9 @@ export class MoneyTransferPage extends HelperBase {
 		await submitButton.click();
 	}
 
-	// static/dashboard.js's handleTransfer() writes app.py's fixed
-	// 'Transfer Completed' success message into #message on a successful POST
-	// /transfer, so waiting for that exact text is a real success signal
-	// rather than a loose page-wide text match.
 	async waitForSuccess(timeout = 5000): Promise<boolean> {
+		// Wait for exact 'Transfer Completed' message in #message (app.py's fixed success text).
+		// This is a reliable success signal since the text only appears on successful POST /transfer.
 		try {
 			await this.page.locator('#message', { hasText: 'Transfer Completed' }).waitFor({ state: 'visible', timeout });
 			return true;

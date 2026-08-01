@@ -9,13 +9,9 @@ import { RegisterPage } from './register.page';
 import { VirtualCardsPage } from './virtual-cards.page';
 import { BillPaymentsPage } from './bill-payments.page';
 
-/**
- * Owns one instance of every page object and hands them out through
- * accessor methods, so a spec that needs several page objects constructs a
- * single PageManager instead of instantiating each page object ad hoc.
- * See .claude/skills/playwright-vulnerable-bank/SKILL.md's "Page Manager"
- * convention.
- */
+// Central registry for all page objects: instantiates once, provides accessors.
+// Specs use PageManager to avoid constructing multiple page object instances.
+// See .claude/skills/playwright-vulnerable-bank/SKILL.md for details.
 export class PageManager {
 	private readonly page: Page;
 	private readonly adminPanelPage: AdminPanelPage;

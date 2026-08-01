@@ -1,6 +1,7 @@
 import { HelperBase } from './helper-base.page';
 import { LocatorFactory } from './locator-factory';
 
+// Registration form interactions: username, password, submit.
 export class RegisterPage extends HelperBase {
 	async goto(baseURL: string) {
 		await this.page.goto(new URL('/register', baseURL).toString());

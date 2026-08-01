@@ -2,12 +2,16 @@ import { chromium, request as apiRequest } from '@playwright/test';
 import { rm } from 'fs/promises';
 import { resolve } from 'path';
 
+// Global teardown (after all tests): Delete all test users, clean storage/.
+// Preserves the admin master account. Ensures a clean slate for the next run.
+// See CLAUDE.md and ADMIN_PANEL_TESTS.md for details.
+
 const baseURL = process.env.BASE_URL ?? 'http://localhost:5001';
 
 export default async () => {
 	const browser = await chromium.launch();
 
-	// Get admin auth to delete test data
+	// Authenticate as admin to call the cleanup API
 	try {
 		const page = await browser.newPage();
 		const adminUsername = process.env.ADMIN_USERNAME ?? 'admin';

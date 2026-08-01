@@ -4,6 +4,11 @@ import { LoginPage } from '../pages/login.page';
 import { DashboardPage } from '../pages/dashboard.page';
 import { findOrCreateUser, loadStoredToken, saveStoredToken } from './credentials';
 
+// Authentication bootstrapping: token-first strategy with credential fallback.
+// 1. Try to inject stored/env token into browser storage/cookies.
+// 2. If token fails, fall back to credential login via LoginPage.
+// Returns metadata about which auth mode succeeded and the user identifier.
+
 const TOKEN_STORAGE_KEYS = ['token', 'jwt', 'jwt_token', 'auth', 'access_token', 'id_token'];
 const TOKEN_COOKIE_NAMES = ['token', 'jwt', 'access_token', 'auth_token'];
 const LOGIN_CANDIDATES = ['/api/auth/login', '/api/login', '/login', '/api/session'];
@@ -23,6 +28,7 @@ type TokenAuthContext = {
 	identifier: string | null;
 };
 
+// Get token for a role: stored token or env var, with user role having env fallback.
 function getTokenByRole(role: UiAuthRole): string | null {
 	if (role === 'admin') {
 		return loadStoredToken('admin') || process.env.ADMIN_AUTH_TOKEN?.trim() || null;
@@ -30,6 +36,7 @@ function getTokenByRole(role: UiAuthRole): string | null {
 	return loadStoredToken('user') || process.env.API_AUTH_TOKEN?.trim() || null;
 }
 
+// Extract JWT token from Set-Cookie header.
 function extractCookieToken(setCookieHeader: string): string | null {
 	const parts = String(setCookieHeader).split(/,(?=\s*[^\s]+=)/);
 	for (const part of parts) {
@@ -41,6 +48,7 @@ function extractCookieToken(setCookieHeader: string): string | null {
 	return null;
 }
 
+// Extract JWT token from response body, Authorization header, or Set-Cookie.
 async function extractTokenFromResponse(res: any): Promise<string | null> {
 	try {
 		const json = await res.json().catch(() => null);
@@ -71,6 +79,8 @@ async function extractTokenFromResponse(res: any): Promise<string | null> {
 	return null;
 }
 
+// Mint a fresh JWT by POSTing login credentials to multiple candidate endpoints.
+// Tries username/email variants and both JSON and form payloads.
 async function mintFreshUserToken(
 	baseURL: string,
 	fallbackUserPrefix: string
@@ -124,6 +134,7 @@ async function mintFreshUserToken(
 	return null;
 }
 
+// Decode JWT payload and extract the username/email/sub claim.
 function decodeTokenIdentifier(token: string): string | null {
 	try {
 		const [, payloadSegment] = token.split('.');
@@ -143,6 +154,7 @@ function decodeTokenIdentifier(token: string): string | null {
 	}
 }
 
+// Get token and its decoded identifier (username/email) for a role.
 function getTokenAuthContext(role: UiAuthRole): TokenAuthContext | null {
 	const token = getTokenByRole(role);
 	if (!token) return null;
@@ -152,6 +164,8 @@ function getTokenAuthContext(role: UiAuthRole): TokenAuthContext | null {
 	};
 }
 
+// Inject token into browser localStorage, sessionStorage, and cookies.
+// Returns a cleanup function to clear all injected tokens.
 async function applyTokenBootstrap(page: Page, baseURL: string, token: string) {
 	// Navigate to establish origin, then set storage for that origin only.
 	await page.goto(baseURL, { waitUntil: 'domcontentloaded' }).catch(() => {});
@@ -194,6 +208,8 @@ async function applyTokenBootstrap(page: Page, baseURL: string, token: string) {
 	};
 }
 
+// Load admin credentials from env vars (ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD).
+// Defaults to admin/admin123 if not set.
 function getAdminCredentialsFromEnv(): { identifier: string; password: string } | null {
 	const identifier =
 		process.env.ADMIN_USERNAME?.trim() ||
@@ -206,6 +222,9 @@ function getAdminCredentialsFromEnv(): { identifier: string; password: string } 
 	return { identifier, password };
 }
 
+// Authenticate a page: token-first (inject token), fallback to form login (username/password).
+// Returns which mode was used and the authenticated user's identifier.
+// If requireToken=true, throw rather than fall back to credentials.
 export async function ensureDashboardAuthenticated(
 	page: Page,
 	options: {
