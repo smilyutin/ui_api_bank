@@ -186,6 +186,29 @@ Most UI specs call this in `beforeEach` instead of driving the login form manual
 
 Pass `role: 'admin'` for admin-only flows (requires `ADMIN_AUTH_TOKEN`, or `ADMIN_USERNAME`/`ADMIN_EMAIL`/`ADMIN_IDENTIFIER` + `ADMIN_PASSWORD` for the credential fallback), and `requireToken: true` when a test specifically needs token-mode auth and should fail loudly rather than silently falling back to UI login.
 
+### Global Setup & Teardown (Admin Panel Tests)
+
+The admin panel test suite (`tests/ui/specs/admin-panel.spec.ts`) runs under a dedicated `chromium-admin` project with global setup/teardown hooks (`global-setup.ts`, `global-teardown.ts`) for efficiency and data hygiene:
+
+**global-setup.ts** (runs once before all admin tests):
+- Launches a browser, navigates to `/login`, authenticates with `ADMIN_USERNAME`/`ADMIN_PASSWORD` (defaults to `admin`/`admin123`)
+- Saves the authenticated session state to `storage/admin-auth.json` via `storageState()`
+- Admin tests then reuse this pre-authenticated session (skip per-test login overhead)
+
+**global-teardown.ts** (runs once after all admin tests):
+- Authenticates with admin credentials via API call to `/login`
+- Fetches all users from `/debug/users`
+- Deletes any test-created users matching these prefixes: `e2e-`, `global-setup-`, `loan-approval-*`, `admin-panel-*`, `admin-delete-*`, `admin-test-*`, `admin-form-clear-*`, `admin-msg-*`
+- Preserves the admin master account (username: `admin`, id: 1)
+- Typically deletes 100-200+ test users per run
+
+**Configuration** (in `playwright.config.ts`):
+- New `chromium-admin` project with `use: { storageState: 'storage/admin-auth.json' }`
+- Main `chromium` project ignores admin tests via `testIgnore` (they only run via the admin project)
+- Both projects share the same `globalSetup` and `globalTeardown` hooks
+
+**Result:** ~8-9 seconds total for 66 admin tests (vs 30+ seconds with per-test authentication), and clean database after each run without manual intervention.
+
 ### API endpoint discovery
 
 The backend's real routes aren't hardcoded knowledge — API helpers (e.g. `fixtures/api/login.helpers.ts`) probe a list of candidate paths (`/api/auth/login`, `/api/login`, `/login`, `/api/session`) with both JSON and form bodies rather than assuming one canonical route. Follow this pattern for any new endpoint-discovery helper instead of hardcoding a single guessed path.
@@ -264,27 +287,34 @@ The script also writes `allure-results/categories.json` (buckets failures into "
 
 The admin panel suite is a complete example of comprehensive, phased test coverage for a complex feature:
 
-- **Phase 1** (18 tests) — core functionality: authentication, user management, account creation, loan approvals, navigation, message feedback
+- **Phase 1** (22 tests) — core functionality: authentication, user management, account creation, loan approvals, navigation, message feedback
 - **Phase 2** (22 tests) — error handling & validation: form edge cases (empty/long inputs, special characters), duplicate detection, error recovery, input security (XSS/SQL injection)
-- **Phase 3** (26 tests) — advanced scenarios: responsive design (mobile/tablet/desktop), performance metrics, data exposure, concurrent operations, OWASP compliance, edge cases
+- **Phase 3** (22 tests) — advanced scenarios: responsive design (mobile/tablet/desktop), performance metrics, data exposure, concurrent operations, OWASP compliance, edge cases
 
 **Page Object:** `pages/admin-panel.page.ts` — 30+ methods for table interactions, form management, message feedback, navigation, and verification
 
 **PageManager Integration:** accessor added to `pages/page-manager.ts` — `pm.adminPanel()`
+
+**Global Setup & Teardown:** Admin tests run under the `chromium-admin` project with `global-setup.ts`/`global-teardown.ts` hooks (see "Global Setup & Teardown" section above for details). Tests do NOT call `ensureDashboardAuthenticated()` — they reuse the pre-authenticated session from global setup instead.
 
 **Run the suite:**
 ```bash
 ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/admin-panel.spec.ts
 ```
 
+The global setup runs once, authenticates, and caches the session. All 66 tests then run concurrently (or sequentially depending on config) without re-authenticating, improving speed from 30+ seconds (per-test auth) to ~8-9 seconds (shared session).
+
 **Key patterns demonstrated:**
 
+- **Shared authentication:** reuse pre-authenticated session from global setup instead of per-test login
+- **Automatic cleanup:** global teardown auto-deletes all test-created users after tests complete
 - **Pagination handling:** tables limited to 25 items per page; test IDs enable reliable navigation
 - **Form validation:** separate tests for empty fields, long inputs, special characters, duplication
 - **Error scenarios:** tests handle edge cases gracefully (skips when data unavailable, robust error checking)
 - **Security coverage:** XSS/SQL injection payload testing, sensitive data exposure checks, OWASP categories (API1, API3, API4, API6, API8)
 - **Responsive design:** tests at mobile (375x667), tablet (768x1024), and desktop (1920x1080) breakpoints
 - **Concurrent operations:** form submission while message showing, pagination during form visibility
+- **Data validation:** loan amount validation, pending count tracking, approval state verification
 
 ## Adding a New Feature (checklist)
 

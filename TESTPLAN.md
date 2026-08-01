@@ -45,6 +45,8 @@ docker compose down -v                                  # teardown
 
 Key env vars: `BASE_URL`, `API_AUTH_TOKEN`/`ADMIN_AUTH_TOKEN`, `ADMIN_USERNAME`/`ADMIN_EMAIL`/`ADMIN_IDENTIFIER`+`ADMIN_PASSWORD`, `SECURITY_SOFT=1`, `UPDATE_SCHEMAS=1`. Full list: `CLAUDE.md` "Environment".
 
+**Global Setup & Teardown (Admin Tests):** Admin tests run under a dedicated `chromium-admin` project configured with `globalSetup` and `globalTeardown` hooks (`global-setup.ts`, `global-teardown.ts`). Setup authenticates once and caches the session; teardown auto-deletes test-created users. See `ADMIN_PANEL_TESTS.md` for details.
+
 CI (`.github/workflows/playwright.yml`) builds the Docker stack, polls until ready, runs `npm test` with `workers: 1` and 2 retries, uploads the HTML report.
 
 ## 6. Tools

@@ -58,6 +58,13 @@ tests/security/    OWASP-style checks by category (auth, CORS, CSRF, headers, fi
 
 No barrel/`index.ts` files — import each module directly.
 
+**Admin Tests Setup & Teardown:** The admin panel test suite (`tests/ui/specs/admin-panel.spec.ts`) uses global setup/teardown hooks for efficiency:
+- **global-setup.ts** — runs once before admin tests, authenticates, caches session to `storage/admin-auth.json` (tests reuse it)
+- **global-teardown.ts** — runs after admin tests complete, auto-deletes test-created users (preserves admin master account)
+- **Result:** ~8-9s total (vs 30+ seconds per-test auth), clean database after each run, no manual cleanup
+
+See `ADMIN_PANEL_TESTS.md` for the full explanation and how tests interact with this system.
+
 **Before writing or editing any test, read `.claude/skills/playwright-vulnerable-bank/SKILL.md`** — the detailed reference (conventions, auth/schema/security workflows, feature checklist). Keep new detail there, not here.
 
 **For the Appium suite specifically, read `.claude/skills/appium-mobile-bank/SKILL.md` instead** — it mirrors the same Page Object Model / no-barrel-files conventions but documents WebdriverIO-specific APIs (`mobile/wdio*.conf.ts`, `mobile/pages/`, `mobile/fixtures/mobile-auth.ts`).

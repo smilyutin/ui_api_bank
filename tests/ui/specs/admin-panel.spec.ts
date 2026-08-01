@@ -34,6 +34,7 @@ test.describe('Admin Panel UI', () => {
 			const session = await establishAccountSession(api, 'admin-panel-non-admin-check');
 
 			if (!session) {
+				await api.dispose();
 				test.skip();
 			}
 
@@ -42,7 +43,7 @@ test.describe('Admin Panel UI', () => {
 				for (const key of keys) {
 					window.localStorage.setItem(key, token);
 				}
-			}, { token: session.token, keys: ['jwt_token', 'token', 'auth'] });
+			}, { token: session!.token, keys: ['jwt_token', 'token', 'auth'] });
 
 			const pm = new PageManager(page);
 			await pm.adminPanel().goto(baseURL);
@@ -135,10 +136,11 @@ test.describe('Admin Panel UI', () => {
 			const testSession = await establishAccountSession(api, 'admin-delete-test');
 
 			if (!testSession) {
+				await api.dispose();
 				test.skip();
 			}
 
-			const userIdToDelete = testSession.userId;
+			const userIdToDelete = testSession!.userId;
 
 			await page.reload();
 			await pm.adminPanel().waitForLoad();
