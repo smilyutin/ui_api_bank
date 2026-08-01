@@ -1,6 +1,10 @@
 import fs from 'fs/promises'
 import path from 'path'
 
+// Schema validation performance tracking: latency, accuracy, error patterns, trend analysis.
+// Writes daily summaries and 30-day trends to metrics/ directory.
+// Emits performance alerts when accuracy or duration cross thresholds.
+
 interface ValidationMetric {
 	timestamp: string
 	endpoint: string
@@ -26,9 +30,11 @@ const METRICS_PATH = './metrics'
 const DAILY_METRICS_PATH = path.join(METRICS_PATH, 'daily')
 const TRENDS_PATH = path.join(METRICS_PATH, 'trends.json')
 
+// Performance tracking for schema validations: metrics, summaries, trends, and SLA alerts.
 export class PerformanceMetrics {
 	private static metrics: ValidationMetric[] = []
 
+	// Record a schema validation event (latency, success/failure, error type).
 	static async trackValidation(
 		endpoint: string,
 		schemaName: string,
@@ -49,6 +55,7 @@ export class PerformanceMetrics {
 		this.metrics.push(metric)
 	}
 
+	// Flush in-memory metrics to disk: daily raw metrics, summaries, and trends.
 	static async saveMetrics() {
 		if (this.metrics.length === 0) return
 
@@ -68,6 +75,7 @@ export class PerformanceMetrics {
 		this.metrics = []
 	}
 
+	// Load existing metrics from a daily file.
 	private static async loadDailyMetrics(filePath: string): Promise<ValidationMetric[]> {
 		try {
 			const content = await fs.readFile(filePath, 'utf-8')
@@ -77,6 +85,7 @@ export class PerformanceMetrics {
 		}
 	}
 
+	// Generate and save daily summary (accuracy, avg duration, error breakdown).
 	private static async updateDailySummary(date: string, metrics: ValidationMetric[]) {
 		const successful = metrics.filter(m => m.success).length
 		const failed = metrics.filter(m => !m.success).length
@@ -111,6 +120,7 @@ export class PerformanceMetrics {
 		await this.checkSLAThresholds(summary)
 	}
 
+	// Check daily accuracy and duration against SLA targets; emit alerts if breached.
 	private static async checkSLAThresholds(summary: DailyMetrics) {
 		const thresholds = {
 			accuracy: { target: 100, warning: 98, critical: 95 },
@@ -143,6 +153,7 @@ export class PerformanceMetrics {
 		}
 	}
 
+	// Update the 30-day trend analysis file.
 	private static async updateTrends() {
 		const files = await fs.readdir(DAILY_METRICS_PATH)
 		const summaryFiles = files.filter(f => f.endsWith('-summary.json')).sort().slice(-30)
@@ -164,6 +175,7 @@ export class PerformanceMetrics {
 		await fs.writeFile(TRENDS_PATH, JSON.stringify(trendAnalysis, null, 2))
 	}
 
+	// Analyze the last 7 days to compute accuracy/duration trends and health status.
 	private static analyzeTrends(trends: DailyMetrics[]) {
 		if (trends.length === 0) return {}
 
@@ -190,6 +202,7 @@ export class PerformanceMetrics {
 		}
 	}
 
+	// Classify health status (Excellent/Good/Fair/Needs Attention) based on accuracy and duration.
 	private static getHealthStatus(accuracy: number, duration: number): string {
 		if (accuracy >= 100 && duration < 1000) return 'Excellent'
 		if (accuracy >= 98 && duration < 2000) return 'Good'
@@ -197,6 +210,7 @@ export class PerformanceMetrics {
 		return 'Needs Attention'
 	}
 
+	// Print a human-readable performance summary to the console.
 	static async generateReport() {
 		try {
 			const trendsContent = await fs.readFile(TRENDS_PATH, 'utf-8')
