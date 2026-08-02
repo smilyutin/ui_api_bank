@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
 import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
+import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
  * UI User Registration Tests
@@ -41,6 +42,7 @@ import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '.
  */
 test.describe('UI - Create user account', () => {
   test('should create a user via UI', async ({ page, baseURL }) => {
+    setupAssertionLogging('should create a user via UI');
     if (!baseURL) throw new Error('baseURL is not defined');
     const pm = new PageManager(page);
     const register = pm.register();
@@ -58,20 +60,24 @@ test.describe('UI - Create user account', () => {
     const clicked = await register.submit();
 
     // Step 3: Verify form interaction was successful
-    expect(filledEmail).toBeTruthy();
-    expect(filledPassword).toBeTruthy();
-    expect(clicked).toBeTruthy();
+    loggedExpect(filledEmail, 'filledEmail').toBeTruthy();
+    loggedExpect(filledPassword, 'filledPassword').toBeTruthy();
+    loggedExpect(clicked, 'clicked').toBeTruthy();
 
     // Step 4: Wait for success indication (navigation or success message)
-    await Promise.race([
-      page.waitForSelector('text=Registration successful! Proceed to login', { timeout: 5000 }).catch(() => null),
-      page.waitForURL(/\/login/i, { timeout: 5000 }).catch(() => null),
-    ]);
+    try {
+      await Promise.race([
+        expect(page.getByText('Registration successful! Proceed to login')).toBeVisible({ timeout: 5000 }),
+        expect(page).toHaveURL(/\/login/i, { timeout: 5000 }),
+      ]);
+    } catch {
+      // Either condition may not be met, but we check both below
+    }
 
     // Step 5: Verify registration was successful
-    const sawSuccess = await page.$('text=Registration successful! Proceed to login');
+    const successMessage = await page.getByText('Registration successful! Proceed to login').count() > 0;
     const onLogin = /\/login/i.test(page.url());
-    expect(Boolean(sawSuccess) || onLogin).toBeTruthy();
+    loggedExpect(Boolean(successMessage) || onLogin, 'registration success').toBeTruthy();
 
     // Step 6: Login with the newly created user to verify credentials and capture a fresh token
     const login = pm.login();
@@ -80,10 +86,8 @@ test.describe('UI - Create user account', () => {
     await login.fillPassword(user.password);
     await login.submit();
 
-    await page.waitForURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
+    await expect(page).toHaveURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
     await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible({ timeout: 7000 });
-
-    expect(page.url()).not.toContain('/login');
 
     const storageToken = await page.evaluate(() => {
       const keys = ['jwt_token', 'token', 'jwt', 'access_token', 'id_token', 'auth'];
@@ -99,7 +103,7 @@ test.describe('UI - Create user account', () => {
       cookies.find(c => ['token', 'jwt', 'access_token', 'auth_token'].includes(c.name))?.value || null;
 
     const freshToken = storageToken || cookieToken;
-    expect(freshToken).toBeTruthy();
+    loggedExpect(freshToken, 'freshToken').toBeTruthy();
 
     // Step 7: Persist single shared user credentials and token for all tests
     saveUser(user, { replace: true });
@@ -107,10 +111,11 @@ test.describe('UI - Create user account', () => {
       saveStoredToken(freshToken, 'user');
       process.env.API_AUTH_TOKEN = freshToken;
     }
-
+    endAssertionLogging('passed');
   });
 
   test('should show an error and not proceed to login when registering a duplicate username', async ({ page, baseURL }) => {
+    setupAssertionLogging('should show an error and not proceed to login when registering a duplicate username');
     if (!baseURL) throw new Error('baseURL is not defined');
     const pm = new PageManager(page);
     const register = pm.register();
@@ -131,6 +136,7 @@ test.describe('UI - Create user account', () => {
     await register.submit();
 
     await expect(page.locator('#message')).toHaveText(/already exists/i, { timeout: 5000 });
-    expect(page.url()).not.toContain('/login');
+    loggedExpect(page.url(), 'page.url').not.toContain('/login');
+    endAssertionLogging('passed');
   });
 });

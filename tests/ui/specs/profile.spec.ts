@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 import { TEST_PNG_BUFFER } from '../../../fixtures/api/profile.helpers';
+import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
  * Profile Picture Tests (UI)
@@ -32,6 +33,7 @@ test.describe('Profile picture management', () => {
   });
 
   test('should upload a profile picture and update the displayed image', async () => {
+    setupAssertionLogging('should upload a profile picture and update the displayed image');
     const profile = pm.profile();
     const initialSrc = await profile.getProfilePictureSrc();
 
@@ -45,10 +47,12 @@ test.describe('Profile picture management', () => {
     await profile.waitForProfilePictureSrc(/uploads\//);
 
     const updatedSrc = await profile.getProfilePictureSrc();
-    expect(updatedSrc).not.toBe(initialSrc);
+    loggedExpect(updatedSrc, 'updatedSrc').not.toBe(initialSrc);
+    endAssertionLogging('passed');
   });
 
   test('should import a profile picture from a URL', async ({ baseURL }) => {
+    setupAssertionLogging('should import a profile picture from a URL');
     const missingInternalUrl = !process.env.APP_INTERNAL_URL;
     test.skip(missingInternalUrl, 'APP_INTERNAL_URL is not set; skipping URL-import test in this environment');
     if (!baseURL) throw new Error('baseURL is not defined');
@@ -65,5 +69,6 @@ test.describe('Profile picture management', () => {
 
     await profile.waitForUploadMessage(/imported from url successfully/i);
     await profile.waitForProfilePictureSrc(/uploads\//);
+    endAssertionLogging('passed');
   });
 });

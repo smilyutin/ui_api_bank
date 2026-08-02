@@ -1,0 +1,70 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e5]: Vulnerable Bank
+      - navigation [ref=e6]:
+        - link "Guide" [ref=e7] [cursor=pointer]:
+          - /url: https://github.com/Commando-X/vuln-bank?tab=readme-ov-file#testing-guide-
+        - link "API Docs" [ref=e8] [cursor=pointer]:
+          - /url: /api/docs
+        - link "View on GitHub" [ref=e9] [cursor=pointer]:
+          - /url: https://github.com/Commando-X/vuln-bank
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - heading "Banking Made Simple & InSecure" [level=1] [ref=e14]
+      - paragraph [ref=e15]: This is an Intentionally vulnerable application, designed for everyone to practice application security.
+      - generic [ref=e16]:
+        - link "Login" [ref=e17] [cursor=pointer]:
+          - /url: /login
+        - link "Register" [ref=e18] [cursor=pointer]:
+          - /url: /register
+    - img "Banking App" [ref=e20]
+  - generic [ref=e22]:
+    - generic [ref=e23]:
+      - heading "Banking in Your Pocket" [level=2] [ref=e24]
+      - paragraph [ref=e25]: Experience the future of mobile banking with our cutting-edge vulnerable android app
+      - paragraph [ref=e26]: Access all your banking needs on-the-go. Transfer money, pay bills, and manage your finances with just a few taps. Security and convenience, redefined.
+      - link "Download" [ref=e27] [cursor=pointer]:
+        - /url: https://github.com/Commando-X/vuln-bank-mobile
+    - generic [ref=e34]:
+      - generic [ref=e35]: Vulnerable Bank
+      - generic [ref=e37]:
+        - generic [ref=e38]: Total Balance
+        - generic [ref=e39]: $12,450
+      - generic [ref=e40]:
+        - generic [ref=e41]: Send
+        - generic [ref=e42]: Pay
+        - generic [ref=e43]: History
+  - generic [ref=e45]:
+    - heading "Our Features" [level=2] [ref=e46]
+    - generic [ref=e47]:
+      - generic [ref=e48]:
+        - heading "Money Transfers" [level=3] [ref=e49]
+        - paragraph [ref=e50]: Send money instantly to any account within our banking system.
+      - generic [ref=e51]:
+        - heading "Virtual Cards" [level=3] [ref=e52]
+        - paragraph [ref=e53]: Create and manage virtual payment cards for secure online transactions.
+      - generic [ref=e54]:
+        - heading "Loan Services" [level=3] [ref=e55]
+        - paragraph [ref=e56]: Apply for loans with competitive rates and quick approval process.
+      - generic [ref=e57]:
+        - heading "Bill Payments" [level=3] [ref=e58]
+        - paragraph [ref=e59]: Pay your utility bills, subscriptions, and services directly from your account.
+      - generic [ref=e60]:
+        - heading "AI Customer Support" [level=3] [ref=e61]
+        - paragraph [ref=e62]: Get instant help from our intelligent AI assistant for all your banking needs.
+      - generic [ref=e63]:
+        - heading "Mobile App" [level=3] [ref=e64]
+        - paragraph [ref=e65]: Access your account anytime, anywhere with our insecure mobile banking application.
+  - contentinfo [ref=e66]:
+    - generic [ref=e67]:
+      - paragraph [ref=e69]: Vulnerable Bank | Made for Security Engineers to practice Application Security
+      - generic [ref=e70]:
+        - paragraph [ref=e71]: "Connect with Al-Amir Badmus:"
+        - generic [ref=e72]:
+          - link "LinkedIn" [ref=e73] [cursor=pointer]:
+            - /url: https://www.linkedin.com/in/badmus-al-amir/
+          - link "Twitter/X" [ref=e76] [cursor=pointer]:
+            - /url: https://x.com/commando_skiipz
+          - link "GitHub" [ref=e79] [cursor=pointer]:
+            - /url: https://github.com/Commando-X

@@ -2,6 +2,24 @@ import type { APIRequestContext, APIResponse } from '@playwright/test';
 import type { User } from '../../helpers/credentials';
 import { buildRegisterFormSubmission } from './register-form.helpers';
 
+/**
+ * Login Helpers
+ *
+ * Supports API tests for the authentication surfaces:
+ * - `/api/auth/login`, `/api/login`, `/login`, `/api/session` (attempted endpoints)
+ * - Form-encoded and JSON payloads (both attempted)
+ * - Multiple credential variants (username, email, or both)
+ *
+ * `loginViaAvailableFlow` discovers which endpoint and payload format the app
+ * actually supports by probing common patterns, then falls back to registering
+ * a test account and logging in (useful when the login surface is gated behind
+ * a registration requirement).
+ *
+ * Analysis helpers (`analyzeLoginFailure`, `analyzeLoginSuccess`) map observed
+ * HTTP patterns to OWASP API Security findings (broken auth, security misconfiguration,
+ * improper inventory).
+ */
+
 export type LoginAttempt = {
 	path: string;
 	status: number | string;
@@ -24,7 +42,9 @@ export type LoginSuccessAnalysis = {
 	description: string;
 };
 
+// HTTP status codes that indicate successful authentication
 const LOGIN_SUCCESS_STATUSES = [200, 201, 302];
+// Common authentication endpoint paths to try
 const LOGIN_CANDIDATES = ['/api/auth/login', '/api/login', '/login', '/api/session'];
 
 type PayloadVariant = {
@@ -32,10 +52,12 @@ type PayloadVariant = {
 	body: Record<string, string>;
 };
 
+// Record an attempt in the log (used to analyze failures/successes)
 const recordAttempt = (attempts: LoginAttempt[], path: string, status: number | string) => {
 	attempts.push({ path, status });
 };
 
+// Build multiple credential formats to accommodate different field name patterns
 const buildCredentialVariants = (user: User): PayloadVariant[] => {
 	const username = user.username || user.email || '';
 	const email = user.email || user.username || '';
@@ -47,6 +69,7 @@ const buildCredentialVariants = (user: User): PayloadVariant[] => {
 	];
 };
 
+// Try each login endpoint with each credential variant, in both form and JSON formats
 const tryLoginCandidates = async (
 	apiContext: APIRequestContext,
 	user: User,
@@ -55,6 +78,7 @@ const tryLoginCandidates = async (
 ): Promise<{ loginRes: APIResponse | null; successfulLoginPath: string | null }> => {
 	for (const path of LOGIN_CANDIDATES) {
 		for (const variant of buildCredentialVariants(user)) {
+			// Try form-encoded
 			const formPath = `${path} (form:${variant.label}${suffix})`;
 			try {
 				const res = await apiContext.post(path, {
@@ -68,6 +92,7 @@ const tryLoginCandidates = async (
 				recordAttempt(attempts, formPath, e?.message || 'error');
 			}
 
+			// Try JSON
 			const jsonPath = `${path} (json:${variant.label}${suffix})`;
 			try {
 				const res = await apiContext.post(path, {
@@ -165,20 +190,25 @@ export async function loginViaAvailableFlow(
 	return { loginRes, successfulLoginPath, attempts };
 }
 
+// Type guard to filter numeric statuses (vs error strings)
 const isNumericStatus = (status: number | string): status is number => typeof status === 'number';
 
+// Extract unique HTTP status codes from attempts (deduplicated)
 const uniqueNumericStatuses = (attempts: LoginAttempt[]) =>
 	[...new Set(attempts.map(({ status }) => status).filter(isNumericStatus))];
 
+// Check if any attempt path matches the given pattern
 const hasPathMatch = (attempts: LoginAttempt[], matcher: RegExp) =>
 	attempts.some(({ path }) => matcher.test(path));
 
+// Analyze observed login attempt patterns and map to OWASP API Security categories
 export function analyzeLoginFailure(attempts: LoginAttempt[]): LoginFailureAnalysis {
 	const statuses = uniqueNumericStatuses(attempts);
 	const statusStrings = attempts
 		.map(({ status }) => status)
 		.filter((status): status is string => typeof status === 'string');
 
+	// Classify observed status codes to identify root causes
 	const hasAuthDenied = statuses.some((status) => status === 401 || status === 403);
 	const hasServerError = statuses.some((status) => status >= 500);
 	const hasContractMismatch = statuses.some((status) => [400, 405, 415, 422].includes(status));
@@ -247,6 +277,7 @@ export function analyzeLoginFailure(attempts: LoginAttempt[]): LoginFailureAnaly
 	};
 }
 
+// Map successful login path to OWASP category and description
 export function analyzeLoginSuccess(successfulPath: string, status: number): LoginSuccessAnalysis {
 	const path = successfulPath.toLowerCase();
 

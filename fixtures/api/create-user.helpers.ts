@@ -53,19 +53,25 @@ export type CreateUserSuccessAnalysis = {
 	description: string;
 };
 
+// Statuses indicating successful user creation (HTML forms typically return 200)
 const STRICT_SUCCESS_STATUSES = [200];
+// Extended success statuses including API variations (201 created, 302 redirect, 409 already exists)
 export const EXTENDED_SUCCESS_STATUSES = [200, 201, 302, 303, 409];
 
+// Common user creation endpoint paths to try
 const API_REGISTRATION_CANDIDATES = [
 	'/api/users', '/api/auth/register', '/api/register', '/users', '/register', '/signup', '/api/v1/users'
 ];
 
+// Common OpenAPI/Swagger documentation endpoints that list available routes
 const OPENAPI_DOC_CANDIDATES = ['/openapi.json', '/swagger.json', '/v3/api-docs', '/api/docs', '/api/docs.json'];
 
+// Record a discovery attempt in the log
 const recordTry = (tried: TriedEntry[], path: string, status: number | string) => {
 	tried.push({ path, status });
 };
 
+// Build JSON payload for user creation (accommodate common field name patterns)
 const buildJsonBody = (payload: CreatePayload) =>
 	JSON.stringify({
 		email: payload.email,
@@ -73,6 +79,7 @@ const buildJsonBody = (payload: CreatePayload) =>
 		password: payload.password,
 	});
 
+// Try creating a user at a given endpoint path, with both form and JSON payloads
 const tryCreateAtPath = async (
 	apiContext: APIRequestContext,
 	path: string,
@@ -80,6 +87,7 @@ const tryCreateAtPath = async (
 	tried: TriedEntry[],
 	successStatuses: number[]
 ): Promise<CreateResult> => {
+	// Try form-encoded
 	try {
 		const resForm = await apiContext.post(path, { data: payload });
 		recordTry(tried, `${path} (form)`, resForm.status());
@@ -90,6 +98,7 @@ const tryCreateAtPath = async (
 		recordTry(tried, `${path} (form)`, e?.message || 'error');
 	}
 
+	// Try JSON
 	try {
 		const resJson = await apiContext.post(path, {
 			data: buildJsonBody(payload),
@@ -146,6 +155,7 @@ const tryRegisterHtmlFallback = async (
 	return null;
 };
 
+// Extract user-creation-related POST paths from an OpenAPI/Swagger spec
 const discoverPostPaths = (spec: any): string[] => {
 	if (!spec?.paths || typeof spec.paths !== 'object') return [];
 
@@ -155,6 +165,7 @@ const discoverPostPaths = (spec: any): string[] => {
 		const lowerP = p.toLowerCase();
 		const hasPost = methods && (methods as any).post;
 		if (!hasPost) continue;
+		// Filter for paths related to user creation
 		if (lowerP.includes('user') || lowerP.includes('register') || lowerP.includes('signup')) {
 			paths.push(p);
 		}
@@ -263,6 +274,11 @@ const tryUiRegisterFallback = async (
 	return null;
 };
 
+// Discover and use the available user creation flow in priority order:
+// 1. Try common API endpoints (form + JSON)
+// 2. Fall back to HTML form parsing (/register GET, then POST)
+// 3. Try OpenAPI/Swagger discovery (fetch docs, extract paths, try those)
+// 4. Last resort: use UI automation via browser
 export async function createUserViaAvailableFlow(
 	apiContext: APIRequestContext,
 	browser: Browser,
@@ -272,17 +288,21 @@ export async function createUserViaAvailableFlow(
 	const tried: TriedEntry[] = [];
 	let result: CreateResult = null;
 
+	// Step 1: Try common API registration endpoints
 	for (const path of API_REGISTRATION_CANDIDATES) {
 		result = await tryCreateAtPath(apiContext, path, payload, tried, STRICT_SUCCESS_STATUSES);
 		if (result) return { result, tried };
 	}
 
+	// Step 2: Try HTML form fallback (GET /register, parse, POST)
 	result = await tryRegisterHtmlFallback(apiContext, baseURL, payload, tried);
 	if (result) return { result, tried };
 
+	// Step 3: Try OpenAPI/Swagger discovery
 	result = await tryOpenApiDiscovery(apiContext, payload, tried);
 	if (result) return { result, tried };
 
+	// Step 4: Last resort - UI automation
 	result = await tryUiRegisterFallback(browser, baseURL, payload);
 	return { result, tried };
 }

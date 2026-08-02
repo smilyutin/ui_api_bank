@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
  * Virtual Card Tests (UI)
@@ -40,6 +41,7 @@ test.describe('Virtual cards', () => {
   });
 
   test('should create a virtual card and show it in the cards list', async () => {
+    setupAssertionLogging('should create a virtual card and show it in the cards list');
     const cards = pm.virtualCards();
     const limit = '850';
 
@@ -47,19 +49,21 @@ test.describe('Virtual cards', () => {
 
     await cards.waitForMessage(/virtual card created successfully/i);
     const cardId = await cards.waitForCardWithLimit(limit);
-    expect(cardId).not.toBeNull();
+    loggedExpect(cardId, 'cardId').not.toBeNull();
 
     await expect(cards.cardLocator(cardId!)).toContainText(/premium/i);
+    endAssertionLogging('passed');
   });
 
   test('should freeze and unfreeze a virtual card', async () => {
+    setupAssertionLogging('should freeze and unfreeze a virtual card');
     const cards = pm.virtualCards();
     const limit = '650';
 
     await cards.createCard(limit, 'standard');
     await cards.waitForMessage(/virtual card created successfully/i);
     const cardId = await cards.waitForCardWithLimit(limit);
-    expect(cardId).not.toBeNull();
+    loggedExpect(cardId, 'cardId').not.toBeNull();
 
     await cards.verifyFrozenState(cardId!, false);
     await cards.toggleFreeze(cardId!);
@@ -67,9 +71,11 @@ test.describe('Virtual cards', () => {
 
     await cards.toggleFreeze(cardId!);
     await cards.verifyFrozenState(cardId!, false);
+    endAssertionLogging('passed');
   });
 
   test('should update a card\'s limit', async () => {
+    setupAssertionLogging('should update a card\'s limit');
     const cards = pm.virtualCards();
     const initialLimit = '500';
     const updatedLimit = '900';
@@ -77,28 +83,31 @@ test.describe('Virtual cards', () => {
     await cards.createCard(initialLimit, 'standard');
     await cards.waitForMessage(/virtual card created successfully/i);
     const cardId = await cards.waitForCardWithLimit(initialLimit);
-    expect(cardId).not.toBeNull();
+    loggedExpect(cardId, 'cardId').not.toBeNull();
 
     await cards.openUpdateLimit(cardId!);
     await cards.submitUpdateLimit(updatedLimit);
 
     await cards.waitForMessage(/card limit updated successfully/i);
     await cards.waitForCardWithLimit(updatedLimit);
+    endAssertionLogging('passed');
   });
 
   test('should show the full card number and CVV in the details modal (no masking)', async () => {
+    setupAssertionLogging('should show the full card number and CVV in the details modal (no masking)');
     const cards = pm.virtualCards();
     const limit = '750';
 
     await cards.createCard(limit, 'standard');
     await cards.waitForMessage(/virtual card created successfully/i);
     const cardId = await cards.waitForCardWithLimit(limit);
-    expect(cardId).not.toBeNull();
+    loggedExpect(cardId, 'cardId').not.toBeNull();
 
     await cards.openDetails(cardId!);
     const detailsText = await cards.getDetailsModalText();
 
-    expect(detailsText).toMatch(/\d{4}\s\d{4}\s\d{4}\s\d{4}/);
-    expect(detailsText).toMatch(/CVV\s*\n?\d{3}/i);
+    loggedExpect(detailsText, 'detailsText card number').toMatch(/\d{4}\s\d{4}\s\d{4}\s\d{4}/);
+    loggedExpect(detailsText, 'detailsText CVV').toMatch(/CVV\s*\n?\d{3}/i);
+    endAssertionLogging('passed');
   });
 });

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
+import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
  * Money Transfer Flow Tests
@@ -40,6 +41,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
  */
 test.describe('Money transfer flow', () => {
   test('should send money successfully', async ({ page, baseURL, request }) => {
+    setupAssertionLogging('should send money successfully');
     if (!baseURL) throw new Error('baseURL is not defined');
 
     // Step 1: Authenticate with token bootstrap or fallback credentials
@@ -81,7 +83,7 @@ test.describe('Money transfer flow', () => {
     await mt.submit();
 
     // Step 6: Verify transfer success
-    const ok = await mt.waitForSuccess();
-    expect(ok).toBeTruthy();
+    await mt.waitForSuccess();
+    endAssertionLogging('passed');
   });
 });

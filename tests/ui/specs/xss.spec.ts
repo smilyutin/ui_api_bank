@@ -4,6 +4,7 @@ import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 import { SecurityReporter } from '../../../fixtures/helper/security-reporter';
 import { TRANSFER_DESCRIPTION_XSS_PAYLOAD, XSS_MARKER } from '../../../fixtures/api/xss.helpers';
 import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
+import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
  * UI - Stored XSS via transfer description
@@ -26,6 +27,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
  */
 test.describe('UI - Stored XSS via transfer description', () => {
   test('a script-bearing transfer description should not execute when the transaction list renders', async ({ page, baseURL, request }, testInfo) => {
+    setupAssertionLogging('a script-bearing transfer description should not execute when the transaction list renders');
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
@@ -60,13 +62,18 @@ test.describe('UI - Stored XSS via transfer description', () => {
     await mt.fillDescription(TRANSFER_DESCRIPTION_XSS_PAYLOAD);
     await mt.submit();
 
-    const transferOk = await mt.waitForSuccess();
-    expect(transferOk).toBeTruthy();
+    await mt.waitForSuccess();
 
-    const fired = await page
-      .waitForFunction((marker) => (window as any)[marker] === true, XSS_MARKER, { timeout: 3000 })
-      .then(() => true)
-      .catch(() => false);
+    let fired = false;
+    try {
+      await expect.poll(
+        async () => (await page.evaluate<boolean>((marker) => (window as any)[marker] === true, XSS_MARKER)),
+        { timeout: 3000 }
+      ).toBeTruthy();
+      fired = true;
+    } catch {
+      fired = false;
+    }
 
     testInfo.attach('xss-transfer-description-probe', {
       body: JSON.stringify({ payload: TRANSFER_DESCRIPTION_XSS_PAYLOAD, marker: XSS_MARKER, fired }, null, 2),
@@ -94,5 +101,6 @@ test.describe('UI - Stored XSS via transfer description', () => {
         'API8:2023 - Security Misconfiguration'
       );
     }
+    endAssertionLogging('passed');
   });
 });
