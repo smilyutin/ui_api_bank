@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import { HelperBase } from './helper-base.page';
 import { LocatorFactory } from './locator-factory';
 
@@ -47,14 +48,9 @@ export class MoneyTransferPage extends HelperBase {
 		await submitButton.click();
 	}
 
-	async waitForSuccess(timeout = 5000): Promise<boolean> {
+	async waitForSuccess(timeout = 5000) {
 		// Wait for exact 'Transfer Completed' message in #message (app.py's fixed success text).
 		// This is a reliable success signal since the text only appears on successful POST /transfer.
-		try {
-			await this.page.locator('#message', { hasText: 'Transfer Completed' }).waitFor({ state: 'visible', timeout });
-			return true;
-		} catch {
-			return false;
-		}
+		await expect(this.page.locator('#message')).toHaveText('Transfer Completed', { timeout });
 	}
 }

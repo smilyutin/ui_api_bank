@@ -2,7 +2,6 @@
 name: playwright-vulnerable-bank
 description: Create or update Playwright TypeScript automation tests for the Vulnerable Bank application, including UI, API, page object, fixture, and test-data workflows for one feature at a time.
 ---
-
 # Playwright Automation Tests for Vulnerable Bank
 
 Create maintainable Playwright automation tests in TypeScript for the Vulnerable Bank application, one feature at a time. This skill is the authoritative reference for test-suite conventions in this repo — `CLAUDE.md` links here rather than duplicating this detail, so if you change a convention, update it here first.
@@ -191,11 +190,13 @@ Pass `role: 'admin'` for admin-only flows (requires `ADMIN_AUTH_TOKEN`, or `ADMI
 The admin panel test suite (`tests/ui/specs/admin-panel.spec.ts`) runs under a dedicated `chromium-admin` project with global setup/teardown hooks (`global-setup.ts`, `global-teardown.ts`) for efficiency and data hygiene:
 
 **global-setup.ts** (runs once before all admin tests):
+
 - Launches a browser, navigates to `/login`, authenticates with `ADMIN_USERNAME`/`ADMIN_PASSWORD` (defaults to `admin`/`admin123`)
 - Saves the authenticated session state to `storage/admin-auth.json` via `storageState()`
 - Admin tests then reuse this pre-authenticated session (skip per-test login overhead)
 
 **global-teardown.ts** (runs once after all admin tests):
+
 - Authenticates with admin credentials via API call to `/login`
 - Fetches all users from `/debug/users`
 - Deletes any test-created users matching these prefixes: `e2e-`, `global-setup-`, `loan-approval-*`, `admin-panel-*`, `admin-delete-*`, `admin-test-*`, `admin-form-clear-*`, `admin-msg-*`
@@ -203,6 +204,7 @@ The admin panel test suite (`tests/ui/specs/admin-panel.spec.ts`) runs under a d
 - Typically deletes 100-200+ test users per run
 
 **Configuration** (in `playwright.config.ts`):
+
 - New `chromium-admin` project with `use: { storageState: 'storage/admin-auth.json' }`
 - Main `chromium` project ignores admin tests via `testIgnore` (they only run via the admin project)
 - Both projects share the same `globalSetup` and `globalTeardown` hooks
@@ -227,6 +229,7 @@ This compiles the Ajv schema at `response-schemas/<dirName>/<fileName>.json` and
   ```bash
   UPDATE_SCHEMAS=1 BASE_URL=http://localhost:5001 npx playwright test tests/api/<file>.spec.ts --project=chromium
   ```
+
   Any mismatch then **regenerates** that schema file from the current response (full replace, not a merge — stale types/fields from the old schema are discarded) instead of failing, and logs which file it rewrote. Review `git diff response-schemas/` before committing — same "update the snapshot, then read the diff" discipline as Jest's `--updateSnapshot`. Leaving `UPDATE_SCHEMAS` unset (the default) is strict validation — use that for normal runs and CI.
 - **Bootstrapping a schema for a brand-new endpoint**: the same `UPDATE_SCHEMAS=1` run works here too — a missing schema file is treated the same as a mismatch and gets created. So add the `validateSchema(...)` call to your new spec first, do one `UPDATE_SCHEMAS=1` run to populate `response-schemas/`, then review and commit the generated file.
 - The legacy `createSchemaFlag` 4th parameter on `validateSchema` still exists (unconditionally overwrites before validating, so it always trivially passes) but `UPDATE_SCHEMAS=1` is the preferred workflow — it only touches files that actually mismatched, and normal (non-flagged) test runs still catch real regressions.
@@ -248,17 +251,17 @@ Use the `allure-js-commons/sync` functions directly (not `testInfo.annotations.p
 
 Established key-choice convention across existing specs — follow this when picking a key for a new finding:
 
-| Key | Use for |
-|---|---|
-| `API1_BOLA` | Object-level authorization bypass, including impersonation via a forged JWT |
-| `API2_AUTH` | Authentication weaknesses: missing auth, insecure token transmission (query string/cookie/form), forged-token rejection confirmations, session/logout/cookie hardening gaps |
-| `API3_DATA_EXPOSURE` | Excessive/unmasked data in a response (full card numbers, account numbers, plaintext passwords) |
-| `API4_RATE_LIMIT` | Missing or bypassable rate limiting (including payload-size and PIN-bruteforce throttling) |
-| `API5_BFLA` | Function-level authorization bypass (a non-privileged role reaching an admin-only action, e.g. loan approval) |
-| `API6_MASS_ASSIGNMENT` | Missing validation on a numeric or reference business field (negative/zero amounts, unvalidated foreign-key-like fields such as `to_account`/`biller_id`), or extra request fields writing sensitive columns |
-| `API7_MISCONFIGURATION` | Missing/misconfigured security headers (CSP, X-Frame-Options, HSTS, X-Content-Type-Options, Permissions-Policy, Referrer-Policy) and SSRF |
-| `API8_SECURITY_MISCONFIGURATION` | Raw/detailed error message exposure (SQL syntax errors, Python tracebacks reaching the client), permissive CORS |
-| `API9_ASSET_MGMT` | Unauthenticated debug/discovery endpoints, dependency/supply-chain findings |
+| Key                                | Use for                                                                                                                                                                                                         |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `API1_BOLA`                      | Object-level authorization bypass, including impersonation via a forged JWT                                                                                                                                     |
+| `API2_AUTH`                      | Authentication weaknesses: missing auth, insecure token transmission (query string/cookie/form), forged-token rejection confirmations, session/logout/cookie hardening gaps                                     |
+| `API3_DATA_EXPOSURE`             | Excessive/unmasked data in a response (full card numbers, account numbers, plaintext passwords)                                                                                                                 |
+| `API4_RATE_LIMIT`                | Missing or bypassable rate limiting (including payload-size and PIN-bruteforce throttling)                                                                                                                      |
+| `API5_BFLA`                      | Function-level authorization bypass (a non-privileged role reaching an admin-only action, e.g. loan approval)                                                                                                   |
+| `API6_MASS_ASSIGNMENT`           | Missing validation on a numeric or reference business field (negative/zero amounts, unvalidated foreign-key-like fields such as`to_account`/`biller_id`), or extra request fields writing sensitive columns |
+| `API7_MISCONFIGURATION`          | Missing/misconfigured security headers (CSP, X-Frame-Options, HSTS, X-Content-Type-Options, Permissions-Policy, Referrer-Policy) and SSRF                                                                       |
+| `API8_SECURITY_MISCONFIGURATION` | Raw/detailed error message exposure (SQL syntax errors, Python tracebacks reaching the client), permissive CORS                                                                                                 |
+| `API9_ASSET_MGMT`                | Unauthenticated debug/discovery endpoints, dependency/supply-chain findings                                                                                                                                     |
 
 Note: `OWASP_VULNERABILITIES` has some pre-existing key-name-vs-`.name`-string mismatches (e.g. `API7_MISCONFIGURATION`'s `.name` is "Server Side Request Forgery"; `API8_SECURITY_MISCONFIGURATION`'s `.description` talks about injection). These are intentional/pre-existing — don't "fix" them as a side effect of an unrelated change.
 
@@ -298,6 +301,7 @@ The admin panel suite is a complete example of comprehensive, phased test covera
 **Global Setup & Teardown:** Admin tests run under the `chromium-admin` project with `global-setup.ts`/`global-teardown.ts` hooks (see "Global Setup & Teardown" section above for details). Tests do NOT call `ensureDashboardAuthenticated()` — they reuse the pre-authenticated session from global setup instead.
 
 **Run the suite:**
+
 ```bash
 ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/admin-panel.spec.ts
 ```
@@ -327,6 +331,7 @@ When wiring up tests for an endpoint/page that doesn't have coverage yet:
 5. Write the UI spec in `tests/ui/specs/<feature>.spec.ts` using `ensureDashboardAuthenticated` in `beforeEach` and the `PageManager`.
 
 Consider the **three-phase approach** used in the admin panel suite:
+
 - **Phase 1:** Core happy path and basic functionality (18 tests covering auth, CRUD, navigation)
 - **Phase 2:** Error handling, validation, and security basics (22 tests covering form validation, error recovery, input security)
 - **Phase 3:** Advanced scenarios, responsive design, and OWASP compliance (26 tests covering all breakpoints, concurrent ops, compliance)

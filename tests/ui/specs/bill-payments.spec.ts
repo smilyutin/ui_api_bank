@@ -4,6 +4,7 @@ import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 import { loadStoredToken } from '../../../helpers/credentials';
 import { request } from '@playwright/test';
 import { updateCardLimit, listVirtualCards } from '../../../fixtures/api/virtual-cards.helpers';
+import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
  * Bill Payment Tests (UI)
@@ -45,6 +46,7 @@ test.describe('Bill payments', () => {
   });
 
   test('should pay a bill from account balance', async () => {
+    setupAssertionLogging('should pay a bill from account balance');
     const bills = pm.billPayments();
     const description = `UI balance payment ${Date.now()}`;
 
@@ -68,9 +70,11 @@ test.describe('Bill payments', () => {
     // test-scoped signal instead (matched by its unique description).
     await bills.waitForMessage(/bill payment successful/i);
     await bills.waitForPaymentRow(description);
+    endAssertionLogging('passed');
   });
 
   test('should pay a bill from a funded virtual card', async ({ page, baseURL }) => {
+    setupAssertionLogging('should pay a bill from a funded virtual card');
     if (!baseURL) throw new Error('baseURL is not defined');
     const bills = pm.billPayments();
     const cards = pm.virtualCards();
@@ -82,7 +86,7 @@ test.describe('Bill payments', () => {
     await cards.createCard('500', 'standard');
     await cards.waitForMessage(/virtual card created successfully/i);
     const cardId = await cards.waitForCardWithLimit('500');
-    expect(cardId).not.toBeNull();
+    loggedExpect(cardId, 'cardId').not.toBeNull();
 
     const token = loadStoredToken('user') || process.env.API_AUTH_TOKEN;
     if (!token) throw new Error('No auth token available to fund the virtual card via the API');
@@ -97,7 +101,7 @@ test.describe('Bill payments', () => {
     const listBody = await listRes.json().catch(() => null);
     const fundedCard = (listBody?.cards || []).find((c: { id: number; card_number: string }) => c.id === cardId);
     await api.dispose();
-    expect(fundedCard).toBeTruthy();
+    loggedExpect(fundedCard, 'fundedCard').toBeTruthy();
     const last4 = fundedCard!.card_number.slice(-4);
 
     // Reload so loadVirtualCardsForPayment() picks up the funded, non-frozen card.
@@ -116,9 +120,11 @@ test.describe('Bill payments', () => {
     await bills.submit();
 
     await bills.waitForMessage(/bill payment successful/i);
+    endAssertionLogging('passed');
   });
 
   test('should keep a payment visible in history after the dashboard is reloaded', async ({ page }) => {
+    setupAssertionLogging('should keep a payment visible in history after the dashboard is reloaded');
     const bills = pm.billPayments();
     const description = `UI reload persistence check ${Date.now()}`;
 
@@ -138,9 +144,11 @@ test.describe('Bill payments', () => {
     await pm.dashboard().waitForLoad();
 
     await bills.waitForPaymentRow(description);
+    endAssertionLogging('passed');
   });
 
   test('should accept a negative amount (no client or server-side validation)', async () => {
+    setupAssertionLogging('should accept a negative amount (no client or server-side validation)');
     const bills = pm.billPayments();
 
     await bills.openPayBillModal();
@@ -152,5 +160,6 @@ test.describe('Bill payments', () => {
     await bills.submit();
 
     await bills.waitForMessage(/bill payment successful/i);
+    endAssertionLogging('passed');
   });
 });
