@@ -32,13 +32,15 @@ export class LoginPage extends HelperBase {
 	}
 
 	async submit() {
-		// Click login button using fallback locators.
+		// Click login button and wait for page to be ready (handles both success and failure).
 		const submitButton = await LocatorFactory.find(
 			this.page.getByTestId('login-submit'),
 			this.page.getByRole('button', { name: 'Login' }),
 			this.page.locator('#loginForm button[type="submit"]'),
 		);
 		await submitButton.click();
+		// Wait for the page to finish loading, whether it redirects or shows an error.
+		await this.page.waitForLoadState('domcontentloaded');
 		return true;
 	}
 }

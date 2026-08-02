@@ -11,7 +11,10 @@
     "allure:open": "allure open ./allure-report",
     "allure:report": "npm run allure:generate && npm run allure:open",
     "test:mobile:android": "wdio run ./mobile/wdio.android.conf.ts",
-    "test:mobile:ios": "wdio run ./mobile/wdio.ios.conf.ts"
+    "test:mobile:ios": "wdio run ./mobile/wdio.ios.conf.ts",
+    "reliability:report": "node -e \"const {createAnalyzer} = require('./helpers/flakiness-analyzer'); const a = new createAnalyzer().constructor(); console.log(a.generateReport(true))\"",
+    "reliability:analyze": "node scripts/analyze-reliability.js",
+    "test:reliability": "playwright test tests/reliability.spec.ts"
   },
   "keywords": [],
   "author": "",

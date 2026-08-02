@@ -28,10 +28,10 @@
 
 **Output Format:**
 ```
-╔════════════════════════════════════════════════════════════════╗
-║           DETAILED ASSERTION LOGGER REPORTER                   ║
-║     Shows: exact values, actual vs expected, user context       ║
-╚════════════════════════════════════════════════════════════════╝
+
+           DETAILED ASSERTION LOGGER REPORTER                   
+     Shows: exact values, actual vs expected, user context       
+
 
 Tests: 4 | Passed: 4 | Failed: 0 | Skipped: 0
 ```
@@ -62,9 +62,9 @@ setTestContext({
 
 ### Test Start
 ```
-╔════════════════════════════════════════════════════════════════╗
-║ TEST: should login successfully with valid credentials        ║
-╚════════════════════════════════════════════════════════════════╝
+
+ TEST: should login successfully with valid credentials        
+
   User: john.doe (user)
   URL: http://localhost:5001
   Password: ***1234
@@ -73,24 +73,24 @@ setTestContext({
 
 ### Assertion (Passed)
 ```
-  ✓ [Assertion 1] PASSED
+   [Assertion 1] PASSED
      Expression: expect(page).toHaveURL(/\/dashboard/)
 ```
 
 ### Assertion (Failed)
 ```
-  ✗ [Assertion 2] FAILED
+   [Assertion 2] FAILED
      Expression: expect(balance).toContain("$5,000")
      Error: expect(string).toContain(expected) - Actual: "$4,500" | Expected: "$5,000"
 ```
 
 ### Test Summary
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ ✓ should login successfully with valid credentials         │
-│ Status: PASSED | Assertions: 1 (✓ 1 / ✗ 0)                 │
-│ Duration: 404ms | Browser: chromium                         │
-└─────────────────────────────────────────────────────────────┘
+
+  should login successfully with valid credentials         
+ Status: PASSED | Assertions: 1 ( 1 /  0)                 
+ Duration: 404ms | Browser: chromium                         
+
 ```
 
 ## Context Information Tracked
@@ -237,11 +237,11 @@ All Playwright assertions now have enhanced logging:
 
 ## Files Modified/Created
 
-1. ✓ `helpers/expect-logger.ts` - Enhanced assertion logger
-2. ✓ `reporters/assertion-logger-reporter.ts` - Improved reporter
-3. ✓ `tests/ui/specs/login.spec.ts` - Updated with context tracking
-4. ✓ `ASSERTION_LOGGING.md` - Comprehensive usage guide
-5. ✓ `ENHANCED_ASSERTIONS_SUMMARY.md` - This document
+1.  `helpers/expect-logger.ts` - Enhanced assertion logger
+2.  `reporters/assertion-logger-reporter.ts` - Improved reporter
+3.  `tests/ui/specs/login.spec.ts` - Updated with context tracking
+4.  `ASSERTION_LOGGING.md` - Comprehensive usage guide
+5.  `ENHANCED_ASSERTIONS_SUMMARY.md` - This document
 
 ## Next Steps
 
@@ -290,9 +290,9 @@ npm test tests/ui/specs/login.spec.ts
 ```
 
 Look for:
-- ✓ Context information in test headers
-- ✓ Test status and duration
-- ✓ Assertion counts and pass/fail rates
-- ✓ User and URL information
-- ✓ Masked passwords
-- ✓ UI state transitions
+-  Context information in test headers
+-  Test status and duration
+-  Assertion counts and pass/fail rates
+-  User and URL information
+-  Masked passwords
+-  UI state transitions

@@ -48,6 +48,12 @@ playwright-report/
 allure-results/
 allure-report/
 
+## Observability / Failure Context
+failure-context/
+
+## Reliability Analytics
+test-analytics/
+
 ## k6 performance testing (perf/)
 perf/results/
 

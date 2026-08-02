@@ -183,9 +183,9 @@ All standard Playwright assertions are supported with detailed logging:
 
 ### Test Header
 ```
-╔════════════════════════════════════════════════════════════════╗
-║ TEST: should login successfully with valid credentials       ║
-╚════════════════════════════════════════════════════════════════╝
+
+ TEST: should login successfully with valid credentials       
+
 ```
 
 ### Assertion Output
@@ -199,7 +199,7 @@ All standard Playwright assertions are supported with detailed logging:
 
 ### Failed Assertion Output
 ```
-  ✗ [2] expect(balance text).toContain("$5,000")
+   [2] expect(balance text).toContain("$5,000")
       Actual: "$4,500" | Expected: "$5,000"
       Context: user=john.doe, action=check_balance, expectedBehavior=show_correct_balance
       Error: expect(string).toContain(expected)
@@ -207,15 +207,15 @@ All standard Playwright assertions are supported with detailed logging:
 
 ### Summary Report
 ```
-✓ PASSED
+ PASSED
 
-┌─ Assertion Summary (5 total) ─┐
-  ✓ [1] dashboard URL: toHaveURL
-  ✓ [2] balance text: toContain
-  ✓ [3] transfer button: toBeTruthy
-  ✓ [4] confirmation text: toMatch
-  ✓ [5] transaction ID: toBeDefined
-└────────────────────────────────┘
+ Assertion Summary (5 total) 
+   [1] dashboard URL: toHaveURL
+   [2] balance text: toContain
+   [3] transfer button: toBeTruthy
+   [4] confirmation text: toMatch
+   [5] transaction ID: toBeDefined
+
 ```
 
 ## Best Practices

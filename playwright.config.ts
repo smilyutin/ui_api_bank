@@ -25,23 +25,46 @@ export default defineConfig({
   reporter: [
     ['html'],
     ['list'],
-    ['allure-playwright', { outputFolder: 'allure-results', detail: true, suiteTitle: false }],
+    ['allure-playwright', { outputFolder: 'allure-results', detail: true }],
     ['./reporters/security-summary-reporter.ts'],
+    ['./reporters/failure-context-reporter.ts'],
+    ['./reporters/reliability-reporter.ts'],
   ],
   /* Global setup runs once before all tests */
   globalSetup: './global-setup.ts',
   /* Global teardown runs once after all tests - cleans up test data */
   globalTeardown: './global-teardown.ts',
+  /* Test timeout: 60 seconds for most tests */
+  timeout: 60000,
+  /* Expect timeout: 10 seconds for assertions */
+  expect: {
+    timeout: 10000
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('')`. */
     baseURL: process.env.BASE_URL ?? 'http://localhost:5001',
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
+    /* Collect trace for all tests. See https://playwright.dev/docs/trace-viewer */
+    trace: 'on',
+
+    /* Record video on failure for easier debugging */
+    video: process.env.CI ? 'retain-on-failure' : 'on-first-failure',
+
+    /* Capture screenshots on failure */
+    screenshot: 'only-on-failure',
+
+    /* Network activity logging */
+    serviceWorkers: 'allow',
+
+    /* Action timeout: 30 seconds for interactive operations */
+    actionTimeout: 30000,
+
+    /* Navigation timeout: 30 seconds for navigation operations */
+    navigationTimeout: 30000,
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects for major browsers - Phase 6: Cross-Browser Support */
   projects: [
     {
       name: 'chromium',
@@ -55,35 +78,30 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'], storageState: 'storage/admin-auth.json' },
     },
 
-    // {
-    //   name: 'firefox',
-    //   use: { ...devices['Desktop Firefox'] },
-    // },
+    {
+      name: 'firefox',
+      testIgnore: '**/admin-panel.spec.ts',
+      use: { ...devices['Desktop Firefox'] },
+    },
 
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
+    {
+      name: 'webkit',
+      testIgnore: '**/admin-panel.spec.ts',
+      use: { ...devices['Desktop Safari'] },
+    },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+    /* Mobile variants for cross-browser mobile testing */
+    {
+      name: 'Mobile Chrome',
+      testIgnore: '**/admin-panel.spec.ts',
+      use: { ...devices['Pixel 5'] },
+    },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    {
+      name: 'Mobile Safari',
+      testIgnore: '**/admin-panel.spec.ts',
+      use: { ...devices['iPhone 12'] },
+    },
   ],
 
   /* Run your local dev server before starting the tests */
