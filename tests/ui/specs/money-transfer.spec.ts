@@ -62,10 +62,10 @@ test.describe('Money transfer flow', () => {
     await dash.waitForLoad();
 
     // Step 3: Navigate to Money Transfer page
-    const links = await dash.getNavigationLinks();
-    const transfer = links.find(l => /transfers|money transfer|send money/i.test(l.text));
-    if (transfer && transfer.href) {
-      await dash.clickNavigationLink(`a[href="${transfer.href}"]`);
+    // Use text-based navigation link for reliability across all viewports.
+    const transferLink = page.getByRole('link', { name: /send money|transfer|transfers/i });
+    if (await transferLink.count()) {
+      await dash.clickNavigationLinkByText(/send money|transfer|transfers/i);
     } else {
       // Fallback: click a tile/button that contains 'Send Money'
       const tile = page.getByText(/send money|transfer money/i);
