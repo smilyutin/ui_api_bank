@@ -46,10 +46,9 @@ test.describe('UI - Stored XSS via transfer description', () => {
     const dash = pm.dashboard();
     await dash.waitForLoad();
 
-    const links = await dash.getNavigationLinks();
-    const transfer = links.find(l => /transfers|money transfer|send money/i.test(l.text));
-    if (transfer && transfer.href) {
-      await dash.clickNavigationLink(`a[href="${transfer.href}"]`);
+    const transferLink = page.getByRole('link', { name: /send money|transfer|transfers/i });
+    if (await transferLink.count()) {
+      await dash.clickNavigationLinkByText(/send money|transfer|transfers/i);
     } else {
       const tile = page.getByText(/send money|transfer money/i);
       if (await tile.count()) await tile.first().click();

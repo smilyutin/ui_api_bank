@@ -56,7 +56,10 @@
       "Read(//Users/minime/Downloads/allure-report/**)",
       "Read(//Users/minime/Downloads/allure-report/data/**)",
       "Read(//Users/minime/Downloads/allure-report/widgets/**)",
-      "Bash(python3 -m json.tool /Users/minime/Downloads/allure-report/widgets/status-chart.json)"
+      "Bash(python3 -m json.tool /Users/minime/Downloads/allure-report/widgets/status-chart.json)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(grep -E \"\\(^[^/]*$|/[^/]*$\\)\")",
+      "Bash(grep -E \"^[A-Z_]+\\\\.md$|^\\\\./\")"
     ],
     "ask": [
       "Edit(app.py)",

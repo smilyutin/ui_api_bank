@@ -78,14 +78,49 @@ export class DashboardPage extends HelperBase {
 
 	async clickNavigationLink(selector: string) {
 		const menuToggle = this.page.locator('.menu-toggle');
+		const link = this.page.locator(selector);
+
+		// On mobile, open the navigation menu if it's toggled closed.
 		if (await menuToggle.isVisible()) {
 			await menuToggle.click();
-			await this.page.waitForTimeout(100);
+			await this.page.waitForTimeout(300);
 		}
-		const link = this.page.locator(selector);
-		await link.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-		await this.page.waitForTimeout(300);
-		await link.click();
+
+		// Ensure the link is visible and ready for interaction.
+		const isVisible = await link.count().then(count => count > 0);
+		if (!isVisible) {
+			throw new Error(`Navigation link not found with selector: ${selector}`);
+		}
+
+		await expect(link.first()).toBeVisible({ timeout: 5000 });
+		await link.first().evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+		await this.page.waitForTimeout(200);
+		await expect(link.first()).toBeEnabled({ timeout: 2000 });
+		await link.first().click();
+		await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 });
+	}
+
+	async clickNavigationLinkByText(textPattern: RegExp | string) {
+		const menuToggle = this.page.locator('.menu-toggle');
+
+		// On mobile, open the navigation menu if it's toggled closed.
+		if (await menuToggle.isVisible()) {
+			await menuToggle.click();
+			await this.page.waitForTimeout(300);
+		}
+
+		const link = this.page.getByRole('link', { name: textPattern });
+		const isVisible = await link.count().then(count => count > 0);
+		if (!isVisible) {
+			throw new Error(`Navigation link not found with text: ${textPattern}`);
+		}
+
+		await expect(link.first()).toBeVisible({ timeout: 5000 });
+		await link.first().evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+		await this.page.waitForTimeout(200);
+		await expect(link.first()).toBeEnabled({ timeout: 2000 });
+		await link.first().click();
+		await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 });
 	}
 
 	async getAccountNumber(): Promise<string | null> {
