@@ -46,7 +46,7 @@ export default defineConfig({
     baseURL: process.env.BASE_URL ?? 'http://localhost:5001',
 
     /* Collect trace for all tests. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on',
+    trace: process.env.CI ? 'on-first-retry' : 'on',
 
     /* Record video on failure for easier debugging */
     video: process.env.CI ? 'retain-on-failure' : 'on-first-failure',
