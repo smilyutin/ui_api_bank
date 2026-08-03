@@ -29,9 +29,9 @@ export class WaitHelper {
     logger?.debug('Waiting for navigation', { timeout });
 
     try {
-      await Promise.race([
+      await Promise.all([
         page.waitForNavigation({ timeout }),
-        action()
+        action(),
       ]);
       logger?.info('Navigation completed');
     } catch (e) {
