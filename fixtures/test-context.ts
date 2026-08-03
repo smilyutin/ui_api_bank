@@ -7,8 +7,8 @@ interface TestContextFixture {
 }
 
 export const test = base.extend<TestContextFixture>({
-  logger: async ({}, use) => {
-    const logger = createLogger();
+  logger: async ({}, use, testInfo) => {
+    const logger = createLogger(testInfo);
     await use(logger);
     logger.attachToTest();
   },
