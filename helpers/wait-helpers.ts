@@ -213,7 +213,7 @@ export class WaitHelper {
     logger?.debug('Waiting for text content', { text, timeout });
 
     try {
-      await locator.locator(`:has-text("${text}")`).waitFor({ timeout, state: 'visible' });
+      await locator.filter({ hasText: text }).first().waitFor({ timeout, state: 'visible' });
       logger?.info('Text content appeared');
       return true;
     } catch (e) {
