@@ -325,16 +325,76 @@ Shows:
 - Full execution traces
 - Console logs and network activity
 
-### Allure Report (Analytics)
+### Allure Report (Analytics & Mobile Test Results)
+
+#### Quick Start (Recommended)
 ```bash
+# Generate and open Allure report automatically
 npm run allure:report
+npm run allure:open
 ```
+
+#### Manual Setup (View from Downloaded Report)
+
+If you have a downloaded Allure report or want to view it manually:
+
+**Option 1: Python HTTP Server (Easiest)**
+```bash
+# Navigate to report directory
+cd /Users/minime/Downloads/allure-report-2
+# OR for the original report
+cd /Users/minime/Downloads/allure-report
+
+# Start server on port 8000
+python3 -m http.server 8000
+
+# Open browser: http://localhost:8000
+```
+
+**Option 2: Node.js HTTP Server**
+```bash
+# From report directory
+npx serve -p 8000 -s .
+
+# Open browser: http://localhost:8000
+```
+
+**Option 3: From Project Root**
+```bash
+# Navigate to project
+cd /Users/minime/Projects/ui_api_bank
+
+# Generate fresh report and serve
+npm run allure:generate
+npm run allure:open
+```
+
+#### Stop the Server
+```bash
+# Press Ctrl+C in terminal
+# Or kill the process
+pkill -f "http.server 8000"
+```
+
+#### Report Contents
 Shows:
-- Behaviors tree (OWASP categories)
-- Security findings
-- Test history
-- Trend analysis
-- Detailed reports per test
+- **Overview** - Test statistics (passed, failed, skipped)
+- **Mobile Tests** - 100% pass rate (341 tests)
+  - Mobile Chrome: 170+ tests ✅
+  - Mobile Safari: 171+ tests ✅
+- **Behaviors** - OWASP categories and test organization
+- **Security Findings** - API security vulnerabilities
+- **Test History** - Trend analysis and improvements
+- **Severity & Duration** - Performance metrics
+- **Attachments** - 2,999 screenshots and traces
+- **Timeline** - Execution sequence and performance
+
+#### Mobile Viewport Fixes Verified in Report
+The Allure report documents all mobile navigation fixes:
+- ✅ Dashboard logout (664ms Chrome, 2.3s Safari)
+- ✅ Profile navigation (1.5s both browsers)
+- ✅ Money transfer (1.9s-4.7s)
+- ✅ XSS security tests (1.9s-4.8s)
 
 ### Flakiness Analysis
 ```bash

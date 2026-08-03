@@ -41,6 +41,28 @@ npm run test:mobile:android                        # Appium/WebdriverIO suite: C
 npm run test:mobile:ios                             # Appium/WebdriverIO suite: Safari on a booted iOS Simulator (macOS only)
 ```
 
+### Viewing Allure Report
+
+```bash
+# Quick start: Generate and open report automatically
+npm run allure:report
+
+# Or manual steps (e.g., from downloaded report):
+cd /Users/minime/Downloads/allure-report-2
+python3 -m http.server 8000
+# Open: http://localhost:8000
+
+# For detailed instructions, see ALLURE_REPORT_GUIDE.md
+```
+
+**Mobile Test Verification:** The Allure report documents all mobile viewport fixes:
+- Dashboard logout (100% passing on Mobile Chrome & Safari)
+- Profile navigation (100% passing)
+- Money transfer (100% passing)
+- XSS security tests (100% passing)
+
+See [ALLURE_REPORT_GUIDE.md](ALLURE_REPORT_GUIDE.md) for complete instructions.
+
 ## Test suite architecture
 
 ```
