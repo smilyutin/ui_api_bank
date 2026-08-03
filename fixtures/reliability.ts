@@ -5,21 +5,20 @@ import { TestIsolation, IsolationConfig } from '../helpers/test-isolation';
 
 interface ReliabilityFixtures {
   logger: TestLogger;
-  waitHelper: WaitHelper;
+  waitHelper: typeof WaitHelper;
   isolateTest: (config?: IsolationConfig) => Promise<void>;
   cleanupTest: (config?: IsolationConfig) => Promise<void>;
 }
 
 export const test = base.extend<ReliabilityFixtures>({
-  logger: async ({}, use) => {
-    const logger = createLogger();
+  logger: async ({}, use, testInfo) => {
+    const logger = createLogger(testInfo);
     await use(logger);
     logger.attachToTest();
   },
 
   waitHelper: async ({}, use) => {
-    const helper = new WaitHelper();
-    await use(helper);
+    await use(WaitHelper);
   },
 
   isolateTest: async ({ page, context }, use, testInfo) => {
