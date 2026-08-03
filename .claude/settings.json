@@ -51,7 +51,13 @@
       "Bash(curl -s -X POST http://localhost:5001/api/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
       "Bash(curl -s -X POST http://localhost:5001/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
       "Bash(git check-ignore *)",
-      "Bash(node -e \"const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc4NTQ1NTUwMX0.qKg85NjB-G3WmqSTO82tk6YC-0P-fxtarN8w7BZT3u0'; const payload = JSON.parse\\(Buffer.from\\(token.split\\('.'\\)[1], 'base64'\\).toString\\(\\)\\); console.log\\('Token payload:', JSON.stringify\\(payload, null, 2\\)\\); console.log\\('Issued at:', new Date\\(payload.iat * 1000\\).toISOString\\(\\)\\);\")"
+      "Bash(node -e \"const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6ImFkbWluIiwiaXNfYWRtaW4iOnRydWUsImlhdCI6MTc4NTQ1NTUwMX0.qKg85NjB-G3WmqSTO82tk6YC-0P-fxtarN8w7BZT3u0'; const payload = JSON.parse\\(Buffer.from\\(token.split\\('.'\\)[1], 'base64'\\).toString\\(\\)\\); console.log\\('Token payload:', JSON.stringify\\(payload, null, 2\\)\\); console.log\\('Issued at:', new Date\\(payload.iat * 1000\\).toISOString\\(\\)\\);\")",
+      "Bash(npx allure *)",
+      "Bash(curl -s http://127.0.0.1:4321)",
+      "Read(//Users/minime/Downloads/allure-report/**)",
+      "Read(//Users/minime/Downloads/allure-report/data/**)",
+      "Read(//Users/minime/Downloads/allure-report/widgets/**)",
+      "Bash(python3 -m json.tool /Users/minime/Downloads/allure-report/widgets/status-chart.json)"
     ],
     "ask": [
       "Edit(app.py)",

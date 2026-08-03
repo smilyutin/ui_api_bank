@@ -222,7 +222,7 @@ test.describe('Dashboard functionality', () => {
     // Dashboard sections are static, single-page anchors (see static/dashboard.js
     // handleScroll) — "navigating" means the click scrolls #profile into view,
     // not that it gets inserted/toggled in the DOM.
-    await dashboardPage.page.locator(`a[href="${profileLink!.href}"]`).click();
+    await dashboardPage.clickNavigationLink(`a[href="${profileLink!.href}"]`);
     const profileSection = dashboardPage.page.locator('#profile');
     await expect(profileSection).toBeInViewport();
     endAssertionLogging('passed');

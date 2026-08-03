@@ -49,7 +49,7 @@ test.describe('UI - Stored XSS via transfer description', () => {
     const links = await dash.getNavigationLinks();
     const transfer = links.find(l => /transfers|money transfer|send money/i.test(l.text));
     if (transfer && transfer.href) {
-      await page.click(`a[href="${transfer.href}"]`);
+      await dash.clickNavigationLink(`a[href="${transfer.href}"]`);
     } else {
       const tile = page.getByText(/send money|transfer money/i);
       if (await tile.count()) await tile.first().click();

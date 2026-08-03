@@ -79,7 +79,7 @@ async page => {
     <div style="position: absolute; top: 8px; right: 8px;
       padding: 6px 12px; background: rgba(0,0,0,0.7);
       border-radius: 8px; font-size: 13px; color: white;">
-      ✓ Item added successfully
+       Item added successfully
     </div>
   `);
 

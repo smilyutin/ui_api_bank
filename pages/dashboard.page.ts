@@ -76,6 +76,18 @@ export class DashboardPage extends HelperBase {
 		return out;
 	}
 
+	async clickNavigationLink(selector: string) {
+		const menuToggle = this.page.locator('.menu-toggle');
+		if (await menuToggle.isVisible()) {
+			await menuToggle.click();
+			await this.page.waitForTimeout(100);
+		}
+		const link = this.page.locator(selector);
+		await link.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+		await this.page.waitForTimeout(300);
+		await link.click();
+	}
+
 	async getAccountNumber(): Promise<string | null> {
 		const el = this.page.locator('#account-number');
 		if (await el.count()) return (await el.innerText()).trim();
@@ -159,6 +171,16 @@ export class DashboardPage extends HelperBase {
 		} catch {
 			return false;
 		}
+		// On mobile, the side panel is off-screen by default.
+		// Ensure it's open by clicking the menu toggle if visible.
+		const menuToggle = this.page.locator('.menu-toggle');
+		if (await menuToggle.isVisible()) {
+			await menuToggle.click();
+			await this.page.waitForTimeout(100);
+		}
+		// Scroll the logout link into view within the side panel (in case it's below the fold).
+		await logoutLink.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+		await this.page.waitForTimeout(300);
 		await logoutLink.click();
 		return true;
 	}
