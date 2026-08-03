@@ -37,7 +37,7 @@ export class TestIsolation {
     }
 
     if (clearStorage) {
-      await context.clearCookies();
+      await this.isolateAllStorage(page, logger);
       logger?.debug('Cleared storage');
     }
 
