@@ -59,8 +59,7 @@
       "Bash(python3 -m json.tool /Users/minime/Downloads/allure-report/widgets/status-chart.json)",
       "Bash(grep -E \"\\\\.ts$\")",
       "Bash(grep -E \"\\(^[^/]*$|/[^/]*$\\)\")",
-      "Bash(grep -E \"^[A-Z_]+\\\\.md$|^\\\\./\")",
-      "Bash(git push *)"
+      "Bash(grep -E \"^[A-Z_]+\\\\.md$|^\\\\./\")"
     ],
     "ask": [
       "Edit(app.py)",
