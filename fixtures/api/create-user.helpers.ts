@@ -159,8 +159,11 @@ const tryRegisterHtmlFallback = async (
 const discoverPostPaths = (spec: unknown): string[] => {
 	if (typeof spec !== 'object' || spec === null || !('paths' in spec)) return [];
 
+	const pathsObj = (spec as any).paths;
+	if (!pathsObj || typeof pathsObj !== 'object') return [];
+
 	const paths: string[] = [];
-	for (const [rawPath, methods] of Object.entries(spec.paths)) {
+	for (const [rawPath, methods] of Object.entries(pathsObj as Record<string, any>)) {
 		const p = String(rawPath);
 		const lowerP = p.toLowerCase();
 		const hasPost = methods && (methods as any).post;
