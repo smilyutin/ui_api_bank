@@ -1,4 +1,4 @@
-import type { APIRequestContext, Browser } from '@playwright/test';
+import { expect, type APIRequestContext, type Browser } from '@playwright/test';
 import { RegisterPage } from '../../pages/register.page';
 import { saveUser } from '../../helpers/credentials';
 import { buildRegisterFormSubmission } from './register-form.helpers';
@@ -256,7 +256,16 @@ const tryUiRegisterFallback = async (
 		const filledPassword = await reg.fillPassword(payload.password);
 		if (filledEmail && filledPassword) {
 			await reg.submit();
-			await page.waitForTimeout(1000);
+			// #message gets class="success" or class="error" synchronously once the
+			// registration fetch() resolves (templates/register.html) - wait on that
+			// instead of a fixed sleep, and only save credentials on confirmed success.
+			const message = page.locator('#message');
+			await expect(message).toHaveClass(/success|error/, { timeout: 5000 });
+			const succeeded = (await message.getAttribute('class'))?.includes('success') ?? false;
+			if (!succeeded) {
+				await page.close();
+				return null;
+			}
 			saveUser({ email: payload.email, password: payload.password });
 			await page.close();
 			return {

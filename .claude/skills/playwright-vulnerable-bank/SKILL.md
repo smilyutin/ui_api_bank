@@ -31,6 +31,8 @@ There are no barrel/`index.ts` re-export files in `pages/`, `fixtures/api/`, or 
 
 `tests/security/utils/security-reporter.ts` and `tests/security/utils/test-users.ts` are the one deliberate exception: they each re-export (`export * from ...`) this repo's canonical `fixtures/helper/security-reporter.ts` and `helpers/credentials.ts` respectively, purely so `tests/security/` specs can `import` from a local `../utils/...` path matching this suite's mirrored-layout convention, without duplicating the underlying logic. Import from these `utils/` re-exports when writing a new `tests/security/**/*.spec.ts` file; import directly from `fixtures/helper/security-reporter.ts` / `helpers/credentials.ts` everywhere else (`tests/api/`, `tests/ui/specs/`).
 
+Never add a `.spec.ts` file directly under `tests/` — every spec belongs in `tests/api/`, `tests/ui/specs/`, or a `tests/security/<category>/` subdirectory. `playwright.config.ts`'s `testDir: './tests'` means a loose file at the root still runs on every project silently; `tests/example.spec.ts` (a leftover Playwright-starter smoke test) sat there undetected until an audit caught it and it was relocated to `tests/ui/specs/home-page.spec.ts`. If you're adding a general smoke check that isn't feature-specific, it still goes in `tests/ui/specs/` or `tests/api/` based on what it exercises.
+
 ## Test Design
 
 - Make each test cover one business function.
@@ -131,7 +133,9 @@ page.locator('.btn-primary');
 //  Avoid dynamic indexes
 page.locator('.card').nth(5);
 
-//  Avoid hard-coded waits
+//  Avoid hard-coded waits — including "waiting out" a CSS transition before a
+//  click; click()'s actionability check already waits for the element to stop
+//  moving. See "Page Object Rules" below for the full explanation.
 await page.waitForTimeout(3000);
 ```
 
@@ -193,6 +197,10 @@ export class HelperBase {
 
 Use `waitForNumberOfSeconds` only when a test explicitly needs a fixed wait for demonstration, debugging, or an application behavior that cannot be asserted directly. Prefer Playwright auto-waiting and web-first assertions for normal test readiness.
 
+**CSS transitions/animations are not an exception.** `click()`'s built-in actionability check already waits for an element to stop moving before interacting with it, so a manual wait before clicking through a CSS transition (e.g. a slide-in mobile menu using `transform`) is redundant, not a real synchronization mechanism. `pages/dashboard.page.ts` (`clickNavigationLink`, `clickNavigationLinkByText`, `logout`) and `pages/money-transfer.page.ts` (`submit`) used to sleep 100-300ms after opening the `.side-panel` menu or before clicking a scrolled-into-view button; both were removed once traced to a `transition: transform 0.3s ease` in `static/dashboard.css` — the assertions already present (`toBeVisible`/`toBeEnabled`) plus the click itself were sufficient. If you find a `waitForTimeout` guarding a click or fill, trace whether the state it's waiting on is something Playwright's actionability checks (visible, stable, enabled, receives events) already cover before assuming it needs the sleep.
+
+A `waitForTimeout` can also mask a missing assertion rather than a real timing need — check whether it's actually standing in for "wait until the app confirms success/failure" before treating it as harmless. `fixtures/api/create-user.helpers.ts`'s UI-registration fallback used to sleep 1000ms after submitting the register form and then unconditionally save the credentials; tracing `templates/register.html` showed the app sets `#message`'s class to `success` or `error` synchronously once its `fetch()` resolves (then redirects after a separate 2s `setTimeout`) — so the fix waits on that class instead, and only saves credentials when it's `success`. The old code would have silently persisted bogus credentials on a failed registration.
+
 Keep locators inside the functional methods that use them instead of defining locator fields in the constructor. This keeps the page object easier to debug, fix, and maintain because each method shows the elements it interacts with directly.
 
 Example:
@@ -241,6 +249,74 @@ Avoid manually checking locator state:
 ```ts
 expect(await locator.isVisible()).toBe(true);
 ```
+
+### Visual regression
+
+Use `expect(locator).toHaveScreenshot('name.png')` scoped to a specific element, not `page.toHaveScreenshot()` for the full page — full-page screenshots pick up unrelated dynamic content (balances, dates, per-user data) and turn into flaky diffs on unrelated changes. Before adding a visual test, check the target element's template for anything per-user/per-run (e.g. `templates/dashboard.html`'s `.side-panel` is safe — logo + static nav links only; balance/greeting/date live in `.main-content`, out of frame). Reference: `tests/ui/specs/visual-leftmenu.spec.ts`.
+
+Playwright screenshot baselines are platform-suffixed (`left-menu-chromium-darwin.png` locally on macOS vs `-linux.png` in CI, which runs `ubuntu-latest`). A baseline generated locally will not satisfy CI — CI needs its own baseline generated in a Linux environment (matching CI's OS) via `--update-snapshots`, committed separately. Don't assume a locally-passing visual test will pass in CI on first run; that's a follow-up step, not implied by local success.
+
+**Outstanding follow-up (as of the `visual-leftmenu.spec.ts` addition):** only macOS (`-darwin.png`) baselines exist for that test. CI will fail on its first run with "no baseline found" until the Linux baselines below are generated once and committed:
+
+```bash
+docker compose up -d --build   # app must be reachable at localhost:5001
+docker run --rm --network host \
+  -v "$PWD":/work -w /work \
+  mcr.microsoft.com/playwright:v1.60.0-jammy \
+  npx playwright test tests/ui/specs/visual-leftmenu.spec.ts \
+    --project=chromium --project=firefox --project=webkit \
+    --project="Mobile Chrome" --project="Mobile Safari" \
+    --update-snapshots
+```
+
+Use `mcr.microsoft.com/playwright:v1.60.0-jammy` — the tag must match the installed `@playwright/test` version (`package.json`) or browser binaries can mismatch. Commit the resulting `-linux.png` files alongside the existing `-darwin.png` ones in `tests/ui/specs/visual-leftmenu.spec.ts-snapshots/`; don't delete the macOS baselines, they're what local runs on this machine compare against.
+
+## test.step()
+
+Wrap every test body's logical phases in `test.step()` — it groups actions under a named label in the HTML/Allure report and trace viewer, which matters once a test has more than a couple of API calls or UI actions. As of the full-suite retrofit (all of `tests/api/`, `tests/ui/specs/`, `tests/security/`), every spec in this repo follows this convention; keep new specs consistent with it.
+
+**Pattern**: split each test into an "act" step (perform the request/action, return whatever the verification needs) and a "verify" step (assertions + `SecurityReporter` calls):
+
+```ts
+const { status, body } = await test.step('Attempt the action', async () => {
+  const res = await someApiCall(...);
+  return { status: res.status(), body: await res.json().catch(() => null) };
+});
+
+await test.step('Verify the expected outcome', async () => {
+  expect(status).toBe(200);
+  reporter.reportPass(...);
+});
+```
+
+For a test with 3+ distinct phases (e.g. setup → act → verify, or capture-before → mutate → capture-after → compare), use one step per phase rather than forcing everything into two.
+
+**Keep `test.skip()` guards at the top level, never inside a step.** `test.skip(condition, reason)` works correctly when called from inside a `test.step()` callback (verified: it produces a clean "skipped" result, not a failed step) — but the convention in this repo is still to resolve whatever the skip condition depends on inside a step, then check-and-skip in the top-level test body, matching the existing `if (!session) { reporter.reportSkip(...); test.skip(true, ...); return; }` pattern used throughout. Example:
+
+```ts
+const session = await test.step('Establish an account session', async () => {
+  return establishAccountSession(api, 'my-feature');
+});
+if (!session) {
+  reporter.reportSkip('Could not establish an account session on this target.');
+  await api.dispose();
+  test.skip(true, 'No account session available');
+  return;
+}
+```
+
+**Watch for TypeScript narrowing loss across step closures.** A presence check like `if (!user.email) throw ...` only narrows `user.email` to `string` within the same function scope — that narrowing does **not** carry into a *different* `test.step()` callback, because each callback is its own closure over the same mutable object. This compiles fine in the step where the check happened, then fails in a later step referencing the same property. Fix it by destructuring into local `const`s right after the check, before entering any step — primitives copied out this way keep their narrowed type in every subsequent closure:
+
+```ts
+const user = createRandomUser('...', false);
+if (!user.email || !user.password) throw new Error('...');
+const { email, password } = user; // narrowed constants, safe across all later steps
+
+await test.step('Step one', async () => { await login.fillEmail(email); });
+await test.step('Step two', async () => { await login.fillPassword(password); }); // would fail to compile with user.password
+```
+
+**Never return a raw `Response` object from a step** if the calling code will read `.status()`/`.json()` from a *different* step — resolve `status`/`body` inside the step that made the request and return those plain values instead. Returning the live response and re-deriving status/body later either re-fetches (wasteful, and can silently change behavior if the endpoint isn't idempotent) or breaks type safety across the closure boundary the same way the narrowing issue above does. This was a real bug caught during the retrofit (`tests/security/authentication/plaintext-password-storage.spec.ts` originally called `/debug/users` twice because of this).
 
 ## Test Data
 

@@ -40,24 +40,28 @@ test.describe('Authorization - Virtual card creation mass assignment', () => {
       user_id: 1
     };
 
-    const createRes = await api.post('/api/virtual-cards/create', {
-      headers: { Authorization: `Bearer ${session.token}` },
-      data: maliciousPayload
+    const storedCard = await test.step('Create a card with extra sensitive fields in the payload', async () => {
+      const createRes = await api.post('/api/virtual-cards/create', {
+        headers: { Authorization: `Bearer ${session.token}` },
+        data: maliciousPayload
+      });
+      const createBody = await createRes.json().catch(() => null);
+
+      const listRes = await api.get('/api/virtual-cards', { headers: { Authorization: `Bearer ${session.token}` } });
+      const listBody = await listRes.json().catch(() => null);
+      await api.dispose();
+
+      const createdCardNumber: string | undefined = createBody?.card_details?.card_number;
+      const storedCard = listBody?.cards?.find((c: any) => c.card_number === createdCardNumber) ?? null;
+
+      testInfo.attach('vcard-create-mass-assign-probe', {
+        body: JSON.stringify({ maliciousPayload, createStatus: createRes.status(), createBody, storedCard }, null, 2),
+        contentType: 'application/json'
+      });
+      return storedCard;
     });
-    const createBody = await createRes.json().catch(() => null);
 
-    const listRes = await api.get('/api/virtual-cards', { headers: { Authorization: `Bearer ${session.token}` } });
-    const listBody = await listRes.json().catch(() => null);
-    await api.dispose();
-
-    const createdCardNumber: string | undefined = createBody?.card_details?.card_number;
-    const storedCard = listBody?.cards?.find((c: any) => c.card_number === createdCardNumber) ?? null;
-
-    testInfo.attach('vcard-create-mass-assign-probe', {
-      body: JSON.stringify({ maliciousPayload, createStatus: createRes.status(), createBody, storedCard }, null, 2),
-      contentType: 'application/json'
-    });
-
+    await test.step('Verify the extra fields had no effect', async () => {
     const balanceInjected = storedCard && Number(storedCard.balance) === maliciousPayload.current_balance;
 
     if (balanceInjected) {
@@ -66,11 +70,12 @@ test.describe('Authorization - Virtual card creation mass assignment', () => {
         { endpoint: 'POST /api/virtual-cards/create', maliciousPayload, storedCard },
         ['Continue to only read card_limit/card_type by name from the request body (as it already does) — do not switch to a generic field-loop like /register uses.']
       );
-    } else {
-      reporter.reportPass(
-        'Extra fields sent on card creation (current_balance, is_frozen, is_active, user_id) had no effect — the endpoint only reads card_limit and card_type by name.',
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      } else {
+        reporter.reportPass(
+          'Extra fields sent on card creation (current_balance, is_frozen, is_active, user_id) had no effect — the endpoint only reads card_limit and card_type by name.',
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 });

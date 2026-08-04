@@ -11,11 +11,16 @@ test.describe('Admin Panel UI', () => {
 			if (!baseURL) throw new Error('baseURL is not defined');
 
 			const pm = new PageManager(page);
-			await pm.adminPanel().goto(baseURL);
-			await pm.adminPanel().waitForLoad();
 
-			await expect(page.getByRole('heading', { name: /Admin Control Panel/i })).toBeVisible();
-			endAssertionLogging('passed');
+			await test.step('Navigate to the admin panel', async () => {
+				await pm.adminPanel().goto(baseURL);
+				await pm.adminPanel().waitForLoad();
+			});
+
+			await test.step('Verify the panel loaded', async () => {
+				await expect(page.getByRole('heading', { name: /Admin Control Panel/i })).toBeVisible();
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Admin authentication required to access panel', async ({ page, baseURL }) => {
@@ -23,10 +28,15 @@ test.describe('Admin Panel UI', () => {
 			if (!baseURL) throw new Error('baseURL is not defined');
 
 			const pm = new PageManager(page);
-			await pm.adminPanel().goto(baseURL);
 
-			await expect(page).toHaveURL(/(?:\/sup3r_s3cr3t_admin|\/login)/);
-			endAssertionLogging('passed');
+			await test.step('Navigate to the admin panel without authentication', async () => {
+				await pm.adminPanel().goto(baseURL);
+			});
+
+			await test.step('Verify redirected to login or the panel is otherwise gated', async () => {
+				await expect(page).toHaveURL(/(?:\/sup3r_s3cr3t_admin|\/login)/);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Non-admin user access is not protected (vulnerability)', async ({ page, baseURL }) => {
@@ -41,20 +51,23 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			await page.goto(baseURL);
-			await page.evaluate(({ token, keys }) => {
-				for (const key of keys) {
-					window.localStorage.setItem(key, token);
-				}
-			}, { token: session!.token, keys: ['jwt_token', 'token', 'auth'] });
+			await test.step('Inject a non-admin token and navigate to the admin panel', async () => {
+				await page.goto(baseURL);
+				await page.evaluate(({ token, keys }) => {
+					for (const key of keys) {
+						window.localStorage.setItem(key, token);
+					}
+				}, { token: session!.token, keys: ['jwt_token', 'token', 'auth'] });
 
-			const pm = new PageManager(page);
-			await pm.adminPanel().goto(baseURL);
+				const pm = new PageManager(page);
+				await pm.adminPanel().goto(baseURL);
+			});
 
-			await expect(page).toHaveURL(/\/sup3r_s3cr3t_admin/);
-
-			await api.dispose();
-			endAssertionLogging('passed');
+			await test.step('Verify access was not blocked', async () => {
+				await expect(page).toHaveURL(/\/sup3r_s3cr3t_admin/);
+				await api.dispose();
+				endAssertionLogging('passed');
+			});
 		});
 	});
 
@@ -70,27 +83,31 @@ test.describe('Admin Panel UI', () => {
 		test('User management table displays with correct columns', async ({ page }) => {
 			setupAssertionLogging('User management table displays with correct columns');
 			const pm = new PageManager(page);
-			const table = page.locator('table').first();
 
-			await expect(table).toBeVisible();
+			await test.step('Verify the table columns', async () => {
+				const table = page.locator('table').first();
+				await expect(table).toBeVisible();
 
-			const headers = await table.locator('thead th').allTextContents();
-			loggedExpect(headers, 'headers').toContain('ID');
-			loggedExpect(headers, 'headers').toContain('Username');
-			loggedExpect(headers, 'headers').toContain('Account Number');
-			loggedExpect(headers, 'headers').toContain('Balance');
-			loggedExpect(headers, 'headers').toContain('Admin');
-			loggedExpect(headers, 'headers').toContain('Actions');
-			endAssertionLogging('passed');
+				const headers = await table.locator('thead th').allTextContents();
+				loggedExpect(headers, 'headers').toContain('ID');
+				loggedExpect(headers, 'headers').toContain('Username');
+				loggedExpect(headers, 'headers').toContain('Account Number');
+				loggedExpect(headers, 'headers').toContain('Balance');
+				loggedExpect(headers, 'headers').toContain('Admin');
+				loggedExpect(headers, 'headers').toContain('Actions');
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('User management table displays users', async ({ page }) => {
 			setupAssertionLogging('User management table displays users');
 			const pm = new PageManager(page);
-			const userCount = await pm.adminPanel().getUserCount();
 
-			loggedExpect(userCount, 'userCount').toBeGreaterThan(0);
-			endAssertionLogging('passed');
+			await test.step('Verify the user table displays users', async () => {
+				const userCount = await pm.adminPanel().getUserCount();
+				loggedExpect(userCount, 'userCount').toBeGreaterThan(0);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('User data displays correctly in table', async ({ page }) => {
@@ -102,15 +119,17 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			const firstRowCells = await rows[0].locator('td').allTextContents();
-			loggedExpect(firstRowCells.length, 'firstRowCells.length').toBeGreaterThanOrEqual(5);
+			await test.step('Verify user id and username are present in the first row', async () => {
+				const firstRowCells = await rows[0].locator('td').allTextContents();
+				loggedExpect(firstRowCells.length, 'firstRowCells.length').toBeGreaterThanOrEqual(5);
 
-			const userId = firstRowCells[0];
-			const username = firstRowCells[1];
+				const userId = firstRowCells[0];
+				const username = firstRowCells[1];
 
-			loggedExpect(userId, 'userId').toBeTruthy();
-			loggedExpect(username, 'username').toBeTruthy();
-			endAssertionLogging('passed');
+				loggedExpect(userId, 'userId').toBeTruthy();
+				loggedExpect(username, 'username').toBeTruthy();
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Delete button present for each user', async ({ page }) => {
@@ -122,11 +141,13 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			for (const row of rows) {
-				const deleteButton = row.locator('button:has-text("Delete")');
-				await expect(deleteButton).toBeVisible();
-			}
-			endAssertionLogging('passed');
+			await test.step('Verify a delete button is visible for each user', async () => {
+				for (const row of rows) {
+					const deleteButton = row.locator('button:has-text("Delete")');
+					await expect(deleteButton).toBeVisible();
+				}
+				endAssertionLogging('passed');
+			});
 		});
 	});
 
@@ -154,17 +175,21 @@ test.describe('Admin Panel UI', () => {
 
 			const userIdToDelete = testSession!.userId;
 
-			await page.reload();
-			await pm.adminPanel().waitForLoad();
+			await test.step('Reload to pick up the test user', async () => {
+				await page.reload();
+				await pm.adminPanel().waitForLoad();
+			});
 
 			try {
-				await pm.adminPanel().deleteUserById(userIdToDelete);
-				await pm.adminPanel().waitForSuccessMessage('deleted successfully', 10000);
+				await test.step('Delete the user and verify success', async () => {
+					await pm.adminPanel().deleteUserById(userIdToDelete);
+					await pm.adminPanel().waitForSuccessMessage('deleted successfully', 10000);
 
-				const messageText = await pm.adminPanel().getMessageText();
-				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('delete');
-				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
-				endAssertionLogging('passed');
+					const messageText = await pm.adminPanel().getMessageText();
+					loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('delete');
+					loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
+					endAssertionLogging('passed');
+				});
 			} catch {
 				test.skip();
 			}
@@ -186,48 +211,54 @@ test.describe('Admin Panel UI', () => {
 			setupAssertionLogging('Create admin form displays with correct fields');
 			const pm = new PageManager(page);
 
-			await expect(page.locator('#admin_username')).toBeVisible();
-			await expect(page.locator('#admin_password')).toBeVisible();
-			await expect(page.getByRole('button', { name: /Create Admin/i })).toBeVisible();
-			endAssertionLogging('passed');
+			await test.step('Verify the create admin form fields are present', async () => {
+				await expect(page.locator('#admin_username')).toBeVisible();
+				await expect(page.locator('#admin_password')).toBeVisible();
+				await expect(page.getByRole('button', { name: /Create Admin/i })).toBeVisible();
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Create admin success flow', async ({ page }) => {
 			setupAssertionLogging('Create admin success flow');
 			const pm = new PageManager(page);
-
 			const testUsername = `admin-test-${Date.now()}`;
 			const testPassword = 'TestPass123!';
 
-			await pm.adminPanel().createAdmin(testUsername, testPassword);
+			await test.step('Create an admin account', async () => {
+				await pm.adminPanel().createAdmin(testUsername, testPassword);
+				await pm.adminPanel().waitForSuccessMessage('created successfully', 10000);
+			});
 
-			await pm.adminPanel().waitForSuccessMessage('created successfully', 10000);
+			await test.step('Verify the success message and cleared form', async () => {
+				const messageText = await pm.adminPanel().getMessageText();
+				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
 
-			const messageText = await pm.adminPanel().getMessageText();
-			loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
-
-			const usernameInput = page.locator('#admin_username');
-			await expect(usernameInput).toHaveValue('');
-			endAssertionLogging('passed');
+				const usernameInput = page.locator('#admin_username');
+				await expect(usernameInput).toHaveValue('');
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Create admin form clears after submission', async ({ page }) => {
 			setupAssertionLogging('Create admin form clears after submission');
 			const pm = new PageManager(page);
-
 			const testUsername = `admin-form-clear-${Date.now()}`;
 			const testPassword = 'TestPass123!';
 
-			await pm.adminPanel().createAdmin(testUsername, testPassword);
+			await test.step('Create an admin account', async () => {
+				await pm.adminPanel().createAdmin(testUsername, testPassword);
+				await pm.adminPanel().waitForSuccessMessage();
+			});
 
-			await pm.adminPanel().waitForSuccessMessage();
+			await test.step('Verify username and password fields cleared', async () => {
+				const usernameInput = page.locator('#admin_username');
+				const passwordInput = page.locator('#admin_password');
 
-			const usernameInput = page.locator('#admin_username');
-			const passwordInput = page.locator('#admin_password');
-
-			await expect(usernameInput).toHaveValue('');
-			endAssertionLogging('passed');
-			await expect(passwordInput).toHaveValue('');
+				await expect(usernameInput).toHaveValue('');
+				endAssertionLogging('passed');
+				await expect(passwordInput).toHaveValue('');
+			});
 		});
 	});
 
@@ -248,15 +279,17 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			const loansTable = tables[1];
-			const headers = await loansTable.locator('thead th').allTextContents();
+			await test.step('Verify the pending loans table columns', async () => {
+				const loansTable = tables[1];
+				const headers = await loansTable.locator('thead th').allTextContents();
 
-			loggedExpect(headers, 'headers').toContain('Loan ID');
-			loggedExpect(headers, 'headers').toContain('User ID');
-			loggedExpect(headers, 'headers').toContain('Amount');
-			loggedExpect(headers, 'headers').toContain('Status');
-			loggedExpect(headers, 'headers').toContain('Actions');
-			endAssertionLogging('passed');
+				loggedExpect(headers, 'headers').toContain('Loan ID');
+				loggedExpect(headers, 'headers').toContain('User ID');
+				loggedExpect(headers, 'headers').toContain('Amount');
+				loggedExpect(headers, 'headers').toContain('Status');
+				loggedExpect(headers, 'headers').toContain('Actions');
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Approve loan success flow', async ({ page, baseURL }) => {
@@ -280,17 +313,20 @@ test.describe('Admin Panel UI', () => {
 
 			const rowsBeforeApprove = await pm.adminPanel().getPendingLoansTableRows();
 
-			await pm.adminPanel().approveLoanById(loanId);
+			await test.step('Approve the first pending loan', async () => {
+				await pm.adminPanel().approveLoanById(loanId);
+				await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+			});
 
-			await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+			await test.step('Verify the success message and row count decreased', async () => {
+				const messageText = await pm.adminPanel().getMessageText();
+				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('approve');
+				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
 
-			const messageText = await pm.adminPanel().getMessageText();
-			loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('approve');
-			loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
-
-			const rowsAfterApprove = await pm.adminPanel().getPendingLoansTableRows();
-			loggedExpect(rowsAfterApprove.length, 'rowsAfterApprove.length').toBeLessThanOrEqual(rowsBeforeApprove.length);
-			endAssertionLogging('passed');
+				const rowsAfterApprove = await pm.adminPanel().getPendingLoansTableRows();
+				loggedExpect(rowsAfterApprove.length, 'rowsAfterApprove.length').toBeLessThanOrEqual(rowsBeforeApprove.length);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Approve button present for each pending loan', async ({ page }) => {
@@ -302,15 +338,17 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			for (let i = 0; i < loanRows.length; i++) {
-				const row = loanRows[i];
-				const isEmptyMessage = await row.locator('[data-testid="no-pending-loans-message"]').isVisible().catch(() => false);
-				if (isEmptyMessage) continue;
+			await test.step('Verify an approve button is visible for each pending loan', async () => {
+				for (let i = 0; i < loanRows.length; i++) {
+					const row = loanRows[i];
+					const isEmptyMessage = await row.locator('[data-testid="no-pending-loans-message"]').isVisible().catch(() => false);
+					if (isEmptyMessage) continue;
 
-				const approveButton = row.locator('button:has-text("Approve")');
-				await expect(approveButton).toBeVisible();
-			}
-			endAssertionLogging('passed');
+					const approveButton = row.locator('button:has-text("Approve")');
+					await expect(approveButton).toBeVisible();
+				}
+				endAssertionLogging('passed');
+			});
 		});
 	});
 
@@ -327,37 +365,47 @@ test.describe('Admin Panel UI', () => {
 			setupAssertionLogging('Back to Dashboard link works');
 			const pm = new PageManager(page);
 
-			await pm.adminPanel().navigateBackToDashboard();
+			await test.step('Click the back to dashboard link', async () => {
+				await pm.adminPanel().navigateBackToDashboard();
+			});
 
-			await expect(page).toHaveURL(/\/dashboard/i);
-			endAssertionLogging('passed');
+			await test.step('Verify redirect to the dashboard', async () => {
+				await expect(page).toHaveURL(/\/dashboard/i);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Page title shows Admin Panel', async ({ page }) => {
 			setupAssertionLogging('Page title shows Admin Panel');
 			const pm = new PageManager(page);
-			const title = await pm.adminPanel().getPageTitle();
 
-			loggedExpect(title, 'title').toContain('Admin');
-			endAssertionLogging('passed');
+			await test.step('Verify the page title', async () => {
+				const title = await pm.adminPanel().getPageTitle();
+				loggedExpect(title, 'title').toContain('Admin');
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Admin header displays correctly', async ({ page }) => {
 			setupAssertionLogging('Admin header displays correctly');
 			const pm = new PageManager(page);
-			const headerText = await pm.adminPanel().getAdminHeaderText();
 
-			loggedExpect(headerText?.toLowerCase(), 'headerText').toContain('admin');
-			loggedExpect(headerText?.toLowerCase(), 'headerText').toContain('control');
-			endAssertionLogging('passed');
+			await test.step('Verify the admin header text', async () => {
+				const headerText = await pm.adminPanel().getAdminHeaderText();
+				loggedExpect(headerText?.toLowerCase(), 'headerText').toContain('admin');
+				loggedExpect(headerText?.toLowerCase(), 'headerText').toContain('control');
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Admin profile picture displays', async ({ page }) => {
 			setupAssertionLogging('Admin profile picture displays');
 			const pm = new PageManager(page);
 
-			await expect(pm.adminPanel().getProfilePicture()).toBeVisible({ timeout: 5000 });
-			endAssertionLogging('passed');
+			await test.step('Verify the profile picture is visible', async () => {
+				await expect(pm.adminPanel().getProfilePicture()).toBeVisible({ timeout: 5000 });
+				endAssertionLogging('passed');
+			});
 		});
 	});
 
@@ -390,10 +438,12 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			const firstLoanAmount = await pm.adminPanel().getLoanAmountByRowIndex(0);
-			loggedExpect(firstLoanAmount, 'firstLoanAmount').toBeTruthy();
-			loggedExpect(firstLoanAmount?.trim(), 'loanAmount format').toMatch(/\$-?[\d,]+(\.\d{2})?/);
-			endAssertionLogging('passed');
+			await test.step('Verify the loan amount format', async () => {
+				const firstLoanAmount = await pm.adminPanel().getLoanAmountByRowIndex(0);
+				loggedExpect(firstLoanAmount, 'firstLoanAmount').toBeTruthy();
+				loggedExpect(firstLoanAmount?.trim(), 'loanAmount format').toMatch(/\$-?[\d,]+(\.\d{2})?/);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Approve loan removes from pending applications', async ({ page, baseURL }) => {
@@ -417,16 +467,20 @@ test.describe('Admin Panel UI', () => {
 
 			const rowsBeforeApprove = await pm.adminPanel().getPendingLoansTableRows();
 
-			await pm.adminPanel().approveLoanById(loanId);
-			await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+			await test.step('Approve the first pending loan', async () => {
+				await pm.adminPanel().approveLoanById(loanId);
+				await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+			});
 
-			const messageText = await pm.adminPanel().getMessageText();
-			loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('approve');
-			loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
+			await test.step('Verify the success message and row count decreased', async () => {
+				const messageText = await pm.adminPanel().getMessageText();
+				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('approve');
+				loggedExpect(messageText?.toLowerCase(), 'messageText').toContain('success');
 
-			const rowsAfterApprove = await pm.adminPanel().getPendingLoansTableRows();
-			loggedExpect(rowsAfterApprove.length, 'rowsAfterApprove.length').toBeLessThan(rowsBeforeApprove.length);
-			endAssertionLogging('passed');
+				const rowsAfterApprove = await pm.adminPanel().getPendingLoansTableRows();
+				loggedExpect(rowsAfterApprove.length, 'rowsAfterApprove.length').toBeLessThan(rowsBeforeApprove.length);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Loan amount stays same or increases after approval', async ({ page, baseURL }) => {
@@ -448,13 +502,17 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			const amountBefore = await pm.adminPanel().getLoanAmountById(loanId);
-			const amountBeforeNum = parseFloat(amountBefore?.replace(/[^\d.]/g, '') || '0');
-			loggedExpect(amountBeforeNum, 'amountBeforeNum').toBeGreaterThan(0);
+			await test.step('Verify the loan amount before approval', async () => {
+				const amountBefore = await pm.adminPanel().getLoanAmountById(loanId);
+				const amountBeforeNum = parseFloat(amountBefore?.replace(/[^\d.]/g, '') || '0');
+				loggedExpect(amountBeforeNum, 'amountBeforeNum').toBeGreaterThan(0);
+			});
 
-			await pm.adminPanel().approveLoanById(loanId);
-			await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
-			endAssertionLogging('passed');
+			await test.step('Approve the loan', async () => {
+				await pm.adminPanel().approveLoanById(loanId);
+				await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Pending loans count decreases after approval', async ({ page, baseURL }) => {
@@ -477,12 +535,16 @@ test.describe('Admin Panel UI', () => {
 				test.skip();
 			}
 
-			await pm.adminPanel().approveLoanById(loanId);
-			await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+			await test.step('Approve the first pending loan', async () => {
+				await pm.adminPanel().approveLoanById(loanId);
+				await pm.adminPanel().waitForSuccessMessage('approved successfully', 10000);
+			});
 
-			const countAfter = await pm.adminPanel().getPendingLoansCount();
-			loggedExpect(countAfter, 'countAfter').toBeLessThan(countBefore);
-			endAssertionLogging('passed');
+			await test.step('Verify the pending loans count decreased', async () => {
+				const countAfter = await pm.adminPanel().getPendingLoansCount();
+				loggedExpect(countAfter, 'countAfter').toBeLessThan(countBefore);
+				endAssertionLogging('passed');
+			});
 		});
 	});
 
@@ -500,12 +562,16 @@ test.describe('Admin Panel UI', () => {
 			const pm = new PageManager(page);
 			const testUsername = `admin-msg-success-${Date.now()}`;
 
-			await pm.adminPanel().createAdmin(testUsername, 'Test123!');
+			await test.step('Create an admin account', async () => {
+				await pm.adminPanel().createAdmin(testUsername, 'Test123!');
+			});
 
-			const message = page.locator('#message');
-			await expect(message).toBeVisible();
-			await expect(message).toHaveClass(/success/);
-			endAssertionLogging('passed');
+			await test.step('Verify the success message styling', async () => {
+				const message = page.locator('#message');
+				await expect(message).toBeVisible();
+				await expect(message).toHaveClass(/success/);
+				endAssertionLogging('passed');
+			});
 		});
 
 		test('Message text content displays', async ({ page }) => {
@@ -513,14 +579,17 @@ test.describe('Admin Panel UI', () => {
 			const pm = new PageManager(page);
 			const testUsername = `admin-msg-content-${Date.now()}`;
 
-			await pm.adminPanel().createAdmin(testUsername, 'Test123!');
+			await test.step('Create an admin account', async () => {
+				await pm.adminPanel().createAdmin(testUsername, 'Test123!');
+				await pm.adminPanel().waitForSuccessMessage('created successfully', 10000);
+			});
 
-			await pm.adminPanel().waitForSuccessMessage('created successfully', 10000);
-
-			const messageText = await pm.adminPanel().getMessageText();
-			loggedExpect(messageText, 'messageText').toBeTruthy();
-			loggedExpect(messageText?.length, 'messageText.length').toBeGreaterThan(0);
-			endAssertionLogging('passed');
+			await test.step('Verify the message text content', async () => {
+				const messageText = await pm.adminPanel().getMessageText();
+				loggedExpect(messageText, 'messageText').toBeTruthy();
+				loggedExpect(messageText?.length, 'messageText.length').toBeGreaterThan(0);
+				endAssertionLogging('passed');
+			});
 		});
 	});
 });

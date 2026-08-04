@@ -56,20 +56,26 @@ test.describe('Profile picture management', () => {
   test('should upload a profile picture and update the displayed image', async () => {
     setupAssertionLogging('should upload a profile picture and update the displayed image');
     const profile = pm.profile();
-    const initialSrc = await profile.getProfilePictureSrc();
 
-    await profile.uploadPicture({
-      name: 'avatar.png',
-      mimeType: 'image/png',
-      buffer: TEST_PNG_BUFFER,
+    const initialSrc = await test.step('Capture the initial picture and upload a new one', async () => {
+      const initialSrc = await profile.getProfilePictureSrc();
+
+      await profile.uploadPicture({
+        name: 'avatar.png',
+        mimeType: 'image/png',
+        buffer: TEST_PNG_BUFFER,
+      });
+
+      await profile.waitForUploadMessage(/upload successful/i);
+      await profile.waitForProfilePictureSrc(/uploads\//);
+      return initialSrc;
     });
 
-    await profile.waitForUploadMessage(/upload successful/i);
-    await profile.waitForProfilePictureSrc(/uploads\//);
-
-    const updatedSrc = await profile.getProfilePictureSrc();
-    loggedExpect(updatedSrc, 'updatedSrc').not.toBe(initialSrc);
-    endAssertionLogging('passed');
+    await test.step('Verify the displayed image updated', async () => {
+      const updatedSrc = await profile.getProfilePictureSrc();
+      loggedExpect(updatedSrc, 'updatedSrc').not.toBe(initialSrc);
+      endAssertionLogging('passed');
+    });
   });
 
   test('should import a profile picture from a URL', async ({ baseURL }) => {
@@ -80,16 +86,20 @@ test.describe('Profile picture management', () => {
 
     const profile = pm.profile();
 
-    // Use an app-hosted static asset to keep the test self-contained.
-    // APP_INTERNAL_URL allows CI/Docker environments to supply the URL that the
-    // Flask server can reach (e.g. http://web:5000) instead of the host-facing
-    // baseURL (e.g. http://localhost:5001), since the server fetches this URL
-    // from inside the Docker network.
-    const serverBaseUrl = process.env.APP_INTERNAL_URL || baseURL;
-    await profile.importFromUrl(new URL('/static/user.png', serverBaseUrl).toString());
+    await test.step('Import a profile picture from a URL', async () => {
+      // Use an app-hosted static asset to keep the test self-contained.
+      // APP_INTERNAL_URL allows CI/Docker environments to supply the URL that the
+      // Flask server can reach (e.g. http://web:5000) instead of the host-facing
+      // baseURL (e.g. http://localhost:5001), since the server fetches this URL
+      // from inside the Docker network.
+      const serverBaseUrl = process.env.APP_INTERNAL_URL || baseURL;
+      await profile.importFromUrl(new URL('/static/user.png', serverBaseUrl).toString());
+    });
 
-    await profile.waitForUploadMessage(/imported from url successfully/i);
-    await profile.waitForProfilePictureSrc(/uploads\//);
-    endAssertionLogging('passed');
+    await test.step('Verify it was imported successfully', async () => {
+      await profile.waitForUploadMessage(/imported from url successfully/i);
+      await profile.waitForProfilePictureSrc(/uploads\//);
+      endAssertionLogging('passed');
+    });
   });
 });

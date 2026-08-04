@@ -59,20 +59,22 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - Case-insensitive regex for mobile text variations
 		 */
 
-		// Chained locator: h1 filtered by regex (tolerates case, whitespace)
-		const heading = page.locator('h1').filter({ hasText: /welcome/i });
+		await test.step('Locate the welcome heading via chained locator with regex filter', async () => {
+			// Chained locator: h1 filtered by regex (tolerates case, whitespace)
+			const heading = page.locator('h1').filter({ hasText: /welcome/i });
 
-		// expect() includes built-in auto-wait (10s timeout from config)
-		// No manual waitForDisplayed() needed
-		await expect(heading).toBeVisible();
+			// expect() includes built-in auto-wait (10s timeout from config)
+			// No manual waitForDisplayed() needed
+			await expect(heading).toBeVisible();
 
-		// Verify text content (also uses built-in wait)
-		await expect(heading).toContainText(/welcome/i);
+			// Verify text content (also uses built-in wait)
+			await expect(heading).toContainText(/welcome/i);
 
-		// Get the actual text to verify it matches expected pattern
-		const text = await heading.textContent();
-		expect(text).toBeTruthy();
-		expect(text?.toLowerCase()).toContain('welcome');
+			// Get the actual text to verify it matches expected pattern
+			const text = await heading.textContent();
+			expect(text).toBeTruthy();
+			expect(text?.toLowerCase()).toContain('welcome');
+		});
 	});
 
 	test('should locate balance element with ID selector (most stable)', async ({
@@ -85,17 +87,19 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - Combining visibility + text assertions
 		 */
 
-		const balance = page.locator('#balance');
+		await test.step('Locate the balance element via ID selector', async () => {
+			const balance = page.locator('#balance');
 
-		// Auto-wait for visibility (built-in to expect)
-		await expect(balance).toBeVisible();
+			// Auto-wait for visibility (built-in to expect)
+			await expect(balance).toBeVisible();
 
-		// Verify it contains currency symbol
-		await expect(balance).toContainText(/\$|€|£/);
+			// Verify it contains currency symbol
+			await expect(balance).toContainText(/\$|€|£/);
 
-		// Verify the value is numeric
-		const balanceText = await balance.textContent();
-		expect(balanceText).toMatch(/\d+(\.\d{2})?/);
+			// Verify the value is numeric
+			const balanceText = await balance.textContent();
+			expect(balanceText).toMatch(/\d+(\.\d{2})?/);
+		});
 	});
 
 	test('should open menu using chained button selector with text filter', async ({
@@ -108,24 +112,26 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - No arbitrary waits for CSS transitions
 		 */
 
-		const menuToggle = page.locator('button').filter({ hasText: /menu/i });
+		await test.step('Open the menu (if present) using a chained button selector', async () => {
+			const menuToggle = page.locator('button').filter({ hasText: /menu/i });
 
-		// Check if toggle is displayed (respects @media display: none)
-		const isVisible = await menuToggle.isVisible();
+			// Check if toggle is displayed (respects @media display: none)
+			const isVisible = await menuToggle.isVisible();
 
-		if (isVisible) {
-			// Auto-wait for enabled state before click
-			await expect(menuToggle).toBeEnabled();
-			await menuToggle.click();
+			if (isVisible) {
+				// Auto-wait for enabled state before click
+				await expect(menuToggle).toBeEnabled();
+				await menuToggle.click();
 
-			// Wait for menu to appear (navigation should be visible now)
-			// Use WaitHelper for custom conditions, not arbitrary sleep
-			const navVisible = await WaitHelper.waitForElement(
-				page.locator('nav').filter({ hasText: /.+/ }),
-				{ timeout: WaitHelper.timeouts.NORMAL }
-			);
-			expect(navVisible).toBe(true);
-		}
+				// Wait for menu to appear (navigation should be visible now)
+				// Use WaitHelper for custom conditions, not arbitrary sleep
+				const navVisible = await WaitHelper.waitForElement(
+					page.locator('nav').filter({ hasText: /.+/ }),
+					{ timeout: WaitHelper.timeouts.NORMAL }
+				);
+				expect(navVisible).toBe(true);
+			}
+		});
 	});
 
 	test('should navigate using chained context-aware selectors', async ({
@@ -138,30 +144,34 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - Built-in wait before interaction
 		 */
 
-		// Open menu if needed (same as previous test)
-		const menuToggle = page.locator('button').filter({ hasText: /menu/i });
-		if (await menuToggle.isVisible()) {
-			await menuToggle.click();
-		}
+		await test.step('Open the menu if needed and click the profile link', async () => {
+			// Open menu if needed (same as previous test)
+			const menuToggle = page.locator('button').filter({ hasText: /menu/i });
+			if (await menuToggle.isVisible()) {
+				await menuToggle.click();
+			}
 
-		// Chained: navigation > link with "Profile" text
-		// /profile/i matches "Profile", "PROFILE", case-insensitive
-		const profileLink = page
-			.locator('nav')
-			.locator('a, button, [role="link"]')
-			.filter({ hasText: /profile/i })
-			.first();
+			// Chained: navigation > link with "Profile" text
+			// /profile/i matches "Profile", "PROFILE", case-insensitive
+			const profileLink = page
+				.locator('nav')
+				.locator('a, button, [role="link"]')
+				.filter({ hasText: /profile/i })
+				.first();
 
-		// expect() includes auto-wait (up to 10s by default)
-		await expect(profileLink).toBeVisible();
-		await expect(profileLink).toBeEnabled();
+			// expect() includes auto-wait (up to 10s by default)
+			await expect(profileLink).toBeVisible();
+			await expect(profileLink).toBeEnabled();
 
-		// Click with auto-wait for element to be ready
-		await profileLink.click();
+			// Click with auto-wait for element to be ready
+			await profileLink.click();
+		});
 
-		// Wait for navigation (use URL since page title may vary)
-		await expect(page).toHaveURL(/\/dashboard|\/profile/i, {
-			timeout: WaitHelper.timeouts.NORMAL,
+		await test.step('Verify navigation occurred', async () => {
+			// Wait for navigation (use URL since page title may vary)
+			await expect(page).toHaveURL(/\/dashboard|\/profile/i, {
+				timeout: WaitHelper.timeouts.NORMAL,
+			});
 		});
 	});
 
@@ -175,31 +185,35 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - Conditional logic with built-in waits
 		 */
 
-		// Open menu to ensure logout link is visible
-		const menuToggle = page.locator('button').filter({ hasText: /menu/i });
-		if (await menuToggle.isVisible()) {
-			await menuToggle.click();
-		}
+		await test.step('Open the menu and click the logout link', async () => {
+			// Open menu to ensure logout link is visible
+			const menuToggle = page.locator('button').filter({ hasText: /menu/i });
+			if (await menuToggle.isVisible()) {
+				await menuToggle.click();
+			}
 
-		// Chained contextual selector: nav > a with whitespace-tolerant regex
-		// /log\s*out/i matches "Logout", "Log out", "LOG OUT", etc.
-		const logoutLink = page
-			.locator('nav')
-			.locator('a')
-			.filter({ hasText: /log\s*out/i });
+			// Chained contextual selector: nav > a with whitespace-tolerant regex
+			// /log\s*out/i matches "Logout", "Log out", "LOG OUT", etc.
+			const logoutLink = page
+				.locator('nav')
+				.locator('a')
+				.filter({ hasText: /log\s*out/i });
 
-		// expect() includes auto-wait for visibility
-		await expect(logoutLink).toBeVisible();
+			// expect() includes auto-wait for visibility
+			await expect(logoutLink).toBeVisible();
 
-		// Verify it's clickable
-		await expect(logoutLink).toBeEnabled();
+			// Verify it's clickable
+			await expect(logoutLink).toBeEnabled();
 
-		// Click it
-		await logoutLink.click();
+			// Click it
+			await logoutLink.click();
+		});
 
-		// Wait for redirect to login page (URL change, not arbitrary sleep)
-		await expect(page).toHaveURL(/\/login/i, {
-			timeout: WaitHelper.timeouts.NORMAL,
+		await test.step('Verify redirect to the login page', async () => {
+			// Wait for redirect to login page (URL change, not arbitrary sleep)
+			await expect(page).toHaveURL(/\/login/i, {
+				timeout: WaitHelper.timeouts.NORMAL,
+			});
 		});
 	});
 
@@ -213,38 +227,44 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - No arbitrary waits between actions
 		 */
 
-		// Open menu if needed
-		const menuToggle = page.locator('button').filter({ hasText: /menu/i });
-		if (await menuToggle.isVisible()) {
-			await menuToggle.click();
-		}
+		const navItems = await test.step('Open the menu and locate nav items', async () => {
+			// Open menu if needed
+			const menuToggle = page.locator('button').filter({ hasText: /menu/i });
+			if (await menuToggle.isVisible()) {
+				await menuToggle.click();
+			}
 
-		// Get all nav links, filtered by text content
-		const navItems = page
-			.locator('nav')
-			.locator('a, button, [role="link"]')
-			.filter({ hasText: /.+/ });
+			// Get all nav links, filtered by text content
+			const navItems = page
+				.locator('nav')
+				.locator('a, button, [role="link"]')
+				.filter({ hasText: /.+/ });
 
-		// Wait for at least one item to be visible
-		const count = await navItems.count();
-		expect(count).toBeGreaterThan(0);
+			// Wait for at least one item to be visible
+			const count = await navItems.count();
+			expect(count).toBeGreaterThan(0);
+			return navItems;
+		});
 
-		// Collect only visible items (respects CSS media query visibility)
-		const visibleItems: string[] = [];
-		for (let i = 0; i < count; i++) {
-			const item = navItems.nth(i);
+		await test.step('Collect and verify visible items', async () => {
+			// Collect only visible items (respects CSS media query visibility)
+			const count = await navItems.count();
+			const visibleItems: string[] = [];
+			for (let i = 0; i < count; i++) {
+				const item = navItems.nth(i);
 
-			// Check visibility (respects @media display: none)
-			if (await item.isVisible()) {
-				const text = (await item.textContent())?.trim();
-				if (text) {
-					visibleItems.push(text);
+				// Check visibility (respects @media display: none)
+				if (await item.isVisible()) {
+					const text = (await item.textContent())?.trim();
+					if (text) {
+						visibleItems.push(text);
+					}
 				}
 			}
-		}
 
-		// Should have at least some visible items
-		expect(visibleItems.length).toBeGreaterThan(0);
+			// Should have at least some visible items
+			expect(visibleItems.length).toBeGreaterThan(0);
+		});
 	});
 
 	test('should wait for page load state without arbitrary delays', async ({
@@ -258,31 +278,34 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - No arbitrary waits for "stability" (use WaitHelper.waitForStableDOM instead)
 		 */
 
-		// Navigate to dashboard directly
-		const dashboardUrl = new URL('/dashboard', baseURL).toString();
-		await page.goto(dashboardUrl);
+		await test.step('Navigate directly to the dashboard', async () => {
+			const dashboardUrl = new URL('/dashboard', baseURL).toString();
+			await page.goto(dashboardUrl);
 
-		// Wait for DOM content loaded (built-in Playwright mechanism)
-		await page.waitForLoadState('domcontentloaded');
+			// Wait for DOM content loaded (built-in Playwright mechanism)
+			await page.waitForLoadState('domcontentloaded');
+		});
 
-		// Wait for the actual UI elements to appear (not arbitrary sleep)
-		// The dashboard fetches data after load, so poll the actual elements
-		const heading = page.locator('h1').filter({ hasText: /welcome/i });
-		const balance = page.locator('#balance');
+		await test.step('Verify UI elements appear without arbitrary delays', async () => {
+			// Wait for the actual UI elements to appear (not arbitrary sleep)
+			// The dashboard fetches data after load, so poll the actual elements
+			const heading = page.locator('h1').filter({ hasText: /welcome/i });
+			const balance = page.locator('#balance');
 
-		// These use expect() auto-wait (10s timeout)
-		await expect(heading).toBeVisible();
-		await expect(balance).toBeVisible();
+			// These use expect() auto-wait (10s timeout)
+			await expect(heading).toBeVisible();
+			await expect(balance).toBeVisible();
 
-		// Optional: Wait for network to be idle (if needed for API results)
-		// But only if the app actually waits for network responses
-		try {
-			await page.waitForLoadState('networkidle', {
-				timeout: WaitHelper.timeouts.QUICK,
-			});
-		} catch {
-			// Network idle timeout is acceptable; we already have UI elements
-		}
+			// Optional: Wait for network to be idle (if needed for API results)
+			// But only if the app actually waits for network responses
+			try {
+				await page.waitForLoadState('networkidle', {
+					timeout: WaitHelper.timeouts.QUICK,
+				});
+			} catch {
+				// Network idle timeout is acceptable; we already have UI elements
+			}
+		});
 	});
 
 	test('should isolate tests by preventing state leakage between runs', async ({
@@ -297,30 +320,34 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * - Verifying isolation with cookies/storage
 		 */
 
-		// Get current cookies (should be clean session)
-		const cookies = await page.context().cookies();
+		await test.step('Verify a fresh authenticated session via cookies', async () => {
+			// Get current cookies (should be clean session)
+			const cookies = await page.context().cookies();
 
-		// Should have auth token (set by ensureDashboardAuthenticated)
-		const hasAuthCookie = cookies.some((c) =>
-			['token', 'jwt', 'auth', 'access_token'].includes(c.name)
-		);
-		expect(hasAuthCookie || cookies.length > 0).toBe(true); // May vary by app
+			// Should have auth token (set by ensureDashboardAuthenticated)
+			const hasAuthCookie = cookies.some((c) =>
+				['token', 'jwt', 'auth', 'access_token'].includes(c.name)
+			);
+			expect(hasAuthCookie || cookies.length > 0).toBe(true); // May vary by app
 
-		// Verify we're on dashboard (proves we're authenticated)
-		await expect(page).toHaveURL(/\/dashboard/i);
-
-		// Check localStorage for auth token
-		const token = await page.evaluate(() => {
-			const keys = ['token', 'jwt', 'jwt_token', 'auth', 'access_token', 'id_token'];
-			for (const key of keys) {
-				const val = localStorage.getItem(key);
-				if (val) return val;
-			}
-			return null;
+			// Verify we're on dashboard (proves we're authenticated)
+			await expect(page).toHaveURL(/\/dashboard/i);
 		});
 
-		// Should have some auth token in storage
-		expect(typeof token === 'string' || token === null).toBe(true);
+		await test.step('Verify auth token presence in localStorage', async () => {
+			// Check localStorage for auth token
+			const token = await page.evaluate(() => {
+				const keys = ['token', 'jwt', 'jwt_token', 'auth', 'access_token', 'id_token'];
+				for (const key of keys) {
+					const val = localStorage.getItem(key);
+					if (val) return val;
+				}
+				return null;
+			});
+
+			// Should have some auth token in storage
+			expect(typeof token === 'string' || token === null).toBe(true);
+		});
 	});
 
 	test('should demonstrate best practice: chained selector + explicit wait + assertion', async ({
@@ -336,34 +363,38 @@ test.describe('Locator Synchronization & Stability', () => {
 		 * 5. Use WaitHelper for custom conditions
 		 */
 
-		// PATTERN: Chained selector with semantic meaning
-		const heading = page
-			.locator('h1') // Element type (semantic)
-			.filter({ hasText: /welcome/i }); // Condition (text filter)
+		await test.step('Locate the heading via chained selector and verify it', async () => {
+			// PATTERN: Chained selector with semantic meaning
+			const heading = page
+				.locator('h1') // Element type (semantic)
+				.filter({ hasText: /welcome/i }); // Condition (text filter)
 
-		// PATTERN: expect() includes built-in 10s wait
-		// No manual waitForDisplayed() or waitForVisible() needed
-		await expect(heading).toBeVisible();
+			// PATTERN: expect() includes built-in 10s wait
+			// No manual waitForDisplayed() or waitForVisible() needed
+			await expect(heading).toBeVisible();
 
-		// PATTERN: Combine multiple assertions for clarity
-		await expect(heading).toHaveText(/welcome back/i);
+			// PATTERN: Combine multiple assertions for clarity
+			await expect(heading).toHaveText(/welcome back/i);
 
-		// PATTERN: For more complex waits, use WaitHelper
-		const isStable = await WaitHelper.waitForStableDOM(page, {
-			timeout: WaitHelper.timeouts.QUICK,
+			// PATTERN: For more complex waits, use WaitHelper
+			await WaitHelper.waitForStableDOM(page, {
+				timeout: WaitHelper.timeouts.QUICK,
+			});
+			// isStable wait completes (void), no assertion needed
 		});
-		// isStable wait completes (void), no assertion needed
 
-		// PATTERN: Never do this:
-		// await page.waitForTimeout(1000);  // ← BAD: Arbitrary wait
-		// await page.waitForTimeout(300);   // ← BAD: CSS transition wait
+		await test.step('Open the menu (if present) using WaitHelper instead of arbitrary sleep', async () => {
+			// PATTERN: Never do this:
+			// await page.waitForTimeout(1000);  // ← BAD: Arbitrary wait
+			// await page.waitForTimeout(300);   // ← BAD: CSS transition wait
 
-		// PATTERN: Instead, use WaitHelper for CSS transitions:
-		const menuToggle = page.locator('button').filter({ hasText: /menu/i });
-		if (await menuToggle.isVisible()) {
-			await menuToggle.click();
-			// If CSS transition is needed, use WaitHelper, not arbitrary sleep
-			// (normally handled by page rendering, not needed)
-		}
+			// PATTERN: Instead, use WaitHelper for CSS transitions:
+			const menuToggle = page.locator('button').filter({ hasText: /menu/i });
+			if (await menuToggle.isVisible()) {
+				await menuToggle.click();
+				// If CSS transition is needed, use WaitHelper, not arbitrary sleep
+				// (normally handled by page rendering, not needed)
+			}
+		});
 	});
 })

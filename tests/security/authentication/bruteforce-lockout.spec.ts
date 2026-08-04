@@ -22,23 +22,29 @@ test.describe('Authentication - Bruteforce lockout', () => {
     const reporter = new SecurityReporter(testInfo);
 
     const api = await request.newContext({ baseURL: baseURL.toString() });
-    const user = createRandomUser('bruteforce', false);
-    const register = await api.post('/register', {
-      data: { username: user.username, password: user.password },
-      headers: { 'Content-Type': 'application/json' }
+    const user = await test.step('Register a fresh user', async () => {
+      const user = createRandomUser('bruteforce', false);
+      const register = await api.post('/register', {
+        data: { username: user.username, password: user.password },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (![200, 201].includes(register.status())) {
+        reporter.reportSkip('Could not register a fresh user for the bruteforce probe on this target.');
+        await api.dispose();
+        test.skip(true, 'Registration unavailable');
+      }
+      return user;
     });
-    if (![200, 201].includes(register.status())) {
-      reporter.reportSkip('Could not register a fresh user for the bruteforce probe on this target.');
+
+    const probe = await test.step(`Send ${WRONG_ATTEMPTS} wrong-password attempts, then the correct password`, async () => {
+      const probe = await probeBruteforceLockout(api, user.username!, user.password, WRONG_ATTEMPTS);
       await api.dispose();
-      test.skip(true, 'Registration unavailable');
-      return;
-    }
 
-    const probe = await probeBruteforceLockout(api, user.username!, user.password, WRONG_ATTEMPTS);
-    await api.dispose();
+      testInfo.attach('bruteforce-lockout-probe', { body: JSON.stringify(probe, null, 2), contentType: 'application/json' });
+      return probe;
+    });
 
-    testInfo.attach('bruteforce-lockout-probe', { body: JSON.stringify(probe, null, 2), contentType: 'application/json' });
-
+    await test.step('Verify the account locked out', async () => {
     if (probe.stillAuthenticatesAfterBurst) {
       reporter.reportVulnerability(
         'API2_AUTH',
@@ -54,11 +60,12 @@ test.describe('Authentication - Bruteforce lockout', () => {
           'Add exponential backoff between attempts in addition to a hard lockout threshold.'
         ]
       );
-    } else {
-      reporter.reportPass(
-        `Account did not authenticate immediately with the correct password after ${probe.attempts} failed attempts.`,
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      } else {
+        reporter.reportPass(
+          `Account did not authenticate immediately with the correct password after ${probe.attempts} failed attempts.`,
+          'API2:2023 - Broken Authentication'
+        );
+      }
+    });
   });
 });

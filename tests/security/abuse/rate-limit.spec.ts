@@ -23,64 +23,74 @@ test.describe('Abuse - Rate limiting outside AI chat', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const probe = await probeBurstRequests(
-      () =>
-        api.post('/login', {
-          data: { username: 'rate-limit-probe-user', password: 'wrong-password' },
-          headers: { 'Content-Type': 'application/json' }
-        }),
-      BURST_SIZE
-    );
-    await api.dispose();
+    const probe = await test.step(`Send a ${BURST_SIZE}-request burst of failed login attempts`, async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const probe = await probeBurstRequests(
+        () =>
+          api.post('/login', {
+            data: { username: 'rate-limit-probe-user', password: 'wrong-password' },
+            headers: { 'Content-Type': 'application/json' }
+          }),
+        BURST_SIZE
+      );
+      await api.dispose();
 
-    testInfo.attach('login-burst-probe', { body: JSON.stringify(probe, null, 2), contentType: 'application/json' });
+      testInfo.attach('login-burst-probe', { body: JSON.stringify(probe, null, 2), contentType: 'application/json' });
+      return probe;
+    });
 
+    await test.step('Verify the burst was rate-limited', async () => {
     if (probe.any429) {
-      reporter.reportPass(
-        `POST /login returned a 429 within a ${BURST_SIZE}-request burst.`,
-        'API4:2023 - Unrestricted Resource Consumption'
-      );
-    } else {
-      reporter.reportVulnerability(
-        'API4_RATE_LIMIT',
-        { endpoint: 'POST /login', ...probe },
-        [
-          'Apply the existing check_rate_limit/ai_rate_limit machinery (or an equivalent) to /login by IP and/or username.',
-          'Return 429 with a Retry-After header once a caller exceeds the threshold.',
-          'Add account lockout or exponential backoff after repeated failed attempts for a given username.'
-        ]
-      );
-    }
+        reporter.reportPass(
+          `POST /login returned a 429 within a ${BURST_SIZE}-request burst.`,
+          'API4:2023 - Unrestricted Resource Consumption'
+        );
+      } else {
+        reporter.reportVulnerability(
+          'API4_RATE_LIMIT',
+          { endpoint: 'POST /login', ...probe },
+          [
+            'Apply the existing check_rate_limit/ai_rate_limit machinery (or an equivalent) to /login by IP and/or username.',
+            'Return 429 with a Retry-After header once a caller exceeds the threshold.',
+            'Add account lockout or exponential backoff after repeated failed attempts for a given username.'
+          ]
+        );
+      }
+    });
   });
 
   test('GET /api/bill-categories should rate-limit a burst of public reads', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const probe = await probeBurstRequests(() => api.get('/api/bill-categories'), BURST_SIZE);
-    await api.dispose();
+    const probe = await test.step(`Send a ${BURST_SIZE}-request burst of public reads`, async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const probe = await probeBurstRequests(() => api.get('/api/bill-categories'), BURST_SIZE);
+      await api.dispose();
 
-    testInfo.attach('bill-categories-burst-probe', {
-      body: JSON.stringify(probe, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('bill-categories-burst-probe', {
+        body: JSON.stringify(probe, null, 2),
+        contentType: 'application/json'
+      });
+      return probe;
     });
 
-    if (probe.any429) {
-      reporter.reportPass(
-        `GET /api/bill-categories returned a 429 within a ${BURST_SIZE}-request burst.`,
-        'API4:2023 - Unrestricted Resource Consumption'
-      );
-    } else {
-      reporter.reportVulnerability(
-        'API4_RATE_LIMIT',
-        { endpoint: 'GET /api/bill-categories', ...probe },
-        [
-          'Apply rate limiting to public read endpoints by IP, not just AI chat routes.',
-          'Use an API gateway or reverse-proxy layer for centralized rate limiting across all routes.'
-        ]
-      );
-    }
+    await test.step('Verify the burst was rate-limited', async () => {
+      if (probe.any429) {
+        reporter.reportPass(
+          `GET /api/bill-categories returned a 429 within a ${BURST_SIZE}-request burst.`,
+          'API4:2023 - Unrestricted Resource Consumption'
+        );
+      } else {
+        reporter.reportVulnerability(
+          'API4_RATE_LIMIT',
+          { endpoint: 'GET /api/bill-categories', ...probe },
+          [
+            'Apply rate limiting to public read endpoints by IP, not just AI chat routes.',
+            'Use an API gateway or reverse-proxy layer for centralized rate limiting across all routes.'
+          ]
+        );
+      }
+    });
   });
 });
