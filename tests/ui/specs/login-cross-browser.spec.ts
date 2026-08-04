@@ -17,7 +17,7 @@ import { loginViaAvailableFlow } from '../../../fixtures/api/login.helpers';
  * Tests are automatically run across all browsers via playwright.config.ts projects.
  */
 
-test.describe('Login - Cross-Browser Compatibility', () => {
+test.describe('@smoke @auth @cross-browser Login - Cross-Browser Compatibility', () => {
   test('should login successfully on all browsers', async ({ page, browserName, baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
@@ -247,7 +247,7 @@ test.describe('Login - Cross-Browser Compatibility', () => {
   });
 });
 
-test.describe('Login - Browser-Specific Features', () => {
+test.describe('@smoke @auth @cross-browser Login - Browser-Specific Features', () => {
   test('should handle Chromium-specific features', async ({ page, browserName, baseURL }) => {
     if (browserName !== 'chromium') test.skip();
     if (!baseURL) throw new Error('baseURL is not defined');

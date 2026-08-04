@@ -7,7 +7,7 @@ import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
 // content (balance/greeting/date live in .main-content, out of frame), so the
 // screenshot is deterministic across runs for a given browser/OS. For
 // functional coverage of nav item labels, see left-menu-navigation.spec.ts.
-test.describe('UI - Left menu visual coverage', () => {
+test.describe('@ui UI - Left menu visual coverage', () => {
   test('left menu should match its visual baseline', async ({ page, baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 

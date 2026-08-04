@@ -24,7 +24,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * tests/api/virtual-cards.spec.ts; this UI test just confirms the same data
  * is visible through the dashboard.
  */
-test.describe('Virtual cards', () => {
+test.describe('@ui @feature:virtual-cards Virtual cards', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page, baseURL }) => {

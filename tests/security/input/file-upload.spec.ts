@@ -24,7 +24,7 @@ import { uploadProfilePicture } from '../../../fixtures/api/profile.helpers';
  *   tests/ui/specs/xss.spec.ts.
  * - No file size limit — consistent with tests/security/abuse/payload-size.spec.ts.
  */
-test.describe('Input - File upload validation', () => {
+test.describe('@security  Input - File upload validation', () => {
   test('an uploaded .html file should not be served back with an executable content-type', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

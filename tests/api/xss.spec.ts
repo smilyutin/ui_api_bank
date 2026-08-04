@@ -17,7 +17,7 @@ import { establishXssUsernameSession } from '../../fixtures/api/xss.helpers';
  * `transaction-list.innerHTML = ...` in static/dashboard.js — needs a real
  * browser and lives in tests/ui/specs/xss.spec.ts instead.
  */
-test.describe('API - Stored XSS via username', () => {
+test.describe('@api @security API - Stored XSS via username', () => {
   test('GET /dashboard should not reflect an unescaped <script> payload from a malicious username', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

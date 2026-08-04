@@ -14,7 +14,7 @@ import { createRandomUser } from '../utils/test-users';
  * response, proving storage is plaintext rather than just asserting it
  * from the schema comment.
  */
-test.describe('Authentication - Plaintext password storage', () => {
+test.describe('@security  Authentication - Plaintext password storage', () => {
   test('GET /debug/users should not return a freshly-registered password in plaintext', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

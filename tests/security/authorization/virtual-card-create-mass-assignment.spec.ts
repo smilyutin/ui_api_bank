@@ -17,7 +17,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
  * dangerous if honored (current_balance, is_frozen, is_active, user_id)
  * and confirm none of them influence the created card.
  */
-test.describe('Authorization - Virtual card creation mass assignment', () => {
+test.describe('@security  Authorization - Virtual card creation mass assignment', () => {
   test('extra fields on card creation should not set sensitive columns', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

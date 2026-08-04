@@ -18,7 +18,7 @@ import { probeBurstRequests } from '../sec-objects/abuse/rate-limit.logic';
  */
 const BURST_SIZE = 20;
 
-test.describe('Abuse - Rate limiting outside AI chat', () => {
+test.describe('@security Abuse - Rate limiting outside AI chat', () => {
   test('POST /login should rate-limit a burst of failed attempts', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

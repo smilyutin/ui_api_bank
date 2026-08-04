@@ -63,7 +63,7 @@ import {
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - AI system-info (public, unauthenticated)', () => {
+test.describe('@api @feature:ai-chat API - AI system-info (public, unauthenticated)', () => {
   test('GET /api/ai/system-info should be reachable without auth and expose the stub agent, endpoint map, and attack hints', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

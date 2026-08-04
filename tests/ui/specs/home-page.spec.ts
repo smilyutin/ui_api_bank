@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Vulnerable Bank smoke checks', () => {
+test.describe('@smoke Vulnerable Bank smoke checks', () => {
   test('home page renders and primary links work', async ({ page }) => {
     await test.step('Load the home page', async () => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });

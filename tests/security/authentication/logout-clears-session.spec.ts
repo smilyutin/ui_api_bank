@@ -12,7 +12,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
  * proves the consequence directly: the exact token from before "logout"
  * still authenticates a protected endpoint after it.
  */
-test.describe('Authentication - Logout clears session', () => {
+test.describe('@security  Authentication - Logout clears session', () => {
   test('a token should not still authenticate a protected endpoint after logout', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

@@ -18,7 +18,7 @@ import { WaitHelper } from '../../../helpers/wait-helpers';
  * - Isolate each test with fresh authentication
  * - Wait for actual conditions, not fixed delays
  */
-test.describe('Locator Synchronization & Stability', () => {
+test.describe('@ui Locator Synchronization & Stability', () => {
 	let pm: PageManager;
 
 	// Test isolation: Fresh authentication for each test

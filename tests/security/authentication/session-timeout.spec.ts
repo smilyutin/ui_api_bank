@@ -21,7 +21,7 @@ import { decodeJwtNoVerify } from '../sec-objects/authentication/jwt.logic';
  * anything — that test and its supporting page-object helper have since
  * been deleted (see TODO.md).
  */
-test.describe('Authentication - Session timeout', () => {
+test.describe('@security  Authentication - Session timeout', () => {
   test('a session should not remain authenticated indefinitely with no expiration mechanism', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

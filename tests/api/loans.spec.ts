@@ -38,7 +38,7 @@ import {
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Loan requests', () => {
+test.describe('@api @feature:loans API - Loan requests', () => {
   test('POST /request_loan should require authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

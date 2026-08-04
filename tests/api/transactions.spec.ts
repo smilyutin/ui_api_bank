@@ -26,7 +26,7 @@ import {
 const READ_SUCCESS_STATUSES = [200, 201];
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Transaction & balance access', () => {
+test.describe('@api @feature:transactions API - Transaction & balance access', () => {
   let session: AccountSession | null = null;
 
   // Test isolation: Fresh session per test to prevent state leakage

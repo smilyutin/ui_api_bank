@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { createLogger } from '../helpers/logger';
 import { setupObservability, createObservabilityReport } from '../helpers/observability';
 
-test.describe('Phase 2: Observability Demo', () => {
+test.describe('@observability Phase 2: Observability Demo', () => {
   test('should demonstrate trace collection and logging', async ({ page, baseURL }, testInfo) => {
     const logger = createLogger(testInfo);
     const observability = await setupObservability(testInfo, logger);

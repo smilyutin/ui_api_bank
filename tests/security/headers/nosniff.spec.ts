@@ -17,7 +17,7 @@ import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec
  * confusion generally. Checked across a public HTML page, a public JSON
  * API, and the authenticated dashboard, not just /login.
  */
-test.describe('Headers - nosniff', () => {
+test.describe('@security  Headers - nosniff', () => {
   test('every representative endpoint should set X-Content-Type-Options: nosniff', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

@@ -10,7 +10,7 @@ import {
   type CreatePayload
 } from '../../fixtures/api/create-user.helpers';
 
-test.describe('API - Create user account', () => {
+test.describe('@api @feature:create-user API - Create user account', () => {
   test('should create a user via API', async ({ baseURL, browser }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 

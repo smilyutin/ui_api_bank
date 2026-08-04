@@ -17,7 +17,7 @@ import { createRandomUser } from '../utils/test-users';
  * a real, separate username-enumeration vector on that endpoint, tracked
  * in TODO.md alongside the wider password-reset gap rather than here.)
  */
-test.describe('Authentication - Generic login errors', () => {
+test.describe('@security  Authentication - Generic login errors', () => {
   test('a nonexistent username and a wrong password for a real user should return identical errors', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

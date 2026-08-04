@@ -14,7 +14,7 @@ import { fetchSecurityHeaders, buildRepresentativeEndpoints } from '../sec-objec
  * public HTML page, a public JSON API, and — the highest-value target —
  * the authenticated dashboard, not just /login.
  */
-test.describe('Headers - Clickjacking', () => {
+test.describe('@security  Headers - Clickjacking', () => {
   test('every representative endpoint should set X-Frame-Options or an equivalent frame-ancestors policy', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

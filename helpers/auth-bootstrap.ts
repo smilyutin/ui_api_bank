@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Page, APIResponse } from '@playwright/test';
 import { request } from '@playwright/test';
 import { LoginPage } from '../pages/login.page';
 import { DashboardPage } from '../pages/dashboard.page';
@@ -49,7 +49,7 @@ function extractCookieToken(setCookieHeader: string): string | null {
 }
 
 // Extract JWT token from response body, Authorization header, or Set-Cookie.
-async function extractTokenFromResponse(res: any): Promise<string | null> {
+async function extractTokenFromResponse(res: APIResponse): Promise<string | null> {
 	try {
 		const json = await res.json().catch(() => null);
 		const bodyToken =
