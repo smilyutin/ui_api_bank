@@ -1,6 +1,6 @@
 import { test, expect, request } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
-import { createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
+import { createRandomUser } from '../../../helpers/credentials';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
