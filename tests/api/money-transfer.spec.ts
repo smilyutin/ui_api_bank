@@ -36,7 +36,7 @@ import { transfer } from '../../fixtures/api/money-transfer.helpers';
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Money transfer authentication', () => {
+test.describe('@api @feature:money-transfer API - Money transfer authentication', () => {
   test('POST /transfer should require authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

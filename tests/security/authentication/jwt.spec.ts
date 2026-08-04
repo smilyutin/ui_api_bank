@@ -20,7 +20,7 @@ import { decodeJwtNoVerify, buildNoneAlgToken } from '../sec-objects/authenticat
  *   auth.py's exact decode call locally, and by hitting a real protected
  *   endpoint with a forged none-alg token — both reject it).
  */
-test.describe('Authentication - JWT', () => {
+test.describe('@security  Authentication - JWT', () => {
   test('an issued token should carry an expiration claim', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

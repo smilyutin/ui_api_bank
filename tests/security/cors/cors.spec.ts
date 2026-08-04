@@ -22,7 +22,7 @@ import { SecurityReporter } from '../utils/security-reporter';
  */
 const FOREIGN_ORIGIN = 'https://evil.example.com';
 
-test.describe('CORS', () => {
+test.describe('@security  CORS', () => {
   test('Access-Control-Allow-Origin should not reflect an arbitrary Origin', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

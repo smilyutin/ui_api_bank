@@ -13,7 +13,7 @@ import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec
  * across a public HTML page, a public JSON API, and the authenticated
  * dashboard, not just /login.
  */
-test.describe('Headers - Permissions-Policy', () => {
+test.describe('@security  Headers - Permissions-Policy', () => {
   test('every representative endpoint should set a Permissions-Policy', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

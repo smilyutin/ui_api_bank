@@ -16,7 +16,7 @@ import { parseCookieAttributes } from '../sec-objects/authentication/cookies.log
  * endpoint. See inspect-cookies.spec.ts for the cookie's security
  * attributes.
  */
-test.describe('Authentication - Cookie-based auth', () => {
+test.describe('@security Authentication - Cookie-based auth', () => {
   test('POST /login should issue a session cookie usable on its own for authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

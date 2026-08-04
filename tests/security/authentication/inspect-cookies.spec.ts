@@ -12,7 +12,7 @@ import { parseCookieAttributes } from '../sec-objects/authentication/cookies.log
  * there's no `secure=True` and no explicit `samesite` argument. This
  * inspects the real Set-Cookie header rather than trusting the comment.
  */
-test.describe('Authentication - Cookie attributes', () => {
+test.describe('@security  Authentication - Cookie attributes', () => {
   test('the token cookie should be Secure and HttpOnly with an explicit SameSite policy', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

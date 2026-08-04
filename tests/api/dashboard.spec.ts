@@ -52,7 +52,7 @@ async function tryApiLogin(api: APIRequestContext, user: User): Promise<boolean>
   return false;
 }
 
-test.describe('API - Dashboard', () => {
+test.describe('@api API - Dashboard', () => {
   test('GET /dashboard should respond safely (protected or reachable)', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 

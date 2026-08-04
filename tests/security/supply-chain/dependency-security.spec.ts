@@ -52,7 +52,7 @@ function runNpmAudit(cwd: string): NpmAuditMetadata | null {
 	}
 }
 
-test.describe('Supply chain - Dependency vulnerabilities', () => {
+test.describe('@security  Supply chain - Dependency vulnerabilities', () => {
   test('npm dependencies should have no known high/critical vulnerabilities', async ({}, testInfo) => {
     const reporter = new SecurityReporter(testInfo);
     const repoRoot = path.resolve(__dirname, '../../..');

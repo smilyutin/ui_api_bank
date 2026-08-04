@@ -18,7 +18,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
  */
 const FOREIGN_ORIGIN = 'https://evil.example.com';
 
-test.describe('Cross-Site Request Forgery', () => {
+test.describe('@security  Cross-Site Request Forgery', () => {
   test('POST /transfer should not process a cross-site request with no CSRF token', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

@@ -16,7 +16,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * 2. Drive the Profile section through the ProfilePage POM.
  * 3. Verify the success message and the updated <img> src for each flow.
  */
-test.describe('Profile picture management', () => {
+test.describe('@ui @feature:profile Profile picture management', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page, baseURL }) => {

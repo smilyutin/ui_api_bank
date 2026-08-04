@@ -49,7 +49,7 @@ import {
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Bill categories & billers (public catalog)', () => {
+test.describe('@api @feature:bill-payments API - Bill categories & billers (public catalog)', () => {
   test('GET /api/bill-categories should be reachable without a token (public by design)', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

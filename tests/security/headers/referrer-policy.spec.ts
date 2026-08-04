@@ -17,7 +17,7 @@ import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec
  * page, a public JSON API, and the authenticated dashboard, not just
  * /login.
  */
-test.describe('Headers - Referrer-Policy', () => {
+test.describe('@security  Headers - Referrer-Policy', () => {
   test('every representative endpoint should set an explicit Referrer-Policy', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

@@ -88,7 +88,7 @@ const tryLoginCandidates = async (
 				if (LOGIN_SUCCESS_STATUSES.includes(res.status())) {
 					return { loginRes: res, successfulLoginPath: formPath };
 				}
-			} catch (e: any) {
+			} catch (e: unknown) {
 				recordAttempt(attempts, formPath, e?.message || 'error');
 			}
 
@@ -103,7 +103,7 @@ const tryLoginCandidates = async (
 				if (LOGIN_SUCCESS_STATUSES.includes(res.status())) {
 					return { loginRes: res, successfulLoginPath: jsonPath };
 				}
-			} catch (e: any) {
+			} catch (e: unknown) {
 				recordAttempt(attempts, jsonPath, e?.message || 'error');
 			}
 		}
@@ -138,7 +138,7 @@ const tryRegisterFallbackThenLogin = async (
 			if (LOGIN_SUCCESS_STATUSES.includes(post.status())) {
 				return tryLoginCandidates(apiContext, user, attempts, '-after-register');
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			recordAttempt(attempts, `${actionPath} (register form)`, e?.message || 'error');
 		}
 
@@ -151,7 +151,7 @@ const tryRegisterFallbackThenLogin = async (
 			if (LOGIN_SUCCESS_STATUSES.includes(post.status())) {
 				return tryLoginCandidates(apiContext, user, attempts, '-after-register');
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			recordAttempt(attempts, `${actionPath} (register json)`, e?.message || 'error');
 		}
 
@@ -164,12 +164,12 @@ const tryRegisterFallbackThenLogin = async (
 			if (LOGIN_SUCCESS_STATUSES.includes(post.status())) {
 				return tryLoginCandidates(apiContext, user, attempts, '-after-register');
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			recordAttempt(attempts, `${actionPath} (register json:username-email-password)`, e?.message || 'error');
 		}
 
 		return { loginRes: null, successfulLoginPath: null };
-	} catch (e: any) {
+	} catch (e: unknown) {
 		recordAttempt(attempts, '/register (get)', e?.message || 'error');
 		return { loginRes: null, successfulLoginPath: null };
 	}

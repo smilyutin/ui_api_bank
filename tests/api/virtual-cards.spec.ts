@@ -38,7 +38,7 @@ import {
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Virtual card creation', () => {
+test.describe('@api @feature:virtual-cards API - Virtual card creation', () => {
   test('POST /api/virtual-cards/create should require authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

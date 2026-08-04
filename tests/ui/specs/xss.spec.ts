@@ -25,7 +25,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * (unlike other UI specs that mirror an API-level check) — the DOM sink is
  * only reachable through a real browser, so this test reports it directly.
  */
-test.describe('UI - Stored XSS via transfer description', () => {
+test.describe('@ui @security UI - Stored XSS via transfer description', () => {
   test('a script-bearing transfer description should not execute when the transaction list renders', async ({ page, baseURL, request }, testInfo) => {
     setupAssertionLogging('a script-bearing transfer description should not execute when the transaction list renders');
     if (!baseURL) throw new Error('baseURL is not defined');

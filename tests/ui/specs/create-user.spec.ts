@@ -40,7 +40,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * 6. Verify registration was successful
  * 7. Persist user credentials for future tests
  */
-test.describe('UI - Create user account', () => {
+test.describe('@ui @feature:create-user UI - Create user account', () => {
   test('should create a user via UI', async ({ page, baseURL }) => {
     setupAssertionLogging('should create a user via UI');
     if (!baseURL) throw new Error('baseURL is not defined');

@@ -16,7 +16,7 @@ import { probePinBruteforce } from '../sec-objects/authentication/pin-bruteforce
  */
 const WRONG_GUESSES = 20;
 
-test.describe('Authentication - PIN reset bruteforce', () => {
+test.describe('@security  Authentication - PIN reset bruteforce', () => {
   test('POST /reset-password should throttle or lock out repeated wrong PIN guesses', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

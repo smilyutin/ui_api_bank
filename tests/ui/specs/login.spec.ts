@@ -18,7 +18,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging, setTestContex
  * 5. Verify error handling for invalid scenarios.
  */
 
-test.describe('User login', () => {
+test.describe('@smoke @auth User login', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page }) => {

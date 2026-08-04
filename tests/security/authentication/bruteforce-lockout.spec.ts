@@ -16,7 +16,7 @@ import { probeBruteforceLockout } from '../sec-objects/authentication/bruteforce
  */
 const WRONG_ATTEMPTS = 15;
 
-test.describe('Authentication - Bruteforce lockout', () => {
+test.describe('@security  Authentication - Bruteforce lockout', () => {
   test('an account should lock out after repeated failed login attempts', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

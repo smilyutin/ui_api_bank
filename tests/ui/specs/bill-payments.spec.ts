@@ -29,7 +29,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * tests/api/bill-payments.spec.ts; this UI test just confirms the same
  * behavior is reachable through the dashboard form.
  */
-test.describe('Bill payments', () => {
+test.describe('@ui @feature:bill-payments Bill payments', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page, baseURL }) => {

@@ -1,6 +1,6 @@
 import fs from 'fs/promises'
 import path from 'path'
-import Ajv from 'ajv'
+import Ajv, { type ErrorObject } from 'ajv'
 import { createSchema } from 'genson-js'
 import addFormats from 'ajv-formats'
 import { PerformanceMetrics } from './performance-metrics'
@@ -27,7 +27,7 @@ export async function validateSchema(dirName: string, fileName: string, response
 	try {
 		if (createSchemaFlag) await generateNewSchema(responseBody, schemaPath)
 
-		let schema: any
+		let schema: unknown
 		try {
 			schema = await loadSchema(schemaPath)
 		} catch (loadError) {
@@ -130,7 +130,7 @@ async function resolveSchemaPath(schemaPath: string) {
 }
 
 // Format validation errors into a detailed table showing field mismatches.
-function formatSchemaError(errors: any[], schema: any, responseBody: object): string {
+function formatSchemaError(errors: ErrorObject[], schema: unknown, responseBody: object): string {
 	if (!errors || errors.length === 0) return 'Unknown validation error'
 
 	const errorsByPath = new Map<string, any[]>()
@@ -204,7 +204,7 @@ function formatSchemaError(errors: any[], schema: any, responseBody: object): st
 }
 
 // Get the type of a value (handles null, array, date).
-function getTypeOf(value: any): string {
+function getTypeOf(value: unknown): string {
 	if (value === null) return 'null'
 	if (value === undefined) return 'undefined'
 	if (Array.isArray(value)) return 'array'
@@ -213,14 +213,14 @@ function getTypeOf(value: any): string {
 }
 
 // Navigate a nested object by JSON pointer path (e.g., /properties/field).
-function getValueByPath(obj: any, path: string): any {
+function getValueByPath(obj: unknown, path: string): unknown {
 	if (!path || path === '') return obj
 	const keys = path.split('/').filter(k => k)
 	return keys.reduce((current, key) => current?.[key], obj)
 }
 
 // Navigate a schema object to find the type constraint at a given path.
-function getSchemaByPath(schema: any, path: string): any {
+function getSchemaByPath(schema: unknown, path: string): unknown {
 	if (!path || path === '') return schema
 	const keys = path.split('/').filter(k => k)
 	let current = schema
@@ -237,7 +237,7 @@ function getSchemaByPath(schema: any, path: string): any {
 }
 
 // Convert schema type info to a human-readable string.
-function formatSchema(schema: any): string {
+function formatSchema(schema: unknown): string {
 	if (!schema) return 'unknown'
 	if (schema.type) {
 		if (Array.isArray(schema.type)) {
@@ -253,10 +253,10 @@ function formatSchema(schema: any): string {
 }
 
 // Auto-mark createdAt/updatedAt fields as date-time format in generated schemas.
-function applyDateTimeFormats(schema: any) {
+function applyDateTimeFormats(schema: unknown) {
 	const targets = new Set(['createdAt', 'updatedAt'])
 
-	function visit(node: any) {
+	function visit(node: unknown) {
 		if (!node || typeof node !== 'object') return
 
 		if (node.type === 'object' && node.properties) {
@@ -292,7 +292,7 @@ function applyDateTimeFormats(schema: any) {
 // Generate a JSON schema from a response body and write it to disk.
 async function generateNewSchema(responseBody: object, schemaPath: string) {
 	try {
-		const generatedSchema: any = await createSchema(responseBody)
+		const generatedSchema: unknown = await createSchema(responseBody)
 		applyDateTimeFormats(generatedSchema)
 		await fs.mkdir(path.dirname(schemaPath), { recursive: true })
 		await fs.writeFile(schemaPath, JSON.stringify(generatedSchema, null, 4), 'utf-8')

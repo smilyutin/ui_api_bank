@@ -24,7 +24,7 @@ import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec
  *    circumvented by the app's own client-side code duplicating the same
  *    credential into a JS-readable location.
  */
-test.describe('Authentication - CSP and storage hardening', () => {
+test.describe('@security  Authentication - CSP and storage hardening', () => {
   test('every representative endpoint should send a Content-Security-Policy header', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

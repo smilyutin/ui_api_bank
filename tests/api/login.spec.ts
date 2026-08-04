@@ -43,7 +43,7 @@ import {
  * 5. Verify successful authentication response
  * 6. Persist user credentials for future tests
  */
-test.describe('API - Login with persisted user', () => {
+test.describe('@api @auth API - Login with persisted user', () => {
   test('should login using stored credentials or create then login', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
@@ -129,7 +129,7 @@ test.describe('API - Login with persisted user', () => {
  * loginViaAvailableFlow above) with malformed and malicious credentials,
  * rather than only the happy path exercised earlier in this file.
  */
-test.describe('API - Login validation and security', () => {
+test.describe('@api @auth API - Login validation and security', () => {
   test('POST /login should reject a valid username with an incorrect password', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

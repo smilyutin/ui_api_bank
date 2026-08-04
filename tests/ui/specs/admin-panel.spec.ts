@@ -4,7 +4,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
 import { requestLoan } from '../../../fixtures/api/loans.helpers';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
-test.describe('Admin Panel UI', () => {
+test.describe('@ui @admin Admin Panel UI', () => {
 	test.describe('Phase 1: Authentication & Access Control', () => {
 		test('Admin can access admin panel', async ({ page, baseURL }) => {
 			setupAssertionLogging('Admin can access admin panel');

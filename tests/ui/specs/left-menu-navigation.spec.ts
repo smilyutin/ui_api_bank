@@ -6,7 +6,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
 // Functional coverage for the left navigation/menu on the dashboard: confirms
 // nav items render with expected labels. For pixel-level regression, see
 // visual-leftmenu.spec.ts.
-test.describe('UI - Left menu navigation', () => {
+test.describe('@smoke UI - Left menu navigation', () => {
   test('should render the left menu and core navigation items', async ({ page, baseURL }) => {
     setupAssertionLogging('should render the left menu and core navigation items');
     if (!baseURL) throw new Error('baseURL is not defined');

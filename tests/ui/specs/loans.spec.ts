@@ -27,7 +27,7 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  * tests/api/loans.spec.ts; this UI test just confirms the same behavior is
  * visible through the dashboard.
  */
-test.describe('Loan requests', () => {
+test.describe('@ui @feature:loans Loan requests', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page, baseURL }) => {

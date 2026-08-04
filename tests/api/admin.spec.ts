@@ -33,7 +33,7 @@ import { createAdmin, deleteAccount } from '../../fixtures/api/admin.helpers';
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Admin panel access control', () => {
+test.describe('@api @admin API - Admin panel access control', () => {
 	test('GET /sup3r_s3cr3t_admin should require authentication', async ({ baseURL }, testInfo) => {
 		if (!baseURL) throw new Error('baseURL is not defined');
 		const reporter = new SecurityReporter(testInfo);

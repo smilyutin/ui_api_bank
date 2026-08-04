@@ -20,7 +20,7 @@ import { probeLegacyApiLogin } from '../sec-objects/authentication/broken-authen
  * This test only confirms that disclosure; it deliberately does not
  * attempt to unlock or use the debugger's code-execution console.
  */
-test.describe('Authentication - Broken authentication (legacy /api/login)', () => {
+test.describe('@security  Authentication - Broken authentication (legacy /api/login)', () => {
   test('POST /api/login should not leak an interactive debugger traceback on failure', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

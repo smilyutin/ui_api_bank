@@ -19,7 +19,7 @@ import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec
  * Checked across a public HTML page, a public JSON API, and the
  * authenticated dashboard, not just /login.
  */
-test.describe('Headers - HSTS', () => {
+test.describe('@security  Headers - HSTS', () => {
   test('every representative endpoint should set Strict-Transport-Security', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

@@ -4,19 +4,19 @@ interface AssertionRecord {
   num: number;
   description: string;
   type: string;
-  actualValue?: any;
-  expectedValue?: any;
+  actualValue?: unknown;
+  expectedValue?: unknown;
   passed: boolean;
   error?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   timestamp: number;
 }
 
 let assertionCount = 0;
 let currentTestAssertions: AssertionRecord[] = [];
-let testContext: Record<string, any> = {};
+let testContext: Record<string, unknown> = {};
 
-const valueToString = (val: any, maxLength = 100): string => {
+const valueToString = (val: unknown, maxLength = 100): string => {
   try {
     if (val === null) return 'null';
     if (val === undefined) return 'undefined';
@@ -29,10 +29,10 @@ const valueToString = (val: any, maxLength = 100): string => {
   }
 };
 
-const createAssertions = (value: any, description: string, isNot: boolean = false) => {
+const createAssertions = (value: unknown, description: string, isNot: boolean = false) => {
   const prefix = isNot ? '.not' : '';
 
-  const logAssertion = (type: string, expected?: any, actual?: any) => {
+  const logAssertion = (type: string, expected?: unknown, actual?: unknown) => {
     const desc = description || 'value';
     const expectedStr = expected !== undefined ? valueToString(expected) : '';
     const actualStr = actual !== undefined ? valueToString(actual) : '';
@@ -56,7 +56,7 @@ const createAssertions = (value: any, description: string, isNot: boolean = fals
   };
 
   return {
-    toContain: (expected: any) => {
+    toContain: (expected: unknown) => {
       logAssertion('toContain', expected, value);
       try {
         const result = isNot ? playwrightExpect(value).not.toContain(expected) : playwrightExpect(value).toContain(expected);
@@ -86,7 +86,7 @@ const createAssertions = (value: any, description: string, isNot: boolean = fals
         throw e;
       }
     },
-    toBe: (expected: any) => {
+    toBe: (expected: unknown) => {
       logAssertion('toBe', expected, value);
       try {
         const result = isNot ? playwrightExpect(value).not.toBe(expected) : playwrightExpect(value).toBe(expected);
@@ -116,7 +116,7 @@ const createAssertions = (value: any, description: string, isNot: boolean = fals
         throw e;
       }
     },
-    toEqual: (expected: any) => {
+    toEqual: (expected: unknown) => {
       logAssertion('toEqual', expected, value);
       try {
         const result = isNot ? playwrightExpect(value).not.toEqual(expected) : playwrightExpect(value).toEqual(expected);
@@ -236,7 +236,7 @@ const createAssertions = (value: any, description: string, isNot: boolean = fals
         throw e;
       }
     },
-    toHaveProperty: (property: string, propValue?: any) => {
+    toHaveProperty: (property: string, propValue?: unknown) => {
       logAssertion('toHaveProperty', property, value);
       try {
         const result = isNot ? playwrightExpect(value).not.toHaveProperty(property, propValue) : playwrightExpect(value).toHaveProperty(property, propValue);
@@ -296,7 +296,7 @@ const createAssertions = (value: any, description: string, isNot: boolean = fals
         throw e;
       }
     },
-    toStrictEqual: (expected: any) => {
+    toStrictEqual: (expected: unknown) => {
       logAssertion('toStrictEqual', expected, value);
       try {
         const result = isNot ? playwrightExpect(value).not.toStrictEqual(expected) : playwrightExpect(value).toStrictEqual(expected);

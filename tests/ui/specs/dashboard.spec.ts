@@ -40,7 +40,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * 4. Check recent transactions
  * 5. Test logout functionality
  */
-test.describe('Dashboard functionality', () => {
+test.describe('@smoke Dashboard functionality', () => {
   let dashboardPage: DashboardPage;
   let expectedIdentifiers: string[];
 

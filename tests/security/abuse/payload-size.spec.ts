@@ -15,7 +15,7 @@ import { probeOversizedPayload } from '../sec-objects/abuse/payload-size.logic';
  */
 const OVERSIZED_BYTES = 2 * 1024 * 1024; // 2MB
 
-test.describe('Abuse - Payload size', () => {
+test.describe('@security Abuse - Payload size', () => {
   test('POST /register should reject an oversized username field instead of accepting or crashing on it', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

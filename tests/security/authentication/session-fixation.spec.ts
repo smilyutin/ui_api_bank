@@ -16,7 +16,7 @@ import { resetPasswordViaPin } from '../sec-objects/authentication/session-fixat
  * possibly-compromised token remains valid indefinitely even after the
  * legitimate user "secures" their account by resetting their password.
  */
-test.describe('Authentication - Session fixation', () => {
+test.describe('@security  Authentication - Session fixation', () => {
   test('a token issued before a password reset should not still authenticate afterward', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

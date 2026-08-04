@@ -12,7 +12,7 @@ import { createRandomUser } from '../utils/test-users';
  */
 const WEAK_PASSWORDS = ['', 'a', '123', 'password'];
 
-test.describe('Authentication - Password policy', () => {
+test.describe('@security  Authentication - Password policy', () => {
   test('POST /register should reject passwords with no length or complexity', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);

@@ -184,12 +184,12 @@ export class StateMachine {
     return { ...this.context };
   }
 
-  setContextData(key: string, value: any): void {
+  setContextData(key: string, value: unknown): void {
     this.context.data[key] = value;
     this.logger?.debug('Context data updated', { key, value });
   }
 
-  getContextData(key: string): any {
+  getContextData(key: string): unknown {
     return this.context.data[key];
   }
 

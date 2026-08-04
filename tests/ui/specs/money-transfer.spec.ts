@@ -39,7 +39,7 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  * 5. Submit transfer
  * 6. Verify success confirmation
  */
-test.describe('Money transfer flow', () => {
+test.describe('@ui @feature:money-transfer Money transfer flow', () => {
   test('should send money successfully', async ({ page, baseURL, request }) => {
     setupAssertionLogging('should send money successfully');
     if (!baseURL) throw new Error('baseURL is not defined');

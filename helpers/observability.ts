@@ -64,7 +64,7 @@ export async function setupObservability(
 
       // @ts-ignore - playwright internals
       const allRequests = page.context()._requests || [];
-      allRequests.forEach((req: any) => {
+      allRequests.forEach((req: unknown) => {
         const status = req.response?.status || 'pending';
         networkSummary.byStatus[status] = (networkSummary.byStatus[status] || 0) + 1;
       });
