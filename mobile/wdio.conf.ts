@@ -27,4 +27,53 @@ export const config: Partial<WebdriverIO.Config> = {
 			},
 		],
 	],
+	hooks: {
+		beforeEach: async function() {
+			try {
+				await browser.clearLocalStorage();
+			} catch (e) {
+				console.debug('Failed to clear localStorage at test start:', e);
+			}
+
+			try {
+				await browser.clearSessionStorage();
+			} catch (e) {
+				console.debug('Failed to clear sessionStorage at test start:', e);
+			}
+
+			try {
+				await browser.deleteAllCookies();
+			} catch (e) {
+				console.debug('Failed to delete cookies at test start:', e);
+			}
+		},
+		afterEach: async function() {
+			try {
+				await browser.clearLocalStorage();
+			} catch (e) {
+				console.warn('Failed to clear localStorage:', e);
+			}
+
+			try {
+				await browser.clearSessionStorage();
+			} catch (e) {
+				console.warn('Failed to clear sessionStorage:', e);
+			}
+
+			try {
+				await browser.deleteAllCookies();
+			} catch (e) {
+				console.warn('Failed to delete cookies:', e);
+			}
+		},
+	},
+	onComplete: async () => {
+		console.log('Running mobile global teardown...');
+		try {
+			const { default: mobileGlobalTeardown } = await import('./global-teardown');
+			await mobileGlobalTeardown();
+		} catch (e) {
+			console.error('Failed to run mobile global teardown:', e);
+		}
+	},
 };

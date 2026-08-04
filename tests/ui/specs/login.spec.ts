@@ -25,6 +25,28 @@ test.describe('User login', () => {
     pm = new PageManager(page);
   });
 
+  // Test cleanup: Clear session and storage after each test
+  test.afterEach(async ({ page, context }) => {
+    try {
+      // Logout to ensure clean state
+      await pm.dashboard().logout().catch(() => {
+        // May already be logged out, which is fine
+      });
+    } catch (e) {
+      // Silently ignore if page/context already closed
+    }
+
+    try {
+      await context.clearCookies();
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch (e) {
+      // Silently ignore if page/context already closed
+    }
+  });
+
   test('should login successfully with valid credentials and redirect to dashboard', async ({ baseURL }) => {
     setupAssertionLogging('should login successfully with valid credentials and redirect to dashboard');
     if (!baseURL) throw new Error('baseURL is not defined');

@@ -8,14 +8,21 @@ export class LoginPage extends MobileHelperBase {
 	}
 
 	async fillEmail(email: string) {
-		await $('input[name="username"]').setValue(email);
+		const input = $('input[name="username"]');
+		await input.waitForDisplayed({ timeout: 5000 });
+		await input.setValue(email);
 	}
 
 	async fillPassword(password: string) {
-		await $('input[name="password"]').setValue(password);
+		const input = $('input[name="password"]');
+		await input.waitForDisplayed({ timeout: 5000 });
+		await input.setValue(password);
 	}
 
 	async submit() {
-		await $('#loginForm button[type="submit"]').click();
+		const form = $('#loginForm');
+		const button = form.$('button[type="submit"]');
+		await button.waitForDisplayed({ timeout: 5000 });
+		await button.click();
 	}
 }

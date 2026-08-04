@@ -68,6 +68,88 @@ Avoid:
 - Monolithic end-to-end tests that validate multiple business operations.
 - `networkidle` readiness checks. The dashboard fires many background fetches after load, so `networkidle` never settles reliably — wait on specific elements/URLs instead.
 
+### Locator Best Practices
+
+Write locators the way users interact with your application, not how the DOM is structured. This makes tests more stable, readable, and resistant to UI changes.
+
+**Locator Priority (Best → Worst):**
+
+| Priority | Locator | Example | Notes |
+|----------|---------|---------|-------|
+| ⭐⭐⭐⭐⭐ | `getByRole()` | `page.getByRole('button', { name: 'Login' })` | Best choice — accessible & user-centric |
+| ⭐⭐⭐⭐⭐ | `getByLabel()` | `page.getByLabel('Email')` | Best for form fields |
+| ⭐⭐⭐⭐ | `getByPlaceholder()` | `page.getByPlaceholder('Enter email')` | Good for input fields |
+| ⭐⭐⭐⭐ | `getByText()` | `page.getByText('Welcome')` | Good for static text/headings |
+| ⭐⭐⭐⭐ | `getByAltText()` | `page.getByAltText('Company Logo')` | For images |
+| ⭐⭐⭐⭐ | `getByTitle()` | `page.getByTitle('Close')` | For icons/tooltips |
+| ⭐⭐⭐ | `getByTestId()` | `page.getByTestId('login-button')` | Excellent for automation-friendly markup |
+| ⭐⭐ | CSS Selector | `.login button` | Use only when necessary |
+| ⭐ | XPath | `//div[2]/span` | Avoid |
+
+**Key patterns:**
+
+```ts
+// Buttons — use getByRole with name
+await page.getByRole('button', { name: 'Submit' }).click();
+
+// Form fields — use getByLabel
+await page.getByLabel('Email').fill('user@test.com');
+
+// Text/headings — use getByText
+await expect(page.getByText('Welcome back')).toBeVisible();
+
+// Input fields without labels — use getByPlaceholder
+await page.getByPlaceholder('Search...').fill('query');
+
+// Links — use getByRole with name
+await page.getByRole('link', { name: 'Documentation' }).click();
+
+// Data attributes — use getByTestId (when added to templates)
+await page.getByTestId('save-button').click();
+
+// Chained locators for table rows
+await page.getByRole('row', { name: /John/ })
+  .getByRole('button', { name: 'Edit' }).click();
+
+// Filter by text content
+const card = page.locator('.card').filter({ hasText: 'Premium' });
+
+// Filter by child element
+const section = page.locator('article').filter({
+  has: page.getByText('Playwright')
+});
+```
+
+**Do not:**
+
+```ts
+// ❌ Avoid XPath
+page.locator('//div[3]/button');
+
+// ❌ Avoid CSS classes (they change)
+page.locator('.btn-primary');
+
+// ❌ Avoid dynamic indexes
+page.locator('.card').nth(5);
+
+// ❌ Avoid hard-coded waits
+await page.waitForTimeout(3000);
+```
+
+**Use LocatorFactory for fallbacks** — when a page element might have multiple possible locators (e.g., a test id, placeholder, or name attribute), use the `LocatorFactory.find()` pattern to try several in priority order:
+
+```ts
+// Try test id first, then placeholder, then name attribute
+const input = await LocatorFactory.find(
+  this.page.getByTestId('username'),
+  this.page.getByPlaceholder(/username/i),
+  this.page.locator('input[name="username"]')
+);
+await input.fill('testuser');
+```
+
+This pattern is already used in `pages/login.page.ts`, `pages/register.page.ts`, `pages/dashboard.page.ts`, and other page objects — follow it whenever a form field or button might be located via multiple strategies.
+
 ### Readiness pattern
 
 `DashboardPage.waitForLoad()` (`pages/dashboard.page.ts`) is the reference implementation: wait for the URL, then for specific visible elements, each with an explicit timeout — never for network activity to go quiet.

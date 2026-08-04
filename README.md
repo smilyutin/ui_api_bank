@@ -498,9 +498,12 @@ ADMIN_USERNAME=admin ADMIN_PASSWORD=admin123 npx playwright test tests/ui/specs/
 
 ### Mobile Tests
 ```bash
-npm run test:mobile:android
-npm run test:mobile:ios
+npm run test:mobile:android          # Run Android/Chrome tests (requires booted emulator)
+npm run test:mobile:ios              # Run iOS/Safari tests (macOS only, requires Simulator)
+npm run mobile:cleanup               # Manually cleanup test users from database
 ```
+
+**Note:** Mobile tests automatically clean up test users and browser state after completion (per-test) and after the full suite finishes (global). See `CLAUDE.md` for details.
 
 ### Performance Testing
 ```bash

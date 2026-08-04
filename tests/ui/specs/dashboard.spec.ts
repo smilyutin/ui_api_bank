@@ -75,6 +75,24 @@ test.describe('Dashboard functionality', () => {
     loggedExpect(auth.mode, 'auth.mode').toBe('token');
   });
 
+  // Test cleanup: Clear browser state to prevent leakage to next test
+  test.afterEach(async ({ page, context }) => {
+    try {
+      await context.clearCookies();
+    } catch (e) {
+      // Silently ignore if context already closed
+    }
+
+    try {
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch (e) {
+      // Silently ignore if page already closed
+    }
+  });
+
   test('should display welcome message and navigation', async () => {
     setupAssertionLogging('should display welcome message and navigation');
     const welcomeText = await dashboardPage.getWelcomeMessage();
