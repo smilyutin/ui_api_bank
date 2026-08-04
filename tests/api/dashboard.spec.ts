@@ -2,6 +2,7 @@ import { test, expect, request, APIRequestContext, APIResponse } from '@playwrig
 import { findOrCreateUser, User } from '../../helpers/credentials';
 import { validateSchema } from '../../helpers/schema-validator';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
+import { loginViaAvailableFlow } from '../../fixtures/api/login.helpers';
 
 function getTokenHeaders(): Record<string, string> | undefined {
   const token = process.env.API_AUTH_TOKEN?.trim();
@@ -25,32 +26,6 @@ async function safeText(res: APIResponse): Promise<string> {
   }
 }
 
-async function tryApiLogin(api: APIRequestContext, user: User): Promise<boolean> {
-  // Common candidates (mirrors tests/api/login.spec.ts but kept local to avoid cross-test coupling)
-  const loginCandidates = ['/api/auth/login', '/api/login', '/login', '/api/session'];
-  for (const p of loginCandidates) {
-    // form-like body
-    try {
-      const res = await api.post(p, { data: { username: user.username || user.email, password: user.password } });
-      if ([200, 201, 302, 303].includes(res.status())) return true;
-    } catch {
-      // continue
-    }
-
-    // JSON body
-    try {
-      const res = await api.post(p, {
-        data: JSON.stringify({ username: user.username || user.email, password: user.password }),
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if ([200, 201, 302, 303].includes(res.status())) return true;
-    } catch {
-      // continue
-    }
-  }
-
-  return false;
-}
 
 test.describe('@api API - Dashboard', () => {
   test('GET /dashboard should respond safely (protected or reachable)', async ({ baseURL }, testInfo) => {
@@ -155,11 +130,16 @@ test.describe('@api API - Dashboard', () => {
 
       if (!tokenHeaders) {
         const user = findOrCreateUser('e2e');
-        const loggedIn = await tryApiLogin(api, user);
+        const { loginRes, successfulLoginPath } = await loginViaAvailableFlow(api, user);
 
-        if (!loggedIn) {
+        if (!loginRes) {
           reporter.reportSkip('Could not establish API-authenticated session through supported login endpoints.');
           test.skip(true, 'Could not login via API candidates; skipping authenticated dashboard check');
+        } else {
+          reporter.reportPass(
+            `Successfully authenticated via ${successfulLoginPath}.`,
+            'API2:2023 - Broken Authentication'
+          );
         }
       }
       return { api, tokenHeaders };

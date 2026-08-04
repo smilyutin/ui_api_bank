@@ -1,6 +1,7 @@
 import { test, request } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { SecurityReporter } from '../utils/security-reporter';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
 import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec-objects/headers/security-headers.logic';
 
@@ -62,12 +63,9 @@ test.describe('@security  Authentication - CSP and storage hardening', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const { storageToken, httpOnlyCookie } = await test.step('Authenticate and inspect token storage locations', async () => {
-      await ensureDashboardAuthenticated(page, {
-        baseURL: baseURL.toString(),
-        role: 'user',
-        fallbackUserPrefix: 'xss-storage',
-      });
+    const { storageToken, httpOnlyCookie } = await test.step('Authenticate and inspect token storage locations', async (stepInfo) => {
+      const tempStoragePath = `/tmp/auth-${stepInfo.testId || 'xss-storage'}.json`;
+      await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'xss-storage' });
 
       const storageToken = await page.evaluate(() => {
         const keys = ['jwt_token', 'token', 'jwt', 'access_token'];
@@ -85,6 +83,9 @@ test.describe('@security  Authentication - CSP and storage hardening', () => {
         body: JSON.stringify({ storageToken, hasHttpOnlyCookie: !!httpOnlyCookie }, null, 2),
         contentType: 'application/json'
       });
+
+      // Clean up after step
+      await fs.rm(tempStoragePath, { force: true }).catch(() => {});
       return { storageToken, httpOnlyCookie };
     });
 

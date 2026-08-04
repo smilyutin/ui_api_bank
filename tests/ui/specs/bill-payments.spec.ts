@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { request } from '@playwright/test';
 import { updateCardLimit, listVirtualCards } from '../../../fixtures/api/virtual-cards.helpers';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
@@ -30,18 +31,21 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  */
 test.describe('@ui @feature:bill-payments Bill payments', () => {
   let pm: PageManager;
+  let tempStoragePath: string;
 
-  test.beforeEach(async ({ page, baseURL }) => {
+  test.beforeEach(async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'bills-ui',
-    });
+    tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+    await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'bills-ui' });
 
     pm = new PageManager(page);
     await pm.dashboard().waitForLoad();
+  });
+
+  test.afterEach(async () => {
+    // Clean up temporary auth storageState file
+    await fs.rm(tempStoragePath, { force: true }).catch(() => {});
   });
 
   test('should pay a bill from account balance', async () => {
