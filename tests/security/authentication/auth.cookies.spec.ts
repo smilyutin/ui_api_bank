@@ -16,24 +16,26 @@ import { parseCookieAttributes } from '../sec-objects/authentication/cookies.log
  * endpoint. See inspect-cookies.spec.ts for the cookie's security
  * attributes.
  */
-test.describe('Authentication - Cookie-based auth', () => {
+test.describe('@security Authentication - Cookie-based auth', () => {
   test('POST /login should issue a session cookie usable on its own for authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
     const api = await request.newContext({ baseURL: baseURL.toString() });
-    const user = createRandomUser('auth-cookie', false);
-    await api.post('/register', {
-      data: { username: user.username, password: user.password },
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const cookie = await test.step('Register, log in, and capture the session cookie', async () => {
+      const user = createRandomUser('auth-cookie', false);
+      await api.post('/register', {
+        data: { username: user.username, password: user.password },
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-    const login = await api.post('/login', {
-      data: { username: user.username, password: user.password },
-      headers: { 'Content-Type': 'application/json' }
+      const login = await api.post('/login', {
+        data: { username: user.username, password: user.password },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const setCookieHeader = login.headers()['set-cookie'];
+      return parseCookieAttributes(setCookieHeader, 'token');
     });
-    const setCookieHeader = login.headers()['set-cookie'];
-    const cookie = parseCookieAttributes(setCookieHeader, 'token');
 
     if (!cookie) {
       reporter.reportSkip('Login did not set a token cookie on this target.');
@@ -42,22 +44,26 @@ test.describe('Authentication - Cookie-based auth', () => {
       return;
     }
 
-    // A fresh, cookie-less context, authenticating purely by manually
-    // attaching the cookie header — proving the cookie alone is sufficient.
-    const cookieOnlyApi = await request.newContext({
-      baseURL: baseURL.toString(),
-      extraHTTPHeaders: { Cookie: `token=${cookie.value}` }
-    });
-    const dashRes = await cookieOnlyApi.get('/dashboard');
-    const status = dashRes.status();
-    await cookieOnlyApi.dispose();
-    await api.dispose();
+    const status = await test.step('Use the cookie alone to authenticate', async () => {
+      // A fresh, cookie-less context, authenticating purely by manually
+      // attaching the cookie header — proving the cookie alone is sufficient.
+      const cookieOnlyApi = await request.newContext({
+        baseURL: baseURL.toString(),
+        extraHTTPHeaders: { Cookie: `token=${cookie.value}` }
+      });
+      const dashRes = await cookieOnlyApi.get('/dashboard');
+      const status = dashRes.status();
+      await cookieOnlyApi.dispose();
+      await api.dispose();
 
-    testInfo.attach('auth-cookie-probe', {
-      body: JSON.stringify({ cookieIssued: true, cookie, dashboardStatusViaCookieOnly: status }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('auth-cookie-probe', {
+        body: JSON.stringify({ cookieIssued: true, cookie, dashboardStatusViaCookieOnly: status }, null, 2),
+        contentType: 'application/json'
+      });
+      return status;
     });
 
+    await test.step('Verify the cookie alone was not sufficient', async () => {
     const cookieAuthenticates = status === 200;
 
     if (cookieAuthenticates) {
@@ -73,11 +79,12 @@ test.describe('Authentication - Cookie-based auth', () => {
           'If a cookie-based session is intentional, add CSRF protection — cookies are sent automatically by the browser on cross-site requests, unlike an Authorization header.'
         ]
       );
-    } else {
-      reporter.reportPass(
-        'Cookie alone did not authenticate a protected endpoint.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      } else {
+        reporter.reportPass(
+          'Cookie alone did not authenticate a protected endpoint.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
+    });
   });
 });

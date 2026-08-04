@@ -36,21 +36,26 @@ import { transfer } from '../../fixtures/api/money-transfer.helpers';
 
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Money transfer authentication', () => {
+test.describe('@api @feature:money-transfer API - Money transfer authentication', () => {
   test('POST /transfer should require authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await transfer(anon, '', { to_account: '9999999999', amount: 10 });
-    const status = res.status();
-    await anon.dispose();
+    const status = await test.step('Attempt a transfer without authentication', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await transfer(anon, '', { to_account: '9999999999', amount: 10 });
+      const status = res.status();
+      await anon.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Money transfer endpoint rejected a request without a valid token.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify the request was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Money transfer endpoint rejected a request without a valid token.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 });
 
@@ -69,48 +74,56 @@ test.describe('API - Money transfer happy path & transaction record', () => {
       return;
     }
 
-    const balanceBeforeSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceBeforeSender = (await balanceBeforeSenderRes.json().catch(() => null))?.balance;
-    const balanceBeforeRecipientRes = await api.get(`/check_balance/${recipient.accountNumber}`);
-    const balanceBeforeRecipient = (await balanceBeforeRecipientRes.json().catch(() => null))?.balance;
-
     const amount = 25;
-    const res = await transfer(api, sender.token, {
-      to_account: recipient.accountNumber,
-      amount,
-      description: 'API test transfer'
+
+    const { balanceBeforeSender, balanceBeforeRecipient } = await test.step('Capture starting balances', async () => {
+      const balanceBeforeSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceBeforeSender = (await balanceBeforeSenderRes.json().catch(() => null))?.balance;
+      const balanceBeforeRecipientRes = await api.get(`/check_balance/${recipient.accountNumber}`);
+      const balanceBeforeRecipient = (await balanceBeforeRecipientRes.json().catch(() => null))?.balance;
+      return { balanceBeforeSender, balanceBeforeRecipient };
     });
-    const body = await res.json().catch(() => null);
 
-    expect(res.status()).toBe(200);
-    expect(body?.status).toBe('success');
-    expect(body?.message).toBe('Transfer Completed');
-    expect(body?.new_balance).toBe(balanceBeforeSender - amount);
-    await validateSchema('money-transfer-schema', 'POST_transfer', body);
+    await test.step('Transfer funds and verify the API response', async () => {
+      const res = await transfer(api, sender.token, {
+        to_account: recipient.accountNumber,
+        amount,
+        description: 'API test transfer'
+      });
+      const body = await res.json().catch(() => null);
 
-    const balanceAfterSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceAfterSender = (await balanceAfterSenderRes.json().catch(() => null))?.balance;
-    const balanceAfterRecipientRes = await api.get(`/check_balance/${recipient.accountNumber}`);
-    const balanceAfterRecipient = (await balanceAfterRecipientRes.json().catch(() => null))?.balance;
+      expect(res.status()).toBe(200);
+      expect(body?.status).toBe('success');
+      expect(body?.message).toBe('Transfer Completed');
+      expect(body?.new_balance).toBe(balanceBeforeSender - amount);
+      await validateSchema('money-transfer-schema', 'POST_transfer', body);
+    });
 
-    expect(balanceAfterSender).toBe(balanceBeforeSender - amount);
-    expect(balanceAfterRecipient).toBe(balanceBeforeRecipient + amount);
+    await test.step('Verify balances and the persisted transaction record', async () => {
+      const balanceAfterSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceAfterSender = (await balanceAfterSenderRes.json().catch(() => null))?.balance;
+      const balanceAfterRecipientRes = await api.get(`/check_balance/${recipient.accountNumber}`);
+      const balanceAfterRecipient = (await balanceAfterRecipientRes.json().catch(() => null))?.balance;
 
-    const historyRes = await api.get(`/transactions/${sender.accountNumber}`);
-    const historyBody = await historyRes.json().catch(() => null);
-    const transactions = historyBody?.transactions || [];
-    const matched = transactions.find(
-      (t: { from_account: string; to_account: string; amount: number; type: string }) =>
-        t.from_account === sender.accountNumber && t.to_account === recipient.accountNumber && t.amount === amount && t.type === 'transfer'
-    );
-    await api.dispose();
+      expect(balanceAfterSender).toBe(balanceBeforeSender - amount);
+      expect(balanceAfterRecipient).toBe(balanceBeforeRecipient + amount);
 
-    expect(matched).toBeTruthy();
+      const historyRes = await api.get(`/transactions/${sender.accountNumber}`);
+      const historyBody = await historyRes.json().catch(() => null);
+      const transactions = historyBody?.transactions || [];
+      const matched = transactions.find(
+        (t: { from_account: string; to_account: string; amount: number; type: string }) =>
+          t.from_account === sender.accountNumber && t.to_account === recipient.accountNumber && t.amount === amount && t.type === 'transfer'
+      );
+      await api.dispose();
 
-    reporter.reportPass(
-      'Authenticated user transferred funds between two accounts; both balances and the persisted transaction record are correct.',
-      'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-    );
+      expect(matched).toBeTruthy();
+
+      reporter.reportPass(
+        'Authenticated user transferred funds between two accounts; both balances and the persisted transaction record are correct.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    });
   });
 });
 
@@ -129,53 +142,58 @@ test.describe('API - Money transfer amount validation abuse', () => {
       return;
     }
 
-    const balanceBeforeSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceBeforeSender = (await balanceBeforeSenderRes.json().catch(() => null))?.balance;
-    const balanceBeforeVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
-    const balanceBeforeVictim = (await balanceBeforeVictimRes.json().catch(() => null))?.balance;
+    const { status, body, balanceBeforeSender, balanceAfterSender, balanceBeforeVictim, balanceAfterVictim } = await test.step('Attempt a negative-amount transfer', async () => {
+      const balanceBeforeSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceBeforeSender = (await balanceBeforeSenderRes.json().catch(() => null))?.balance;
+      const balanceBeforeVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
+      const balanceBeforeVictim = (await balanceBeforeVictimRes.json().catch(() => null))?.balance;
 
-    const res = await transfer(api, sender.token, { to_account: victim.accountNumber, amount: -100 });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
+      const res = await transfer(api, sender.token, { to_account: victim.accountNumber, amount: -100 });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
 
-    const balanceAfterSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceAfterSender = (await balanceAfterSenderRes.json().catch(() => null))?.balance;
-    const balanceAfterVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
-    const balanceAfterVictim = (await balanceAfterVictimRes.json().catch(() => null))?.balance;
-    await api.dispose();
+      const balanceAfterSenderRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceAfterSender = (await balanceAfterSenderRes.json().catch(() => null))?.balance;
+      const balanceAfterVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
+      const balanceAfterVictim = (await balanceAfterVictimRes.json().catch(() => null))?.balance;
+      await api.dispose();
 
-    testInfo.attach('negative-amount-directional-probe', {
-      body: JSON.stringify({ status, body, balanceBeforeSender, balanceAfterSender, balanceBeforeVictim, balanceAfterVictim }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('negative-amount-directional-probe', {
+        body: JSON.stringify({ status, body, balanceBeforeSender, balanceAfterSender, balanceBeforeVictim, balanceAfterVictim }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status, body, balanceBeforeSender, balanceAfterSender, balanceBeforeVictim, balanceAfterVictim };
     });
 
-    const inflationConfirmed =
-      status === 200 &&
-      body?.status === 'success' &&
-      balanceAfterSender === balanceBeforeSender + 100 &&
-      balanceAfterVictim === balanceBeforeVictim - 100;
+    await test.step('Verify the transfer direction was not reversed', async () => {
+      const inflationConfirmed =
+        status === 200 &&
+        body?.status === 'success' &&
+        balanceAfterSender === balanceBeforeSender + 100 &&
+        balanceAfterVictim === balanceBeforeVictim - 100;
 
-    if (inflationConfirmed) {
-      reporter.reportVulnerability(
-        'API6_MASS_ASSIGNMENT',
-        {
-          endpoint: '/transfer',
-          technique: "Negative amount (-100) increases the sender's balance while decreasing the victim's — a reversed transfer, not merely an accepted negative value",
-          senderDelta: +100,
-          victimDelta: -100
-        },
-        [
-          'Validate amount > 0 before processing any transfer.',
-          'The sufficiency check (balance >= abs(amount)) must use the same signed value that is later applied in the debit/credit UPDATEs.'
-        ]
-      );
-    } else {
-      expect(balanceAfterSender).not.toBe(balanceBeforeSender + 100);
-      reporter.reportPass(
-        "Negative-amount transfer did not reverse the balance direction.",
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      if (inflationConfirmed) {
+        reporter.reportVulnerability(
+          'API6_MASS_ASSIGNMENT',
+          {
+            endpoint: '/transfer',
+            technique: "Negative amount (-100) increases the sender's balance while decreasing the victim's — a reversed transfer, not merely an accepted negative value",
+            senderDelta: +100,
+            victimDelta: -100
+          },
+          [
+            'Validate amount > 0 before processing any transfer.',
+            'The sufficiency check (balance >= abs(amount)) must use the same signed value that is later applied in the debit/credit UPDATEs.'
+          ]
+        );
+      } else {
+        expect(balanceAfterSender).not.toBe(balanceBeforeSender + 100);
+        reporter.reportPass(
+          "Negative-amount transfer did not reverse the balance direction.",
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 
   test('should have no independent ceiling on amount beyond balance sufficiency', async ({ baseURL }, testInfo) => {
@@ -192,27 +210,32 @@ test.describe('API - Money transfer amount validation abuse', () => {
       return;
     }
 
-    const res = await transfer(api, sender.token, { to_account: recipient.accountNumber, amount: 999999999 });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Attempt a transfer for an enormous amount', async () => {
+      const res = await transfer(api, sender.token, { to_account: recipient.accountNumber, amount: 999999999 });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('transfer-ceiling-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      testInfo.attach('transfer-ceiling-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      return { status, body };
+    });
 
-    const onlyRejectedForBalance = status === 400 && body?.message === 'Insufficient funds';
+    await test.step('Verify rejection is not solely a balance-sufficiency check', async () => {
+      const onlyRejectedForBalance = status === 400 && body?.message === 'Insufficient funds';
 
-    if (onlyRejectedForBalance) {
-      reporter.reportVulnerability(
-        'API6_MASS_ASSIGNMENT',
-        { endpoint: '/transfer', amountSubmitted: 999999999, rejectionReason: body?.message },
-        ['Add an independent sanity ceiling on transfer amount regardless of balance sufficiency (mirrors the same gap already fixed for bill payments).']
-      );
-    } else {
-      reporter.reportPass(
-        'A very large transfer amount was rejected for a reason other than balance sufficiency.',
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      if (onlyRejectedForBalance) {
+        reporter.reportVulnerability(
+          'API6_MASS_ASSIGNMENT',
+          { endpoint: '/transfer', amountSubmitted: 999999999, rejectionReason: body?.message },
+          ['Add an independent sanity ceiling on transfer amount regardless of balance sufficiency (mirrors the same gap already fixed for bill payments).']
+        );
+      } else {
+        reporter.reportPass(
+          'A very large transfer amount was rejected for a reason other than balance sufficiency.',
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 
   test('should not expose a raw exception message for a malformed/missing amount', async ({ baseURL }, testInfo) => {
@@ -228,37 +251,42 @@ test.describe('API - Money transfer amount validation abuse', () => {
       return;
     }
 
-    const res = await transfer(api, session.token, { to_account: session.accountNumber });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Submit a transfer with the amount field missing', async () => {
+      const res = await transfer(api, session.token, { to_account: session.accountNumber });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('malformed-amount-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      testInfo.attach('malformed-amount-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      return { status, body };
+    });
 
-    const revealsRawError = status === 500 && /float\(\)|NoneType|argument must be/i.test(body?.message || '');
+    await test.step('Verify no raw exception message was exposed', async () => {
+      const revealsRawError = status === 500 && /float\(\)|NoneType|argument must be/i.test(body?.message || '');
 
-    if (revealsRawError) {
-      reporter.reportVulnerability(
-        'API8_SECURITY_MISCONFIGURATION',
-        {
-          endpoint: '/transfer',
-          field: 'amount',
-          technique: "Missing amount raises inside float(data.get('amount')); str(e) returned verbatim in the JSON 500 body",
-          responseStatus: status,
-          exposedMessage: body?.message
-        },
-        [
-          'Validate amount is present and numeric before calling float() on it, returning a clean 400.',
-          'Do not return raw Python exception text (str(e)) to API clients.'
-        ]
-      );
-    } else {
-      expect(status).not.toBe(500);
-      reporter.reportPass(
-        'Money transfer rejected a malformed amount without exposing a raw exception.',
-        'API8:2023 - Security Misconfiguration'
-      );
-    }
+      if (revealsRawError) {
+        reporter.reportVulnerability(
+          'API8_SECURITY_MISCONFIGURATION',
+          {
+            endpoint: '/transfer',
+            field: 'amount',
+            technique: "Missing amount raises inside float(data.get('amount')); str(e) returned verbatim in the JSON 500 body",
+            responseStatus: status,
+            exposedMessage: body?.message
+          },
+          [
+            'Validate amount is present and numeric before calling float() on it, returning a clean 400.',
+            'Do not return raw Python exception text (str(e)) to API clients.'
+          ]
+        );
+      } else {
+        expect(status).not.toBe(500);
+        reporter.reportPass(
+          'Money transfer rejected a malformed amount without exposing a raw exception.',
+          'API8:2023 - Security Misconfiguration'
+        );
+      }
+    });
   });
 
   test('self-transfer should net to zero', async ({ baseURL }) => {
@@ -272,10 +300,12 @@ test.describe('API - Money transfer amount validation abuse', () => {
       return;
     }
 
-    const balanceBeforeRes = await api.get(`/check_balance/${session.accountNumber}`);
-    const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
-
-    await transfer(api, session.token, { to_account: session.accountNumber, amount: 50 });
+    const balanceBefore = await test.step('Capture balance and perform a self-transfer', async () => {
+      const balanceBeforeRes = await api.get(`/check_balance/${session.accountNumber}`);
+      const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
+      await transfer(api, session.token, { to_account: session.accountNumber, amount: 50 });
+      return balanceBefore;
+    });
 
     const balanceAfterRes = await api.get(`/check_balance/${session.accountNumber}`);
     const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
@@ -299,52 +329,60 @@ test.describe('API - Money transfer recipient validation', () => {
       return;
     }
 
-    // generate_account_number() (app.py) only ever produces exactly 10
-    // digits, so an 11-digit string is guaranteed to never match a real
-    // account.
-    const ghostAccount = '9'.repeat(11);
-    const ghostCheck = await api.get(`/check_balance/${ghostAccount}`);
-    expect(ghostCheck.status()).toBe(404);
-
-    const balanceBeforeRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
-
     const amount = 30;
-    const res = await transfer(api, sender.token, { to_account: ghostAccount, amount });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
+    const ghostAccount = await test.step('Confirm the target account does not exist', async () => {
+      // generate_account_number() (app.py) only ever produces exactly 10
+      // digits, so an 11-digit string is guaranteed to never match a real
+      // account.
+      const ghostAccount = '9'.repeat(11);
+      const ghostCheck = await api.get(`/check_balance/${ghostAccount}`);
+      expect(ghostCheck.status()).toBe(404);
+      return ghostAccount;
+    });
 
-    const balanceAfterRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
-    await api.dispose();
+    const { status, body, balanceBefore, balanceAfter } = await test.step('Transfer to the nonexistent account', async () => {
+      const balanceBeforeRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
 
-    testInfo.attach('ghost-account-probe', { body: JSON.stringify({ status, body, balanceBefore, balanceAfter }, null, 2), contentType: 'application/json' });
+      const res = await transfer(api, sender.token, { to_account: ghostAccount, amount });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
 
-    const vanishingConfirmed = status === 200 && body?.status === 'success' && balanceAfter === balanceBefore - amount;
+      const balanceAfterRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
+      await api.dispose();
 
-    if (vanishingConfirmed) {
-      reporter.reportVulnerability(
-        'API6_MASS_ASSIGNMENT',
-        {
-          endpoint: '/transfer',
-          field: 'to_account',
-          technique: 'to_account is never validated to reference an existing user; the recipient UPDATE affects 0 rows with no exception, funds are destroyed, and the API still reports success',
-          senderBalanceBefore: balanceBefore,
-          senderBalanceAfter: balanceAfter,
-          amountLost: amount
-        },
-        [
-          'Validate to_account exists (a real user account_number) before debiting the sender.',
-          'Check UPDATE row counts (or use a JOIN/existence check) and roll back / return an error if the recipient update affected 0 rows.'
-        ]
-      );
-    } else {
-      expect(balanceAfter).toBe(balanceBefore);
-      reporter.reportPass(
-        'Money transfer rejected/reverted a transfer to a nonexistent to_account.',
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      testInfo.attach('ghost-account-probe', { body: JSON.stringify({ status, body, balanceBefore, balanceAfter }, null, 2), contentType: 'application/json' });
+      return { status, body, balanceBefore, balanceAfter };
+    });
+
+    await test.step('Verify the sender was not silently debited', async () => {
+      const vanishingConfirmed = status === 200 && body?.status === 'success' && balanceAfter === balanceBefore - amount;
+
+      if (vanishingConfirmed) {
+        reporter.reportVulnerability(
+          'API6_MASS_ASSIGNMENT',
+          {
+            endpoint: '/transfer',
+            field: 'to_account',
+            technique: 'to_account is never validated to reference an existing user; the recipient UPDATE affects 0 rows with no exception, funds are destroyed, and the API still reports success',
+            senderBalanceBefore: balanceBefore,
+            senderBalanceAfter: balanceAfter,
+            amountLost: amount
+          },
+          [
+            'Validate to_account exists (a real user account_number) before debiting the sender.',
+            'Check UPDATE row counts (or use a JOIN/existence check) and roll back / return an error if the recipient update affected 0 rows.'
+          ]
+        );
+      } else {
+        expect(balanceAfter).toBe(balanceBefore);
+        reporter.reportPass(
+          'Money transfer rejected/reverted a transfer to a nonexistent to_account.',
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 });
 
@@ -363,45 +401,50 @@ test.describe('API - Money transfer token handling & impersonation', () => {
       return;
     }
 
-    const balanceBeforeRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
+    const { status, body, balanceBefore, balanceAfter } = await test.step('Attempt a transfer authenticated via ?token= query string', async () => {
+      const balanceBeforeRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
 
-    // No Authorization header at all — proving the token in the URL alone
-    // authenticated the request.
-    const res = await api.post(`/transfer?token=${sender.token}`, {
-      data: { to_account: recipient.accountNumber, amount: 10 }
+      // No Authorization header at all — proving the token in the URL alone
+      // authenticated the request.
+      const res = await api.post(`/transfer?token=${sender.token}`, {
+        data: { to_account: recipient.accountNumber, amount: 10 }
+      });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+
+      const balanceAfterRes = await api.get(`/check_balance/${sender.accountNumber}`);
+      const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
+      await api.dispose();
+
+      testInfo.attach('query-string-token-probe', { body: JSON.stringify({ status, body, balanceBefore, balanceAfter }, null, 2), contentType: 'application/json' });
+      return { status, body, balanceBefore, balanceAfter };
     });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
 
-    const balanceAfterRes = await api.get(`/check_balance/${sender.accountNumber}`);
-    const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
-    await api.dispose();
-
-    testInfo.attach('query-string-token-probe', { body: JSON.stringify({ status, body, balanceBefore, balanceAfter }, null, 2), contentType: 'application/json' });
-
+    await test.step('Verify the query-string token was not accepted', async () => {
     const queryTokenAccepted = status === 200 && body?.status === 'success' && balanceAfter === balanceBefore - 10;
 
-    if (queryTokenAccepted) {
-      reporter.reportVulnerability(
-        'API2_AUTH',
-        {
-          endpoint: '/transfer',
-          technique: 'Bearer token accepted via ?token= query string, no Authorization header sent',
-          note: 'Query-string tokens are logged in server/proxy access logs and browser history'
-        },
-        [
-          'Only accept the token from the Authorization: Bearer header.',
-          'Reject tokens supplied via query string, form body, or cookie (auth.py: token_required currently checks all four locations).'
-        ]
-      );
-    } else {
-      expect(AUTH_DENIED_STATUSES).toContain(status);
-      reporter.reportPass(
-        'Money transfer did not authenticate a request via a query-string token.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      if (queryTokenAccepted) {
+        reporter.reportVulnerability(
+          'API2_AUTH',
+          {
+            endpoint: '/transfer',
+            technique: 'Bearer token accepted via ?token= query string, no Authorization header sent',
+            note: 'Query-string tokens are logged in server/proxy access logs and browser history'
+          },
+          [
+            'Only accept the token from the Authorization: Bearer header.',
+            'Reject tokens supplied via query string, form body, or cookie (auth.py: token_required currently checks all four locations).'
+          ]
+        );
+      } else {
+        expect(AUTH_DENIED_STATUSES).toContain(status);
+        reporter.reportPass(
+          'Money transfer did not authenticate a request via a query-string token.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
+    });
   });
 
   test('POST /transfer with a forged token should be rejected (JWT_SECRET is no longer a fixed/guessable value)', async ({ baseURL }, testInfo) => {
@@ -418,36 +461,40 @@ test.describe('API - Money transfer token handling & impersonation', () => {
       return;
     }
 
-    const balanceBeforeVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
-    const balanceBeforeVictim = (await balanceBeforeVictimRes.json().catch(() => null))?.balance;
-    const balanceBeforeAttackerRes = await api.get(`/check_balance/${attacker.accountNumber}`);
-    const balanceBeforeAttacker = (await balanceBeforeAttackerRes.json().catch(() => null))?.balance;
-
-    // fixtures/api/jwt-forge.helpers.ts signs with a previously-hardcoded weak
-    // secret ('secret123'). auth.py has since been changed to derive
-    // JWT_SECRET from the environment (random per-process fallback), so this
-    // forged token is expected to fail signature verification today. Kept as
-    // a live probe (not a hardcoded assumption) so this test automatically
-    // starts reporting a real finding again if the secret is ever
-    // reintroduced or reset to a guessable value.
-    const forgedToken = forgeToken({ userId: victim.userId, username: victim.user.username || '', isAdmin: false });
-
     const amount = 50;
-    const res = await transfer(api, forgedToken, { to_account: attacker.accountNumber, amount });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
+    const { status, body, balanceBeforeVictim, balanceAfterVictim, balanceBeforeAttacker, balanceAfterAttacker } = await test.step('Forge a token for the victim and attempt to transfer their funds', async () => {
+      const balanceBeforeVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
+      const balanceBeforeVictim = (await balanceBeforeVictimRes.json().catch(() => null))?.balance;
+      const balanceBeforeAttackerRes = await api.get(`/check_balance/${attacker.accountNumber}`);
+      const balanceBeforeAttacker = (await balanceBeforeAttackerRes.json().catch(() => null))?.balance;
 
-    const balanceAfterVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
-    const balanceAfterVictim = (await balanceAfterVictimRes.json().catch(() => null))?.balance;
-    const balanceAfterAttackerRes = await api.get(`/check_balance/${attacker.accountNumber}`);
-    const balanceAfterAttacker = (await balanceAfterAttackerRes.json().catch(() => null))?.balance;
-    await api.dispose();
+      // fixtures/api/jwt-forge.helpers.ts signs with a previously-hardcoded weak
+      // secret ('secret123'). auth.py has since been changed to derive
+      // JWT_SECRET from the environment (random per-process fallback), so this
+      // forged token is expected to fail signature verification today. Kept as
+      // a live probe (not a hardcoded assumption) so this test automatically
+      // starts reporting a real finding again if the secret is ever
+      // reintroduced or reset to a guessable value.
+      const forgedToken = forgeToken({ userId: victim.userId, username: victim.user.username || '', isAdmin: false });
 
-    testInfo.attach('forged-jwt-transfer-probe', {
-      body: JSON.stringify({ status, body, balanceBeforeVictim, balanceAfterVictim, balanceBeforeAttacker, balanceAfterAttacker }, null, 2),
-      contentType: 'application/json'
+      const res = await transfer(api, forgedToken, { to_account: attacker.accountNumber, amount });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+
+      const balanceAfterVictimRes = await api.get(`/check_balance/${victim.accountNumber}`);
+      const balanceAfterVictim = (await balanceAfterVictimRes.json().catch(() => null))?.balance;
+      const balanceAfterAttackerRes = await api.get(`/check_balance/${attacker.accountNumber}`);
+      const balanceAfterAttacker = (await balanceAfterAttackerRes.json().catch(() => null))?.balance;
+      await api.dispose();
+
+      testInfo.attach('forged-jwt-transfer-probe', {
+        body: JSON.stringify({ status, body, balanceBeforeVictim, balanceAfterVictim, balanceBeforeAttacker, balanceAfterAttacker }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status, body, balanceBeforeVictim, balanceAfterVictim, balanceBeforeAttacker, balanceAfterAttacker };
     });
 
+    await test.step("Verify the forged token did not move the victim's funds", async () => {
     const bolaConfirmed =
       status === 200 &&
       body?.status === 'success' &&
@@ -477,5 +524,6 @@ test.describe('API - Money transfer token handling & impersonation', () => {
         'API2:2023 - Broken Authentication'
       );
     }
+    });
   });
 });

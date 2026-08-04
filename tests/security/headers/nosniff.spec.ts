@@ -17,29 +17,34 @@ import { fetchHeaderAcrossEndpoints, buildRepresentativeEndpoints } from '../sec
  * confusion generally. Checked across a public HTML page, a public JSON
  * API, and the authenticated dashboard, not just /login.
  */
-test.describe('Headers - nosniff', () => {
+test.describe('@security  Headers - nosniff', () => {
   test('every representative endpoint should set X-Content-Type-Options: nosniff', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const session = await establishAccountSession(api, 'headers-nosniff');
-    const endpoints = buildRepresentativeEndpoints(session?.token);
-    const { results } = await fetchHeaderAcrossEndpoints(api, endpoints, 'x-content-type-options');
-    await api.dispose();
+    const results = await test.step('Fetch X-Content-Type-Options across representative endpoints', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const session = await establishAccountSession(api, 'headers-nosniff');
+      const endpoints = buildRepresentativeEndpoints(session?.token);
+      const { results } = await fetchHeaderAcrossEndpoints(api, endpoints, 'x-content-type-options');
+      await api.dispose();
 
-    testInfo.attach('nosniff-probe', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });
+      testInfo.attach('nosniff-probe', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });
+      return results;
+    });
 
-    const missing = results.filter((r) => r.headerValue?.toLowerCase() !== 'nosniff');
+    await test.step('Verify nosniff is set on every endpoint', async () => {
+      const missing = results.filter((r) => r.headerValue?.toLowerCase() !== 'nosniff');
 
-    if (missing.length > 0) {
-      reporter.reportVulnerability(
-        'API7_MISCONFIGURATION',
-        { missingEndpoints: missing.map((r) => `${r.path} (${r.label})`), allResults: results },
-        ['Set X-Content-Type-Options: nosniff on every response (e.g. via an after_request hook) to stop browsers from MIME-sniffing served content.']
-      );
-    } else {
-      reporter.reportPass(`X-Content-Type-Options: nosniff is present on all ${results.length} checked endpoints.`, 'API7:2023 - Server Side Request Forgery');
-    }
+      if (missing.length > 0) {
+        reporter.reportVulnerability(
+          'API7_MISCONFIGURATION',
+          { missingEndpoints: missing.map((r) => `${r.path} (${r.label})`), allResults: results },
+          ['Set X-Content-Type-Options: nosniff on every response (e.g. via an after_request hook) to stop browsers from MIME-sniffing served content.']
+        );
+      } else {
+        reporter.reportPass(`X-Content-Type-Options: nosniff is present on all ${results.length} checked endpoints.`, 'API7:2023 - Server Side Request Forgery');
+      }
+    });
   });
 });

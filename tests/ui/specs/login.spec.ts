@@ -18,7 +18,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging, setTestContex
  * 5. Verify error handling for invalid scenarios.
  */
 
-test.describe('User login', () => {
+test.describe('@smoke @auth User login', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page }) => {
@@ -59,23 +59,27 @@ test.describe('User login', () => {
       action: 'login_with_valid_credentials',
     });
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
+    await test.step('Ensure the user exists via API and log in through the UI', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
 
-    await loginViaAvailableFlow(api, user);
-    await api.dispose();
+      await loginViaAvailableFlow(api, user);
+      await api.dispose();
 
-    const login = pm.login();
-    const identifier = user.username || user.email;
-    if (!identifier) throw new Error('User has no username or email');
+      const login = pm.login();
+      const identifier = user.username || user.email;
+      if (!identifier) throw new Error('User has no username or email');
 
-    await login.goto(baseURL);
-    await login.fillEmail(identifier);
-    await login.fillPassword(user.password);
-    await login.submit();
+      await login.goto(baseURL);
+      await login.fillEmail(identifier);
+      await login.fillPassword(user.password);
+      await login.submit();
+    });
 
-    await pm.dashboard().waitForLoad();
-    setTestContext({ uiState: 'dashboard_loaded' });
-    endAssertionLogging('passed');
+    await test.step('Verify redirect to the dashboard', async () => {
+      await pm.dashboard().waitForLoad();
+      setTestContext({ uiState: 'dashboard_loaded' });
+      endAssertionLogging('passed');
+    });
   });
 
   test('should reject login with incorrect password', async ({ baseURL }) => {
@@ -93,25 +97,29 @@ test.describe('User login', () => {
       correctPassword: '***' + user.password.slice(-4),
     });
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
+    await test.step('Ensure the user exists via API and attempt login with the wrong password', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
 
-    await loginViaAvailableFlow(api, user);
-    await api.dispose();
+      await loginViaAvailableFlow(api, user);
+      await api.dispose();
 
-    const login = pm.login();
-    const identifier = user.username || user.email;
-    if (!identifier) throw new Error('User has no username or email');
+      const login = pm.login();
+      const identifier = user.username || user.email;
+      if (!identifier) throw new Error('User has no username or email');
 
-    await login.goto(baseURL);
-    await login.fillEmail(identifier);
-    await login.fillPassword(wrongPassword);
-    await login.submit();
+      await login.goto(baseURL);
+      await login.fillEmail(identifier);
+      await login.fillPassword(wrongPassword);
+      await login.submit();
+    });
 
-    setTestContext({ uiState: 'still_on_login_page', expectedBehavior: 'reject_invalid_password' });
+    await test.step('Verify the login was rejected', async () => {
+      setTestContext({ uiState: 'still_on_login_page', expectedBehavior: 'reject_invalid_password' });
 
-    // Verify we remain on the login page (not redirected to dashboard)
-    await expect(pm.login().page).toHaveURL(/\/login(?:[?#].*)?$/i);
-    endAssertionLogging('passed');
+      // Verify we remain on the login page (not redirected to dashboard)
+      await expect(pm.login().page).toHaveURL(/\/login(?:[?#].*)?$/i);
+      endAssertionLogging('passed');
+    });
   });
 
   test('should handle form submission with empty username', async ({ baseURL }) => {
@@ -128,15 +136,17 @@ test.describe('User login', () => {
 
     const login = pm.login();
 
-    await login.goto(baseURL);
-    await login.fillPassword('anypassword');
-    await login.submit();
+    await test.step('Submit the login form with an empty username', async () => {
+      await login.goto(baseURL);
+      await login.fillPassword('anypassword');
+      await login.submit();
+    });
 
-    setTestContext({ uiState: 'still_on_login_page', validationError: 'username_required' });
-
-    // Verify we remain on the login page
-    await expect(login.page).toHaveURL(/\/login(?:[?#].*)?$/i);
-    endAssertionLogging('passed');
+    await test.step('Verify we remain on the login page', async () => {
+      setTestContext({ uiState: 'still_on_login_page', validationError: 'username_required' });
+      await expect(login.page).toHaveURL(/\/login(?:[?#].*)?$/i);
+      endAssertionLogging('passed');
+    });
   });
 
   test('should handle form submission with empty password', async ({ baseURL }) => {
@@ -153,18 +163,21 @@ test.describe('User login', () => {
     });
 
     const login = pm.login();
-    const identifier = user.username || user.email;
-    if (!identifier) throw new Error('User has no username or email');
 
-    await login.goto(baseURL);
-    await login.fillEmail(identifier);
-    // Don't fill password
-    await login.submit();
+    await test.step('Submit the login form with an empty password', async () => {
+      const identifier = user.username || user.email;
+      if (!identifier) throw new Error('User has no username or email');
 
-    setTestContext({ uiState: 'still_on_login_page', validationError: 'password_required' });
+      await login.goto(baseURL);
+      await login.fillEmail(identifier);
+      // Don't fill password
+      await login.submit();
+    });
 
-    // Verify we remain on the login page
-    await expect(login.page).toHaveURL(/\/login(?:[?#].*)?$/i);
-    endAssertionLogging('passed');
+    await test.step('Verify we remain on the login page', async () => {
+      setTestContext({ uiState: 'still_on_login_page', validationError: 'password_required' });
+      await expect(login.page).toHaveURL(/\/login(?:[?#].*)?$/i);
+      endAssertionLogging('passed');
+    });
   });
 });

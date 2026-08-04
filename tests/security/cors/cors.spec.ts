@@ -22,67 +22,77 @@ import { SecurityReporter } from '../utils/security-reporter';
  */
 const FOREIGN_ORIGIN = 'https://evil.example.com';
 
-test.describe('CORS', () => {
+test.describe('@security  CORS', () => {
   test('Access-Control-Allow-Origin should not reflect an arbitrary Origin', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await api.get('/api/bill-categories', { headers: { Origin: FOREIGN_ORIGIN } });
-    const allowOrigin = res.headers()['access-control-allow-origin'];
-    const allowCredentials = res.headers()['access-control-allow-credentials'];
-    await api.dispose();
+    const { allowOrigin, allowCredentials } = await test.step('Request a public endpoint with a foreign Origin header', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await api.get('/api/bill-categories', { headers: { Origin: FOREIGN_ORIGIN } });
+      const allowOrigin = res.headers()['access-control-allow-origin'];
+      const allowCredentials = res.headers()['access-control-allow-credentials'];
+      await api.dispose();
 
-    testInfo.attach('cors-origin-probe', {
-      body: JSON.stringify({ requestedOrigin: FOREIGN_ORIGIN, allowOrigin: allowOrigin ?? null, allowCredentials: allowCredentials ?? null }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('cors-origin-probe', {
+        body: JSON.stringify({ requestedOrigin: FOREIGN_ORIGIN, allowOrigin: allowOrigin ?? null, allowCredentials: allowCredentials ?? null }, null, 2),
+        contentType: 'application/json'
+      });
+      return { allowOrigin, allowCredentials };
     });
 
-    const reflectsArbitraryOrigin = allowOrigin === FOREIGN_ORIGIN;
+    await test.step('Verify the origin was not reflected', async () => {
+      const reflectsArbitraryOrigin = allowOrigin === FOREIGN_ORIGIN;
 
-    if (reflectsArbitraryOrigin) {
-      reporter.reportVulnerability(
-        'API8_SECURITY_MISCONFIGURATION',
-        { endpoint: 'GET /api/bill-categories', allowOrigin, allowCredentials: allowCredentials ?? null },
-        [
-          'Configure Flask-CORS with an explicit origins allowlist (CORS(app, origins=[...])) instead of the wide-open default.',
-          'Never combine origin-reflection with supports_credentials=True — that combination allows any site to make authenticated requests and read the response.',
-          'Scope CORS per-blueprint/route to only the endpoints that actually need cross-origin access, rather than applying it globally.'
-        ]
-      );
-    } else {
-      reporter.reportPass(`Access-Control-Allow-Origin did not reflect an arbitrary origin (got: ${allowOrigin ?? 'none'}).`, 'API8:2023 - Security Misconfiguration');
-    }
+      if (reflectsArbitraryOrigin) {
+        reporter.reportVulnerability(
+          'API8_SECURITY_MISCONFIGURATION',
+          { endpoint: 'GET /api/bill-categories', allowOrigin, allowCredentials: allowCredentials ?? null },
+          [
+            'Configure Flask-CORS with an explicit origins allowlist (CORS(app, origins=[...])) instead of the wide-open default.',
+            'Never combine origin-reflection with supports_credentials=True — that combination allows any site to make authenticated requests and read the response.',
+            'Scope CORS per-blueprint/route to only the endpoints that actually need cross-origin access, rather than applying it globally.'
+          ]
+        );
+      } else {
+        reporter.reportPass(`Access-Control-Allow-Origin did not reflect an arbitrary origin (got: ${allowOrigin ?? 'none'}).`, 'API8:2023 - Security Misconfiguration');
+      }
+    });
   });
 
   test('a preflight request for a state-changing endpoint should not allow an arbitrary origin', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await api.fetch('/transfer', {
-      method: 'OPTIONS',
-      headers: { Origin: FOREIGN_ORIGIN, 'Access-Control-Request-Method': 'POST' }
+    const { allowOrigin, allowMethods } = await test.step('Send a preflight request with a foreign Origin', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await api.fetch('/transfer', {
+        method: 'OPTIONS',
+        headers: { Origin: FOREIGN_ORIGIN, 'Access-Control-Request-Method': 'POST' }
+      });
+      const allowOrigin = res.headers()['access-control-allow-origin'];
+      const allowMethods = res.headers()['access-control-allow-methods'];
+      await api.dispose();
+
+      testInfo.attach('cors-preflight-probe', {
+        body: JSON.stringify({ endpoint: 'OPTIONS /transfer', allowOrigin: allowOrigin ?? null, allowMethods: allowMethods ?? null }, null, 2),
+        contentType: 'application/json'
+      });
+      return { allowOrigin, allowMethods };
     });
-    const allowOrigin = res.headers()['access-control-allow-origin'];
-    const allowMethods = res.headers()['access-control-allow-methods'];
-    await api.dispose();
 
-    testInfo.attach('cors-preflight-probe', {
-      body: JSON.stringify({ endpoint: 'OPTIONS /transfer', allowOrigin: allowOrigin ?? null, allowMethods: allowMethods ?? null }, null, 2),
-      contentType: 'application/json'
+    await test.step('Verify the origin was not allowed', async () => {
+      const reflectsArbitraryOrigin = allowOrigin === FOREIGN_ORIGIN;
+
+      if (reflectsArbitraryOrigin) {
+        reporter.reportVulnerability(
+          'API8_SECURITY_MISCONFIGURATION',
+          { endpoint: 'OPTIONS /transfer', allowOrigin, allowMethods },
+          ['Restrict CORS on state-changing endpoints (/transfer, /request_loan, etc.) to the app\'s own real origin(s) only.']
+        );
+      } else {
+        reporter.reportPass('Preflight for /transfer did not allow an arbitrary origin.', 'API8:2023 - Security Misconfiguration');
+      }
     });
-
-    const reflectsArbitraryOrigin = allowOrigin === FOREIGN_ORIGIN;
-
-    if (reflectsArbitraryOrigin) {
-      reporter.reportVulnerability(
-        'API8_SECURITY_MISCONFIGURATION',
-        { endpoint: 'OPTIONS /transfer', allowOrigin, allowMethods },
-        ['Restrict CORS on state-changing endpoints (/transfer, /request_loan, etc.) to the app\'s own real origin(s) only.']
-      );
-    } else {
-      reporter.reportPass('Preflight for /transfer did not allow an arbitrary origin.', 'API8:2023 - Security Misconfiguration');
-    }
   });
 });

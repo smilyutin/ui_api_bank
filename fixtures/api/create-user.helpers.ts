@@ -1,4 +1,4 @@
-import type { APIRequestContext, Browser } from '@playwright/test';
+import { expect, type APIRequestContext, type APIResponse, type Browser } from '@playwright/test';
 import { RegisterPage } from '../../pages/register.page';
 import { saveUser } from '../../helpers/credentials';
 import { buildRegisterFormSubmission } from './register-form.helpers';
@@ -42,7 +42,7 @@ import { buildRegisterFormSubmission } from './register-form.helpers';
 
 export type CreatePayload = { email: string; password: string };
 export type TriedEntry = { path: string; status: number | string };
-export type CreateResult = { response: any; path: string } | null;
+export type CreateResult = { response: APIResponse; path: string } | null;
 export type CreateUserFailureAnalysis = {
 	category: string;
 	description: string;
@@ -94,7 +94,7 @@ const tryCreateAtPath = async (
 		if (successStatuses.includes(resForm.status())) {
 			return { response: resForm, path: `${path} (form)` };
 		}
-	} catch (e: any) {
+	} catch (e: unknown) {
 		recordTry(tried, `${path} (form)`, e?.message || 'error');
 	}
 
@@ -108,7 +108,7 @@ const tryCreateAtPath = async (
 		if (successStatuses.includes(resJson.status())) {
 			return { response: resJson, path: `${path} (json)` };
 		}
-	} catch (e: any) {
+	} catch (e: unknown) {
 		recordTry(tried, `${path} (json)`, e?.message || 'error');
 	}
 
@@ -145,10 +145,10 @@ const tryRegisterHtmlFallback = async (
 				saveUser({ email: payload.email, password: payload.password });
 				return { response: regPost, path: `${actionPath} (form submit)` };
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			recordTry(tried, `${actionPath} (form submit)`, e?.message || 'error');
 		}
-	} catch (e: any) {
+	} catch (e: unknown) {
 		recordTry(tried, '/register (get)', e?.message || 'error');
 	}
 
@@ -156,11 +156,14 @@ const tryRegisterHtmlFallback = async (
 };
 
 // Extract user-creation-related POST paths from an OpenAPI/Swagger spec
-const discoverPostPaths = (spec: any): string[] => {
-	if (!spec?.paths || typeof spec.paths !== 'object') return [];
+const discoverPostPaths = (spec: unknown): string[] => {
+	if (typeof spec !== 'object' || spec === null || !('paths' in spec)) return [];
+
+	const pathsObj = (spec as any).paths;
+	if (!pathsObj || typeof pathsObj !== 'object') return [];
 
 	const paths: string[] = [];
-	for (const [rawPath, methods] of Object.entries(spec.paths)) {
+	for (const [rawPath, methods] of Object.entries(pathsObj as Record<string, any>)) {
 		const p = String(rawPath);
 		const lowerP = p.toLowerCase();
 		const hasPost = methods && (methods as any).post;
@@ -201,7 +204,7 @@ const tryOpenApiDiscovery = async (
 			if (!text) continue;
 
 			if (contentType.includes('application/json')) {
-				let spec: any = null;
+				let spec: unknown = null;
 				try { spec = JSON.parse(text); } catch { spec = null; }
 				const postPaths = discoverPostPaths(spec);
 				const result = await tryFromOpenApiSpec(apiContext, postPaths, payload, tried, STRICT_SUCCESS_STATUSES);
@@ -225,17 +228,17 @@ const tryOpenApiDiscovery = async (
 						if (specRes.status() !== 200) continue;
 
 						const specText = await specRes.text().catch(() => '');
-						let spec: any = null;
+						let spec: unknown = null;
 						try { spec = JSON.parse(specText); } catch { spec = null; }
 						const postPaths = discoverPostPaths(spec);
 						const result = await tryFromOpenApiSpec(apiContext, postPaths, payload, tried, EXTENDED_SUCCESS_STATUSES);
 						if (result) return result;
-					} catch (e: any) {
+					} catch (e: unknown) {
 						recordTry(tried, candidate, e?.message || 'error');
 					}
 				}
 			}
-		} catch (e: any) {
+		} catch (e: unknown) {
 			recordTry(tried, docPath, e?.message || 'error');
 		}
 	}
@@ -256,7 +259,16 @@ const tryUiRegisterFallback = async (
 		const filledPassword = await reg.fillPassword(payload.password);
 		if (filledEmail && filledPassword) {
 			await reg.submit();
-			await page.waitForTimeout(1000);
+			// #message gets class="success" or class="error" synchronously once the
+			// registration fetch() resolves (templates/register.html) - wait on that
+			// instead of a fixed sleep, and only save credentials on confirmed success.
+			const message = page.locator('#message');
+			await expect(message).toHaveClass(/success|error/, { timeout: 5000 });
+			const succeeded = (await message.getAttribute('class'))?.includes('success') ?? false;
+			if (!succeeded) {
+				await page.close();
+				return null;
+			}
 			saveUser({ email: payload.email, password: payload.password });
 			await page.close();
 			return {

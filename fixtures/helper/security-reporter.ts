@@ -33,7 +33,7 @@ export interface SecurityTestResult {
 	vulnerability?: string;
 	riskLevel?: SecurityRiskLevel;
 	description: string;
-	evidence?: any;
+	evidence?: unknown;
 	recommendations?: string[];
 	remediationSteps?: string[];
 	references?: string[];
@@ -333,7 +333,7 @@ export class SecurityReporter {
 	 */
 	reportVulnerability(
 		owaspKey: keyof typeof OWASP_VULNERABILITIES,
-		evidence: any,
+		evidence: unknown,
 		additionalRecommendations?: string[]
 	) {
 		const owasp = OWASP_VULNERABILITIES[owaspKey];
@@ -506,7 +506,7 @@ export class SecurityReporter {
 				: `Completed with warning because the test found a concern that did not warrant a hard failure.`;
 	}
 
-	private getEvidenceReason(evidence: any): string | null {
+	private getEvidenceReason(evidence: unknown): string | null {
 		if (!evidence) return null;
 
 		if (typeof evidence === 'string') {

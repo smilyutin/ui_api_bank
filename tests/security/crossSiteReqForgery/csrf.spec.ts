@@ -18,7 +18,7 @@ import { establishAccountSession } from '../../../fixtures/api/transactions.help
  */
 const FOREIGN_ORIGIN = 'https://evil.example.com';
 
-test.describe('Cross-Site Request Forgery', () => {
+test.describe('@security  Cross-Site Request Forgery', () => {
   test('POST /transfer should not process a cross-site request with no CSRF token', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
@@ -34,39 +34,44 @@ test.describe('Cross-Site Request Forgery', () => {
       return;
     }
 
-    // Cookie-only context — no Authorization header at all, matching what a
-    // victim's browser sends automatically on a cross-site request.
-    const cookieOnlyApi = await request.newContext({
-      baseURL: baseURL.toString(),
-      extraHTTPHeaders: {
-        Cookie: `token=${sender.token}`,
-        Origin: FOREIGN_ORIGIN,
-        Referer: `${FOREIGN_ORIGIN}/attack.html`
-      }
+    const { status, forgedBody, balanceBefore, balanceAfter } = await test.step('Simulate a cross-site transfer request', async () => {
+      // Cookie-only context — no Authorization header at all, matching what a
+      // victim's browser sends automatically on a cross-site request.
+      const cookieOnlyApi = await request.newContext({
+        baseURL: baseURL.toString(),
+        extraHTTPHeaders: {
+          Cookie: `token=${sender.token}`,
+          Origin: FOREIGN_ORIGIN,
+          Referer: `${FOREIGN_ORIGIN}/attack.html`
+        }
+      });
+
+      const balanceBeforeRes = await cookieOnlyApi.get(`/check_balance/${sender.accountNumber}`);
+      const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
+
+      const forgedRes = await cookieOnlyApi.post('/transfer', {
+        data: { to_account: recipient.accountNumber, amount: 10 }
+      });
+      const forgedBody = await forgedRes.json().catch(() => null);
+      const status = forgedRes.status();
+
+      const balanceAfterRes = await cookieOnlyApi.get(`/check_balance/${sender.accountNumber}`);
+      const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
+      await cookieOnlyApi.dispose();
+
+      testInfo.attach('csrf-probe', {
+        body: JSON.stringify(
+          { origin: FOREIGN_ORIGIN, status, forgedBody, balanceBefore, balanceAfter },
+          null,
+          2
+        ),
+        contentType: 'application/json'
+      });
+      return { status, forgedBody, balanceBefore, balanceAfter };
     });
 
-    const balanceBeforeRes = await cookieOnlyApi.get(`/check_balance/${sender.accountNumber}`);
-    const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
-
-    const forgedRes = await cookieOnlyApi.post('/transfer', {
-      data: { to_account: recipient.accountNumber, amount: 10 }
-    });
-    const forgedBody = await forgedRes.json().catch(() => null);
-
-    const balanceAfterRes = await cookieOnlyApi.get(`/check_balance/${sender.accountNumber}`);
-    const balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
-    await cookieOnlyApi.dispose();
-
-    testInfo.attach('csrf-probe', {
-      body: JSON.stringify(
-        { origin: FOREIGN_ORIGIN, status: forgedRes.status(), forgedBody, balanceBefore, balanceAfter },
-        null,
-        2
-      ),
-      contentType: 'application/json'
-    });
-
-    const csrfSucceeded = forgedRes.status() === 200 && forgedBody?.status === 'success' && balanceAfter === balanceBefore - 10;
+    await test.step('Verify the transfer was not processed', async () => {
+    const csrfSucceeded = status === 200 && forgedBody?.status === 'success' && balanceAfter === balanceBefore - 10;
 
     if (csrfSucceeded) {
       reporter.reportVulnerability(
@@ -83,11 +88,12 @@ test.describe('Cross-Site Request Forgery', () => {
           'Validate the Origin/Referer header on state-changing requests and reject mismatches.'
         ]
       );
-    } else {
-      reporter.reportPass(
-        'A cross-site request (foreign Origin/Referer, cookie-only auth, no CSRF token) did not complete the transfer.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      } else {
+        reporter.reportPass(
+          'A cross-site request (foreign Origin/Referer, cookie-only auth, no CSRF token) did not complete the transfer.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
+    });
   });
 });

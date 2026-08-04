@@ -26,7 +26,7 @@ import {
 const READ_SUCCESS_STATUSES = [200, 201];
 const AUTH_DENIED_STATUSES = [401, 403];
 
-test.describe('API - Transaction & balance access', () => {
+test.describe('@api @feature:transactions API - Transaction & balance access', () => {
   let session: AccountSession | null = null;
 
   // Test isolation: Fresh session per test to prevent state leakage
@@ -52,43 +52,45 @@ test.describe('API - Transaction & balance access', () => {
       return;
     }
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const anonRes = await anon.get(`/check_balance/${session.accountNumber}`);
-    const anonStatus = anonRes.status();
-    const anonBody = await anonRes.json().catch(() => null);
-    await anon.dispose();
+    const { anonStatus, anonBody } = await test.step('Request the balance anonymously', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const anonRes = await anon.get(`/check_balance/${session!.accountNumber}`);
+      const anonStatus = anonRes.status();
+      const anonBody = await anonRes.json().catch(() => null);
+      await anon.dispose();
 
-    const readableAnonymously = READ_SUCCESS_STATUSES.includes(anonStatus) && anonBody?.status === 'success';
-    if (readableAnonymously) {
-      await validateSchema('transactions-schema', 'GET_check_balance', anonBody);
-    }
-
-    testInfo.attach('check_balance-anonymous', {
-      body: JSON.stringify({ status: anonStatus, body: anonBody }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('check_balance-anonymous', {
+        body: JSON.stringify({ status: anonStatus, body: anonBody }, null, 2),
+        contentType: 'application/json'
+      });
+      return { anonStatus, anonBody };
     });
 
-    if (readableAnonymously) {
-      reporter.reportVulnerability(
-        'API1_BOLA',
-        {
-          endpoint: `/check_balance/${session.accountNumber}`,
-          requestAuth: 'none',
-          responseStatus: anonStatus,
-          disclosedFields: Object.keys(anonBody || {})
-        },
-        [
-          'Require a valid session/token on /check_balance and confirm the caller owns the requested account_number.',
-          'Do not disclose username or balance for arbitrary account numbers to unauthenticated callers.'
-        ]
-      );
-    } else {
-      expect(AUTH_DENIED_STATUSES).toContain(anonStatus);
-      reporter.reportPass(
-        'Account balance endpoint rejected an unauthenticated request.',
-        'API1:2023 - Broken Object Level Authorization'
-      );
-    }
+    await test.step('Verify the balance was not disclosed to an anonymous caller', async () => {
+      const readableAnonymously = READ_SUCCESS_STATUSES.includes(anonStatus) && anonBody?.status === 'success';
+      if (readableAnonymously) {
+        await validateSchema('transactions-schema', 'GET_check_balance', anonBody);
+        reporter.reportVulnerability(
+          'API1_BOLA',
+          {
+            endpoint: `/check_balance/${session!.accountNumber}`,
+            requestAuth: 'none',
+            responseStatus: anonStatus,
+            disclosedFields: Object.keys(anonBody || {})
+          },
+          [
+            'Require a valid session/token on /check_balance and confirm the caller owns the requested account_number.',
+            'Do not disclose username or balance for arbitrary account numbers to unauthenticated callers.'
+          ]
+        );
+      } else {
+        expect(AUTH_DENIED_STATUSES).toContain(anonStatus);
+        reporter.reportPass(
+          'Account balance endpoint rejected an unauthenticated request.',
+          'API1:2023 - Broken Object Level Authorization'
+        );
+      }
+    });
   });
 
   test('GET /transactions should require authorization for account history', async ({ baseURL }, testInfo) => {
@@ -101,43 +103,45 @@ test.describe('API - Transaction & balance access', () => {
       return;
     }
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const anonRes = await anon.get(`/transactions/${session.accountNumber}`);
-    const anonStatus = anonRes.status();
-    const anonBody = await anonRes.json().catch(() => null);
-    await anon.dispose();
+    const { anonStatus, anonBody } = await test.step('Request the transaction history anonymously', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const anonRes = await anon.get(`/transactions/${session!.accountNumber}`);
+      const anonStatus = anonRes.status();
+      const anonBody = await anonRes.json().catch(() => null);
+      await anon.dispose();
 
-    const readableAnonymously = READ_SUCCESS_STATUSES.includes(anonStatus) && anonBody?.status === 'success';
-    if (readableAnonymously) {
-      await validateSchema('transactions-schema', 'GET_transactions', anonBody);
-    }
-
-    testInfo.attach('transactions-anonymous', {
-      body: JSON.stringify({ status: anonStatus, body: anonBody }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('transactions-anonymous', {
+        body: JSON.stringify({ status: anonStatus, body: anonBody }, null, 2),
+        contentType: 'application/json'
+      });
+      return { anonStatus, anonBody };
     });
 
-    if (readableAnonymously) {
-      reporter.reportVulnerability(
-        'API1_BOLA',
-        {
-          endpoint: `/transactions/${session.accountNumber}`,
-          requestAuth: 'none',
-          responseStatus: anonStatus,
-          transactionCount: Array.isArray(anonBody?.transactions) ? anonBody.transactions.length : 'unknown'
-        },
-        [
-          'Require authentication on /transactions and verify the caller owns the requested account_number.',
-          'Avoid returning server_time or raw account activity to unauthenticated callers.'
-        ]
-      );
-    } else {
-      expect(AUTH_DENIED_STATUSES).toContain(anonStatus);
-      reporter.reportPass(
-        'Transaction history endpoint rejected an unauthenticated request.',
-        'API1:2023 - Broken Object Level Authorization'
-      );
-    }
+    await test.step('Verify the history was not disclosed to an anonymous caller', async () => {
+      const readableAnonymously = READ_SUCCESS_STATUSES.includes(anonStatus) && anonBody?.status === 'success';
+      if (readableAnonymously) {
+        await validateSchema('transactions-schema', 'GET_transactions', anonBody);
+        reporter.reportVulnerability(
+          'API1_BOLA',
+          {
+            endpoint: `/transactions/${session!.accountNumber}`,
+            requestAuth: 'none',
+            responseStatus: anonStatus,
+            transactionCount: Array.isArray(anonBody?.transactions) ? anonBody.transactions.length : 'unknown'
+          },
+          [
+            'Require authentication on /transactions and verify the caller owns the requested account_number.',
+            'Avoid returning server_time or raw account activity to unauthenticated callers.'
+          ]
+        );
+      } else {
+        expect(AUTH_DENIED_STATUSES).toContain(anonStatus);
+        reporter.reportPass(
+          'Transaction history endpoint rejected an unauthenticated request.',
+          'API1:2023 - Broken Object Level Authorization'
+        );
+      }
+    });
   });
 
   test('GET /api/transactions should require a token and return the owner history', async ({ baseURL }, testInfo) => {
@@ -150,37 +154,42 @@ test.describe('API - Transaction & balance access', () => {
       return;
     }
 
-    // Anonymous request must be rejected.
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const anonRes = await anon.get(`/api/transactions?account_number=${session.accountNumber}`);
-    const anonStatus = anonRes.status();
-    await anon.dispose();
-
-    expect(AUTH_DENIED_STATUSES).toContain(anonStatus);
-
-    // Authenticated owner request must succeed and be scoped to their account.
-    const authed = await request.newContext({
-      baseURL: baseURL.toString(),
-      extraHTTPHeaders: { Authorization: `Bearer ${session.token}` }
-    });
-    const authedRes = await authed.get(`/api/transactions?account_number=${session.accountNumber}`);
-    const authedStatus = authedRes.status();
-    const authedBody = await authedRes.json().catch(() => null);
-    await authed.dispose();
-
-    testInfo.attach('api-transactions', {
-      body: JSON.stringify({ anonStatus, authedStatus, body: authedBody }, null, 2),
-      contentType: 'application/json'
+    const anonStatus = await test.step('Verify an anonymous request is rejected', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const anonRes = await anon.get(`/api/transactions?account_number=${session!.accountNumber}`);
+      const anonStatus = anonRes.status();
+      await anon.dispose();
+      expect(AUTH_DENIED_STATUSES).toContain(anonStatus);
+      return anonStatus;
     });
 
-    expect(READ_SUCCESS_STATUSES).toContain(authedStatus);
-    expect(authedBody?.account_number).toBe(session.accountNumber);
-    expect(Array.isArray(authedBody?.transactions)).toBe(true);
-    await validateSchema('transactions-schema', 'GET_api_transactions', authedBody);
+    const { authedStatus, authedBody } = await test.step('Request the history as the authenticated owner', async () => {
+      const authed = await request.newContext({
+        baseURL: baseURL.toString(),
+        extraHTTPHeaders: { Authorization: `Bearer ${session!.token}` }
+      });
+      const authedRes = await authed.get(`/api/transactions?account_number=${session!.accountNumber}`);
+      const authedStatus = authedRes.status();
+      const authedBody = await authedRes.json().catch(() => null);
+      await authed.dispose();
 
-    reporter.reportPass(
-      'Protected transaction API rejected anonymous access and returned owner-scoped history for a valid token.',
-      'API1:2023 - Broken Object Level Authorization'
-    );
+      testInfo.attach('api-transactions', {
+        body: JSON.stringify({ anonStatus, authedStatus, body: authedBody }, null, 2),
+        contentType: 'application/json'
+      });
+      return { authedStatus, authedBody };
+    });
+
+    await test.step('Verify the owner-scoped history matches the contract', async () => {
+      expect(READ_SUCCESS_STATUSES).toContain(authedStatus);
+      expect(authedBody?.account_number).toBe(session!.accountNumber);
+      expect(Array.isArray(authedBody?.transactions)).toBe(true);
+      await validateSchema('transactions-schema', 'GET_api_transactions', authedBody);
+
+      reporter.reportPass(
+        'Protected transaction API rejected anonymous access and returned owner-scoped history for a valid token.',
+        'API1:2023 - Broken Object Level Authorization'
+      );
+    });
   });
 });

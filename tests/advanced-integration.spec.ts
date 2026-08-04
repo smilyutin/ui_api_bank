@@ -12,7 +12,7 @@ import {
 } from '../helpers/scenario-runner';
 import { PageManager } from '../pages/page-manager';
 
-test.describe('Phase 4: Advanced Integration', () => {
+test.describe('@integration Phase 4: Advanced Integration', () => {
   test('should manage state machine for user authentication flow', async ({ page }, testInfo) => {
     const logger = createLogger(testInfo);
 

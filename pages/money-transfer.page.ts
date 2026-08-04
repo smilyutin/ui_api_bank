@@ -48,7 +48,6 @@ export class MoneyTransferPage extends HelperBase {
 		await expect(submitButton).toBeVisible({ timeout: 5000 });
 		await expect(submitButton).toBeEnabled({ timeout: 5000 });
 		await submitButton.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-		await this.page.waitForTimeout(200);
 		await submitButton.click();
 		await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
 			// Fallback if networkidle times out (submit may trigger a redirect)

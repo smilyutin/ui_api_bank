@@ -3,7 +3,7 @@ import { createLogger } from '../helpers/logger';
 import { WaitHelper } from '../helpers/wait-helpers';
 import { TestIsolation } from '../helpers/test-isolation';
 
-test.describe('Phase 3: Reliability Improvements', () => {
+test.describe('@reliability Phase 3: Reliability Improvements', () => {
   test('should use wait helpers for robust navigation', async ({ page }, testInfo) => {
     const logger = createLogger(testInfo);
 

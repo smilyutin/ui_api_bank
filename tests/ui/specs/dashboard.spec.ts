@@ -41,7 +41,7 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * 4. Check recent transactions
  * 5. Test logout functionality
  */
-test.describe('Dashboard functionality', () => {
+test.describe('@smoke Dashboard functionality', () => {
   let dashboardPage: DashboardPage;
   let tempStoragePath: string;
   let userIdentifier: string;
@@ -84,176 +84,222 @@ test.describe('Dashboard functionality', () => {
 
   test('should display welcome message and navigation', async () => {
     setupAssertionLogging('should display welcome message and navigation');
-    const welcomeText = await dashboardPage.getWelcomeMessage();
-    loggedExpect(welcomeText, 'welcomeText').toBeTruthy();
+    await test.step('Verify the welcome message', async () => {
+      const welcomeText = await dashboardPage.getWelcomeMessage();
+      loggedExpect(welcomeText, 'welcomeText').toBeTruthy();
 
-    if (userIdentifier && welcomeText) {
-      const normalizedWelcome = welcomeText.toLowerCase();
-      const identifierPart = userIdentifier.split('@')[0].toLowerCase();
-      const matched = normalizedWelcome.includes(identifierPart);
-      loggedExpect(matched, 'welcome message includes user identifier').toBeTruthy();
-    }
+      if (userIdentifier && welcomeText) {
+        const normalizedWelcome = welcomeText.toLowerCase();
+        const identifierPart = userIdentifier.split('@')[0].toLowerCase();
+        const matched = normalizedWelcome.includes(identifierPart);
+        loggedExpect(matched, 'welcome message includes user identifier').toBeTruthy();
+      }
+    });
 
-    const navTexts = await dashboardPage.getNavigationTexts();
-    const expected = [
-      'Profile',
-      'Money Transfer',
-      'Loans',
-      'Transaction History',
-      'Virtual Cards',
-      'Bill Payments',
-      'Logout'
-    ];
+    await test.step('Verify navigation items and hrefs', async () => {
+      const navTexts = await dashboardPage.getNavigationTexts();
+      const expected = [
+        'Profile',
+        'Money Transfer',
+        'Loans',
+        'Transaction History',
+        'Virtual Cards',
+        'Bill Payments',
+        'Logout'
+      ];
 
-    const norm = (s: string) =>
-      s.replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const norm = (s: string) =>
+        s.replace(/[^\p{L}\p{N}\s]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
 
-    const got = navTexts.map(norm);
-    const want = expected.map(norm);
-    // Check that all expected items are present in the navigation, regardless of order
-    let idx = 0;
-    for (const w of want) {
-      const found = got.indexOf(w, idx);
-      loggedExpect(found, `found ${w}`).toBeGreaterThanOrEqual(0);
-      idx = found + 1;
-    }
+      const got = navTexts.map(norm);
+      const want = expected.map(norm);
+      // Check that all expected items are present in the navigation, regardless of order
+      let idx = 0;
+      for (const w of want) {
+        const found = got.indexOf(w, idx);
+        loggedExpect(found, `found ${w}`).toBeGreaterThanOrEqual(0);
+        idx = found + 1;
+      }
 
-    const navLinks = await dashboardPage.getNavigationLinks();
-    const gotHrefs = navLinks.map(l => l.href || '').filter(Boolean);
-    const expectedHrefs = ['#profile', '#transfers', '#loans', '#transactions', '#virtual-cards', '#bill-payments', '#'];
-      // Check that all expected hrefs are present in the navigation links, regardless of order
-    let j = 0;
-    for (const eh of expectedHrefs) {
-      const found = gotHrefs.indexOf(eh, j);
-      loggedExpect(found, `found href ${eh}`).toBeGreaterThanOrEqual(0);
-      j = found + 1;
-    }
-    endAssertionLogging('passed');
+      const navLinks = await dashboardPage.getNavigationLinks();
+      const gotHrefs = navLinks.map(l => l.href || '').filter(Boolean);
+      const expectedHrefs = ['#profile', '#transfers', '#loans', '#transactions', '#virtual-cards', '#bill-payments', '#'];
+        // Check that all expected hrefs are present in the navigation links, regardless of order
+      let j = 0;
+      for (const eh of expectedHrefs) {
+        const found = gotHrefs.indexOf(eh, j);
+        loggedExpect(found, `found href ${eh}`).toBeGreaterThanOrEqual(0);
+        j = found + 1;
+      }
+      endAssertionLogging('passed');
+    });
   });
 
   test('should show account balance', async () => {
     setupAssertionLogging('should show account balance');
-    const balance = await dashboardPage.getAccountBalance();
-    loggedExpect(balance, 'balance').not.toBeNull();
-    loggedExpect(typeof balance, 'typeof balance').toBe('number');
-    loggedExpect((balance as number) >= 0, 'balance >= 0').toBeTruthy();
-    endAssertionLogging('passed');
+    const balance = await test.step('Fetch account balance', async () => {
+      return dashboardPage.getAccountBalance();
+    });
+
+    await test.step('Verify it is a non-negative number', async () => {
+      loggedExpect(balance, 'balance').not.toBeNull();
+      loggedExpect(typeof balance, 'typeof balance').toBe('number');
+      loggedExpect((balance as number) >= 0, 'balance >= 0').toBeTruthy();
+      endAssertionLogging('passed');
+    });
   });
 
   test('should list recent transactions', async () => {
     setupAssertionLogging('should list recent transactions');
-    const transactions = await dashboardPage.getRecentTransactions();
-    if (transactions.length === 0) {
-      loggedExpect(await dashboardPage.hasEmptyTransactionsMessage(), 'hasEmptyTransactionsMessage').toBeTruthy();
-      endAssertionLogging('passed');
-      return;
-    }
+    const transactions = await test.step('Fetch recent transactions', async () => {
+      return dashboardPage.getRecentTransactions();
+    });
 
-    const text = await transactions[0].innerText();
-    loggedExpect(
-      /\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|[$€£]\s*\d+/.test(text), // Basic check for amount in transaction text
-      'transaction text matches pattern'
-    ).toBeTruthy();
-    endAssertionLogging('passed');
+    await test.step('Verify transaction text matches expected pattern', async () => {
+      if (transactions.length === 0) {
+        loggedExpect(await dashboardPage.hasEmptyTransactionsMessage(), 'hasEmptyTransactionsMessage').toBeTruthy();
+        endAssertionLogging('passed');
+        return;
+      }
+
+      const text = await transactions[0].innerText();
+      loggedExpect(
+        /\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|[$€£]\s*\d+/.test(text), // Basic check for amount in transaction text
+        'transaction text matches pattern'
+      ).toBeTruthy();
+      endAssertionLogging('passed');
+    });
   });
 
   test('should allow logout', async () => {
     setupAssertionLogging('should allow logout');
-    const logoutExists = await dashboardPage.logout();
-    loggedExpect(logoutExists, 'logoutExists').toBeTruthy();
+    await test.step('Log out', async () => {
+      const logoutExists = await dashboardPage.logout();
+      loggedExpect(logoutExists, 'logoutExists').toBeTruthy();
+    });
 
-    await expect(dashboardPage.page).toHaveURL(/\/(login|register|$)/, { timeout: 5000 });
+    await test.step('Verify redirect away from the dashboard and logged-out state', async () => {
+      await expect(dashboardPage.page).toHaveURL(/\/(login|register|$)/, { timeout: 5000 });
 
-    const isStillLoggedIn = await dashboardPage.isLoggedIn();
-    loggedExpect(isStillLoggedIn, 'isStillLoggedIn').toBeFalsy();
-    endAssertionLogging('passed');
+      const isStillLoggedIn = await dashboardPage.isLoggedIn();
+      loggedExpect(isStillLoggedIn, 'isStillLoggedIn').toBeFalsy();
+      endAssertionLogging('passed');
+    });
   });
 
   test('should display accurate account balance', async () => {
     setupAssertionLogging('should display accurate account balance');
-    const balanceData = await dashboardPage.verifyBalanceAccuracy();
+    const balanceData = await test.step('Fetch balance from the UI and cross-check against the API', async () => {
+      return dashboardPage.verifyBalanceAccuracy();
+    });
 
-    loggedExpect(balanceData.displayed, 'balanceData.displayed').not.toBeNull();
-    loggedExpect(typeof balanceData.displayed, 'typeof balanceData.displayed').toBe('number');
-    loggedExpect(balanceData.displayed, 'balanceData.displayed').toBeGreaterThanOrEqual(0);
+    await test.step('Verify they match', async () => {
+      loggedExpect(balanceData.displayed, 'balanceData.displayed').not.toBeNull();
+      loggedExpect(typeof balanceData.displayed, 'typeof balanceData.displayed').toBe('number');
+      loggedExpect(balanceData.displayed, 'balanceData.displayed').toBeGreaterThanOrEqual(0);
 
-    loggedExpect(balanceData.api, 'balanceData.api').not.toBeNull();
-    loggedExpect(balanceData.matches, 'balanceData.matches').toBeTruthy();
-    endAssertionLogging('passed');
+      loggedExpect(balanceData.api, 'balanceData.api').not.toBeNull();
+      loggedExpect(balanceData.matches, 'balanceData.matches').toBeTruthy();
+      endAssertionLogging('passed');
+    });
   });
 
   test('should display transaction history with proper data integrity', async () => {
     setupAssertionLogging('should display transaction history with proper data integrity');
-    const transactions = await dashboardPage.getTransactionData();
+    const transactions = await test.step('Fetch transaction data', async () => {
+      return dashboardPage.getTransactionData();
+    });
 
-    for (const txn of transactions) {
-      if (txn.amount !== null) {
-        loggedExpect(typeof txn.amount, 'typeof txn.amount').toBe('number');
-        loggedExpect(txn.amount, 'txn.amount').toBeGreaterThan(0);
+    await test.step('Verify data integrity for each transaction', async () => {
+      for (const txn of transactions) {
+        if (txn.amount !== null) {
+          loggedExpect(typeof txn.amount, 'typeof txn.amount').toBe('number');
+          loggedExpect(txn.amount, 'txn.amount').toBeGreaterThan(0);
+        }
+
+        if (txn.date !== null) {
+          loggedExpect(txn.date, 'txn.date').toMatch(/\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}/);
+        }
+
+        loggedExpect(txn.text, 'txn.text').not.toMatch(/<script|javascript:|on\w+=/i);
       }
-
-      if (txn.date !== null) {
-        loggedExpect(txn.date, 'txn.date').toMatch(/\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}/);
-      }
-
-      loggedExpect(txn.text, 'txn.text').not.toMatch(/<script|javascript:|on\w+=/i);
-    }
-    endAssertionLogging('passed');
+      endAssertionLogging('passed');
+    });
   });
 
   test('should show transactions in chronological order', async () => {
     setupAssertionLogging('should show transactions in chronological order');
-    const transactions = await dashboardPage.getTransactionData();
+    const transactions = await test.step('Fetch transaction data', async () => {
+      return dashboardPage.getTransactionData();
+    });
 
-    if (transactions.length > 1) {
-      const datedTransactions = transactions.filter(t => t.date !== null);
+    await test.step('Verify transactions are in chronological order', async () => {
+      if (transactions.length > 1) {
+        const datedTransactions = transactions.filter(t => t.date !== null);
 
-      if (datedTransactions.length > 1) {
-        for (let i = 1; i < datedTransactions.length; i++) {
-          const prevDate = new Date(datedTransactions[i - 1].date!);
-          const currDate = new Date(datedTransactions[i].date!);
-          loggedExpect(prevDate.getTime(), `prevDate[${i}] >= currDate[${i}]`).toBeGreaterThanOrEqual(currDate.getTime());
+        if (datedTransactions.length > 1) {
+          for (let i = 1; i < datedTransactions.length; i++) {
+            const prevDate = new Date(datedTransactions[i - 1].date!);
+            const currDate = new Date(datedTransactions[i].date!);
+            loggedExpect(prevDate.getTime(), `prevDate[${i}] >= currDate[${i}]`).toBeGreaterThanOrEqual(currDate.getTime());
+          }
         }
       }
-    }
-    endAssertionLogging('passed');
+      endAssertionLogging('passed');
+    });
   });
 
   test('should render profile section when navigating', async () => {
     setupAssertionLogging('should render profile section when navigating');
-    const navLinks = await dashboardPage.getNavigationLinks();
-    const profileLink = navLinks.find(l => l.href === '#profile');
-    loggedExpect(profileLink, 'profileLink').toBeTruthy();
+    await test.step('Click the profile navigation link', async () => {
+      const navLinks = await dashboardPage.getNavigationLinks();
+      const profileLink = navLinks.find(l => l.href === '#profile');
+      loggedExpect(profileLink, 'profileLink').toBeTruthy();
 
-    // Dashboard sections are static, single-page anchors (see static/dashboard.js
-    // handleScroll) — "navigating" means the click scrolls #profile into view,
-    // not that it gets inserted/toggled in the DOM.
-    await dashboardPage.clickNavigationLink(`a[href="${profileLink!.href}"]`);
-    const profileSection = dashboardPage.page.locator('#profile');
-    await expect(profileSection).toBeInViewport();
-    endAssertionLogging('passed');
+      // Dashboard sections are static, single-page anchors (see static/dashboard.js
+      // handleScroll) — "navigating" means the click scrolls #profile into view,
+      // not that it gets inserted/toggled in the DOM.
+      await dashboardPage.clickNavigationLink(`a[href="${profileLink!.href}"]`);
+    });
+
+    await test.step('Verify the profile section scrolls into view', async () => {
+      const profileSection = dashboardPage.page.locator('#profile');
+      await expect(profileSection).toBeInViewport();
+      endAssertionLogging('passed');
+    });
   });
 
   test('should show transaction amounts with currency symbol', async () => {
     setupAssertionLogging('should show transaction amounts with currency symbol');
-    const transactions = await dashboardPage.getRecentTransactions();
-    if (transactions.length === 0) {
-      loggedExpect(await dashboardPage.hasEmptyTransactionsMessage(), 'hasEmptyTransactionsMessage').toBeTruthy();
-      endAssertionLogging('passed');
-      return;
-    }
+    const transactions = await test.step('Fetch recent transactions', async () => {
+      return dashboardPage.getRecentTransactions();
+    });
 
-    const text = await transactions[0].innerText();
-    loggedExpect(text, 'transaction text').toMatch(/[$€£]\s*\d+(\.\d{2})?/);
-    endAssertionLogging('passed');
+    await test.step('Verify currency symbol format', async () => {
+      if (transactions.length === 0) {
+        loggedExpect(await dashboardPage.hasEmptyTransactionsMessage(), 'hasEmptyTransactionsMessage').toBeTruthy();
+        endAssertionLogging('passed');
+        return;
+      }
+
+      const text = await transactions[0].innerText();
+      loggedExpect(text, 'transaction text').toMatch(/[$€£]\s*\d+(\.\d{2})?/);
+      endAssertionLogging('passed');
+    });
   });
 
   test('should have unique navigation labels', async () => {
     setupAssertionLogging('should have unique navigation labels');
-    const navTexts = await dashboardPage.getNavigationTexts();
-    const normalized = navTexts.map(t => t.trim().toLowerCase());
-    const unique = new Set(normalized);
-    loggedExpect(unique.size, 'unique.size').toBe(normalized.length);
-    endAssertionLogging('passed');
+
+    const navTexts = await test.step('Fetch navigation texts', async () => {
+      return dashboardPage.getNavigationTexts();
+    });
+
+    await test.step('Verify labels are unique', async () => {
+      const normalized = navTexts.map(t => t.trim().toLowerCase());
+      const unique = new Set(normalized);
+      loggedExpect(unique.size, 'unique.size').toBe(normalized.length);
+      endAssertionLogging('passed');
+    });
   });
 });

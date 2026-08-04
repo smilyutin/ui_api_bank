@@ -43,79 +43,84 @@ import {
  * 5. Verify successful authentication response
  * 6. Persist user credentials for future tests
  */
-test.describe('API - Login with persisted user', () => {
+test.describe('@api @auth API - Login with persisted user', () => {
   test('should login using stored credentials or create then login', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
     const reporter = new SecurityReporter(testInfo);
     const api = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await api.get('/login');
 
-    // Step 1: Load or create test user credentials
-    const persistedUser: User = findOrCreateUser('API');
-
-    // GET /login always serves the HTML login page (never JSON), so there is
-    // no JSON body to schema-validate here — the real login response schema
-    // is validated below, against the POST /login JSON response instead.
-    const status = res.status();
-    if (status === 404) {
-      reporter.reportSkip('Login route (/login) is not available on this target application (404).');
-      test.skip(true, 'GET /login not found (404)');
-    }
-
-    let activeUser: User = persistedUser;
-    let { loginRes, successfulLoginPath, attempts } = await loginViaAvailableFlow(api, activeUser);
-
-    if (!loginRes) {
-      activeUser = createRandomUser('API');
-      const freshFlow = await loginViaAvailableFlow(api, activeUser);
-      attempts = [
-        ...attempts,
-        { path: '--- retry with fresh user ---', status: 'retry' },
-        ...freshFlow.attempts
-      ];
-      loginRes = freshFlow.loginRes;
-      successfulLoginPath = freshFlow.successfulLoginPath;
-    }
-
-    if (!loginRes) {
-      const failure = analyzeLoginFailure(attempts);
-      testInfo.attach('tried-login-endpoints', { body: JSON.stringify(attempts, null, 2), contentType: 'application/json' });
-      testInfo.attach('login-users-tried', {
-        body: JSON.stringify({
-          persistedUser,
-          freshUserAttempted: activeUser !== persistedUser,
-          finalUser: activeUser
-        }, null, 2),
-        contentType: 'application/json'
-      });
-      reporter.reportWarning(
-        failure.description,
-        failure.recommendations,
-        failure.category
-      );
-    }
-
-    expect(loginRes).toBeTruthy();
-    if (!loginRes) {
-      throw new Error(`Could not log in with discovered credentials. Attempts: ${JSON.stringify(attempts)}`);
-    }
-
-    const success = analyzeLoginSuccess(successfulLoginPath || 'unknown', loginRes.status());
-
-    reporter.reportPass(success.description, success.category);
-
-    // if login response returns a token or body, check basic shape
-    const b = loginRes ? await loginRes.json().catch(() => null) : null;
-    if (b) {
-      expect(b).toBeTruthy();
-      // Schema is generated against the real POST /login contract; other
-      // discovered candidate paths (/api/auth/login, /api/login, etc.)
-      // aren't guaranteed to share that exact shape.
-      if ((successfulLoginPath || '').startsWith('/login (')) {
-        await validateSchema('login-schema', 'POST_login', b);
+    await test.step('Check the login page is reachable', async () => {
+      const res = await api.get('/login');
+      // GET /login always serves the HTML login page (never JSON), so there is
+      // no JSON body to schema-validate here — the real login response schema
+      // is validated below, against the POST /login JSON response instead.
+      const status = res.status();
+      if (status === 404) {
+        reporter.reportSkip('Login route (/login) is not available on this target application (404).');
+        test.skip(true, 'GET /login not found (404)');
       }
-    }
+    });
+
+    const { loginRes, successfulLoginPath } = await test.step('Log in using stored credentials, creating a fresh user if needed', async () => {
+      const persistedUser: User = findOrCreateUser('API');
+      let activeUser: User = persistedUser;
+      let { loginRes, successfulLoginPath, attempts } = await loginViaAvailableFlow(api, activeUser);
+
+      if (!loginRes) {
+        activeUser = createRandomUser('API');
+        const freshFlow = await loginViaAvailableFlow(api, activeUser);
+        attempts = [
+          ...attempts,
+          { path: '--- retry with fresh user ---', status: 'retry' },
+          ...freshFlow.attempts
+        ];
+        loginRes = freshFlow.loginRes;
+        successfulLoginPath = freshFlow.successfulLoginPath;
+      }
+
+      if (!loginRes) {
+        const failure = analyzeLoginFailure(attempts);
+        testInfo.attach('tried-login-endpoints', { body: JSON.stringify(attempts, null, 2), contentType: 'application/json' });
+        testInfo.attach('login-users-tried', {
+          body: JSON.stringify({
+            persistedUser,
+            freshUserAttempted: activeUser !== persistedUser,
+            finalUser: activeUser
+          }, null, 2),
+          contentType: 'application/json'
+        });
+        reporter.reportWarning(
+          failure.description,
+          failure.recommendations,
+          failure.category
+        );
+      }
+
+      expect(loginRes).toBeTruthy();
+      if (!loginRes) {
+        throw new Error(`Could not log in with discovered credentials. Attempts: ${JSON.stringify(attempts)}`);
+      }
+      return { loginRes, successfulLoginPath };
+    });
+
+    await test.step('Verify login succeeded and matches the API contract', async () => {
+      const success = analyzeLoginSuccess(successfulLoginPath || 'unknown', loginRes.status());
+
+      reporter.reportPass(success.description, success.category);
+
+      // if login response returns a token or body, check basic shape
+      const b = loginRes ? await loginRes.json().catch(() => null) : null;
+      if (b) {
+        expect(b).toBeTruthy();
+        // Schema is generated against the real POST /login contract; other
+        // discovered candidate paths (/api/auth/login, /api/login, etc.)
+        // aren't guaranteed to share that exact shape.
+        if ((successfulLoginPath || '').startsWith('/login (')) {
+          await validateSchema('login-schema', 'POST_login', b);
+        }
+      }
+    });
   });
 });
 
@@ -124,78 +129,88 @@ test.describe('API - Login with persisted user', () => {
  * loginViaAvailableFlow above) with malformed and malicious credentials,
  * rather than only the happy path exercised earlier in this file.
  */
-test.describe('API - Login validation and security', () => {
+test.describe('@api @auth API - Login validation and security', () => {
   test('POST /login should reject a valid username with an incorrect password', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const user = findOrCreateUser('login-invalid-check');
-    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const { status, body } = await test.step('Log in with a valid username and wrong password', async () => {
+      const user = findOrCreateUser('login-invalid-check');
+      const api = await request.newContext({ baseURL: baseURL.toString() });
 
-    const res = await api.post('/login', {
-      data: { username: user.username || user.email, password: `${user.password}-wrong` },
-      headers: { 'Content-Type': 'application/json' }
+      const res = await api.post('/login', {
+        data: { username: user.username || user.email, password: `${user.password}-wrong` },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
+      return { status, body };
     });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
 
-    expect(status).toBe(401);
-    expect(body?.status).toBe('error');
+    await test.step('Verify the login was rejected', async () => {
+      expect(status).toBe(401);
+      expect(body?.status).toBe('error');
 
-    reporter.reportPass(
-      'Login endpoint rejected a valid username paired with an incorrect password.',
-      'API2:2023 - Broken Authentication'
-    );
+      reporter.reportPass(
+        'Login endpoint rejected a valid username paired with an incorrect password.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 
   test('POST /login should not allow authentication bypass via SQL injection in username', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const { status, body } = await test.step('Attempt an SQL injection tautology in the username field', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
 
-    // Classic tautology payload targeting the unparameterized query in
-    // app.py (`SELECT * FROM users WHERE username='{username}' AND
-    // password='{password}'`): closes the username literal, forces the
-    // WHERE clause true, and comments out the password check.
-    const res = await api.post('/login', {
-      data: { username: `' OR '1'='1' -- `, password: 'irrelevant' },
-      headers: { 'Content-Type': 'application/json' }
+      // Classic tautology payload targeting the unparameterized query in
+      // app.py (`SELECT * FROM users WHERE username='{username}' AND
+      // password='{password}'`): closes the username literal, forces the
+      // WHERE clause true, and comments out the password check.
+      const res = await api.post('/login', {
+        data: { username: `' OR '1'='1' -- `, password: 'irrelevant' },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
+
+      testInfo.attach('sqli-login-probe', {
+        body: JSON.stringify({ status, body }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status, body };
     });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
 
-    testInfo.attach('sqli-login-probe', {
-      body: JSON.stringify({ status, body }, null, 2),
-      contentType: 'application/json'
+    await test.step('Verify the injection did not bypass authentication', async () => {
+      const bypassed = status === 200 && body?.status === 'success' && Boolean(body?.token);
+
+      if (bypassed) {
+        reporter.reportVulnerability(
+          'API2_AUTH',
+          {
+            endpoint: '/login',
+            technique: "SQL injection tautology in 'username' (' OR '1'='1' -- )",
+            responseStatus: status,
+            authenticatedAs: body?.debug_info?.username,
+            isAdmin: body?.isAdmin
+          },
+          [
+            'Use parameterized queries/prepared statements for the login lookup instead of string-interpolating the query.',
+            'Never build SQL by interpolating request input directly (app.py: f-string SELECT in the /login handler).',
+            'Add input validation that rejects SQL metacharacters in identifier-style fields as defense in depth.'
+          ]
+        );
+      } else {
+        expect(status).toBe(401);
+        reporter.reportPass(
+          'Login endpoint rejected a SQL injection tautology payload in the username field.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
     });
-
-    const bypassed = status === 200 && body?.status === 'success' && Boolean(body?.token);
-
-    if (bypassed) {
-      reporter.reportVulnerability(
-        'API2_AUTH',
-        {
-          endpoint: '/login',
-          technique: "SQL injection tautology in 'username' (' OR '1'='1' -- )",
-          responseStatus: status,
-          authenticatedAs: body?.debug_info?.username,
-          isAdmin: body?.isAdmin
-        },
-        [
-          'Use parameterized queries/prepared statements for the login lookup instead of string-interpolating the query.',
-          'Never build SQL by interpolating request input directly (app.py: f-string SELECT in the /login handler).',
-          'Add input validation that rejects SQL metacharacters in identifier-style fields as defense in depth.'
-        ]
-      );
-    } else {
-      expect(status).toBe(401);
-      reporter.reportPass(
-        'Login endpoint rejected a SQL injection tautology payload in the username field.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
   });
 });

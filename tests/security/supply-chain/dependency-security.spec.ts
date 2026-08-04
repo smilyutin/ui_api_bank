@@ -52,38 +52,42 @@ function runNpmAudit(cwd: string): NpmAuditMetadata | null {
 	}
 }
 
-test.describe('Supply chain - Dependency vulnerabilities', () => {
+test.describe('@security  Supply chain - Dependency vulnerabilities', () => {
   test('npm dependencies should have no known high/critical vulnerabilities', async ({}, testInfo) => {
     const reporter = new SecurityReporter(testInfo);
     const repoRoot = path.resolve(__dirname, '../../..');
 
-    const audit = runNpmAudit(repoRoot);
+    const audit = await test.step('Run npm audit', async () => {
+      return runNpmAudit(repoRoot);
+    });
     if (!audit) {
       reporter.reportSkip('Could not run/parse npm audit on this target (offline, npm unavailable, or unexpected output shape).');
       test.skip(true, 'npm audit unavailable');
       return;
     }
 
-    const counts = audit.vulnerabilities ?? {};
-    testInfo.attach('npm-audit-probe', { body: JSON.stringify(counts, null, 2), contentType: 'application/json' });
+    await test.step('Verify no high/critical vulnerabilities', async () => {
+      const counts = audit.vulnerabilities ?? {};
+      testInfo.attach('npm-audit-probe', { body: JSON.stringify(counts, null, 2), contentType: 'application/json' });
 
-    const highOrCritical = (counts.high ?? 0) + (counts.critical ?? 0);
+      const highOrCritical = (counts.high ?? 0) + (counts.critical ?? 0);
 
-    if (highOrCritical > 0) {
-      reporter.reportVulnerability(
-        'API9_ASSET_MGMT',
-        { counts },
-        [
-          'Run `npm audit fix` (or manually bump the flagged packages) to resolve high/critical advisories.',
-          'Add an `npm audit --audit-level=high` step to .github/workflows/playwright.yml so new high/critical advisories fail CI instead of going unnoticed.',
-          'Consider Dependabot or Renovate for automated dependency update PRs.'
-        ]
-      );
-    } else {
-      reporter.reportPass(
-        `No high/critical npm vulnerabilities found (${JSON.stringify(counts)}).`,
-        'API9:2023 - Improper Inventory Management'
-      );
-    }
+      if (highOrCritical > 0) {
+        reporter.reportVulnerability(
+          'API9_ASSET_MGMT',
+          { counts },
+          [
+            'Run `npm audit fix` (or manually bump the flagged packages) to resolve high/critical advisories.',
+            'Add an `npm audit --audit-level=high` step to .github/workflows/playwright.yml so new high/critical advisories fail CI instead of going unnoticed.',
+            'Consider Dependabot or Renovate for automated dependency update PRs.'
+          ]
+        );
+      } else {
+        reporter.reportPass(
+          `No high/critical npm vulnerabilities found (${JSON.stringify(counts)}).`,
+          'API9:2023 - Improper Inventory Management'
+        );
+      }
+    });
   });
 });

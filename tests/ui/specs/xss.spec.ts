@@ -25,60 +25,67 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * (unlike other UI specs that mirror an API-level check) — the DOM sink is
  * only reachable through a real browser, so this test reports it directly.
  */
-test.describe('UI - Stored XSS via transfer description', () => {
+test.describe('@ui @security UI - Stored XSS via transfer description', () => {
   test('a script-bearing transfer description should not execute when the transaction list renders', async ({ page, baseURL, request }, testInfo) => {
     setupAssertionLogging('a script-bearing transfer description should not execute when the transaction list renders');
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'xss-ui',
+    const { pm, recipient } = await test.step('Authenticate and navigate to money transfer', async () => {
+      await ensureDashboardAuthenticated(page, {
+        baseURL: baseURL.toString(),
+        role: 'user',
+        fallbackUserPrefix: 'xss-ui',
+      });
+
+      // A real, freshly created recipient account instead of a hardcoded
+      // number that /transfer just happens not to validate today.
+      const recipient = await establishAccountSession(request, 'xss-ui-recipient');
+      if (!recipient) throw new Error('Could not establish a recipient account for the transfer');
+
+      const pm = new PageManager(page);
+      const dash = pm.dashboard();
+      await dash.waitForLoad();
+
+      const transferLink = page.getByRole('link', { name: /send money|transfer|transfers/i });
+      if (await transferLink.count()) {
+        await dash.clickNavigationLinkByText(/send money|transfer|transfers/i);
+      } else {
+        const tile = page.getByText(/send money|transfer money/i);
+        if (await tile.count()) await tile.first().click();
+      }
+      return { pm, recipient };
     });
 
-    // A real, freshly created recipient account instead of a hardcoded
-    // number that /transfer just happens not to validate today.
-    const recipient = await establishAccountSession(request, 'xss-ui-recipient');
-    if (!recipient) throw new Error('Could not establish a recipient account for the transfer');
+    const fired = await test.step('Submit a transfer with an XSS payload in the description', async () => {
+      const mt = pm.moneyTransfer();
+      const amount = '1.00';
+      await mt.fillRecipient(recipient.accountNumber);
+      await mt.fillAmount(amount);
+      await mt.fillDescription(TRANSFER_DESCRIPTION_XSS_PAYLOAD);
+      await mt.submit();
 
-    const pm = new PageManager(page);
-    const dash = pm.dashboard();
-    await dash.waitForLoad();
+      await mt.waitForSuccess();
 
-    const transferLink = page.getByRole('link', { name: /send money|transfer|transfers/i });
-    if (await transferLink.count()) {
-      await dash.clickNavigationLinkByText(/send money|transfer|transfers/i);
-    } else {
-      const tile = page.getByText(/send money|transfer money/i);
-      if (await tile.count()) await tile.first().click();
-    }
+      let fired = false;
+      try {
+        await expect.poll(
+          async () => (await page.evaluate<boolean>((marker) => (window as any)[marker] === true, XSS_MARKER)),
+          { timeout: 3000 }
+        ).toBeTruthy();
+        fired = true;
+      } catch {
+        fired = false;
+      }
 
-    const mt = pm.moneyTransfer();
-    const amount = '1.00';
-    await mt.fillRecipient(recipient.accountNumber);
-    await mt.fillAmount(amount);
-    await mt.fillDescription(TRANSFER_DESCRIPTION_XSS_PAYLOAD);
-    await mt.submit();
-
-    await mt.waitForSuccess();
-
-    let fired = false;
-    try {
-      await expect.poll(
-        async () => (await page.evaluate<boolean>((marker) => (window as any)[marker] === true, XSS_MARKER)),
-        { timeout: 3000 }
-      ).toBeTruthy();
-      fired = true;
-    } catch {
-      fired = false;
-    }
-
-    testInfo.attach('xss-transfer-description-probe', {
-      body: JSON.stringify({ payload: TRANSFER_DESCRIPTION_XSS_PAYLOAD, marker: XSS_MARKER, fired }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('xss-transfer-description-probe', {
+        body: JSON.stringify({ payload: TRANSFER_DESCRIPTION_XSS_PAYLOAD, marker: XSS_MARKER, fired }, null, 2),
+        contentType: 'application/json'
+      });
+      return fired;
     });
 
+    await test.step('Verify the payload did not execute', async () => {
     if (fired) {
       reporter.reportVulnerability(
         'API8_SECURITY_MISCONFIGURATION',
@@ -94,12 +101,13 @@ test.describe('UI - Stored XSS via transfer description', () => {
           'Add a Content-Security-Policy header to reduce the blast radius of any HTML that does get injected.'
         ]
       );
-    } else {
-      reporter.reportPass(
-        'A script-bearing transfer description did not execute when the transaction list rendered.',
-        'API8:2023 - Security Misconfiguration'
-      );
-    }
-    endAssertionLogging('passed');
+      } else {
+        reporter.reportPass(
+          'A script-bearing transfer description did not execute when the transaction list rendered.',
+          'API8:2023 - Security Misconfiguration'
+        );
+      }
+      endAssertionLogging('passed');
+    });
   });
 });

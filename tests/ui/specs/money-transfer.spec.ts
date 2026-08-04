@@ -39,51 +39,55 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  * 5. Submit transfer
  * 6. Verify success confirmation
  */
-test.describe('Money transfer flow', () => {
+test.describe('@ui @feature:money-transfer Money transfer flow', () => {
   test('should send money successfully', async ({ page, baseURL, request }) => {
     setupAssertionLogging('should send money successfully');
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    // Step 1: Authenticate with token bootstrap or fallback credentials
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'e2e',
+    const recipient = await test.step('Authenticate and establish a recipient account', async () => {
+      await ensureDashboardAuthenticated(page, {
+        baseURL: baseURL.toString(),
+        role: 'user',
+        fallbackUserPrefix: 'e2e',
+      });
+
+      // A real, freshly created recipient account instead of a hardcoded
+      // number that /transfer just happens not to validate today.
+      const recipient = await establishAccountSession(request, 'transfer-ui-recipient');
+      if (!recipient) throw new Error('Could not establish a recipient account for the transfer');
+      return recipient;
     });
 
-    // A real, freshly created recipient account instead of a hardcoded
-    // number that /transfer just happens not to validate today.
-    const recipient = await establishAccountSession(request, 'transfer-ui-recipient');
-    if (!recipient) throw new Error('Could not establish a recipient account for the transfer');
-
-    // Step 2: Navigate to dashboard and wait for load
     const pm = new PageManager(page);
     const dash = pm.dashboard();
-    await dash.waitForLoad();
 
-    // Step 3: Navigate to Money Transfer page
-    // Use text-based navigation link for reliability across all viewports.
-    const transferLink = page.getByRole('link', { name: /send money|transfer|transfers/i });
-    if (await transferLink.count()) {
-      await dash.clickNavigationLinkByText(/send money|transfer|transfers/i);
-    } else {
-      // Fallback: click a tile/button that contains 'Send Money'
-      const tile = page.getByText(/send money|transfer money/i);
-      if (await tile.count()) await tile.first().click();
-    }
+    await test.step('Navigate to the money transfer page', async () => {
+      await dash.waitForLoad();
 
-    // Step 4: Fill money transfer form
+      // Use text-based navigation link for reliability across all viewports.
+      const transferLink = page.getByRole('link', { name: /send money|transfer|transfers/i });
+      if (await transferLink.count()) {
+        await dash.clickNavigationLinkByText(/send money|transfer|transfers/i);
+      } else {
+        // Fallback: click a tile/button that contains 'Send Money'
+        const tile = page.getByText(/send money|transfer money/i);
+        if (await tile.count()) await tile.first().click();
+      }
+    });
+
     const mt = pm.moneyTransfer();
     const amount = '5.00';
-    await mt.fillRecipient(recipient.accountNumber);
-    await mt.fillAmount(amount);
-    await mt.fillDescription('UI test transfer');
 
-    // Step 5: Submit transfer
-    await mt.submit();
+    await test.step('Fill and submit the transfer form', async () => {
+      await mt.fillRecipient(recipient.accountNumber);
+      await mt.fillAmount(amount);
+      await mt.fillDescription('UI test transfer');
+      await mt.submit();
+    });
 
-    // Step 6: Verify transfer success
-    await mt.waitForSuccess();
-    endAssertionLogging('passed');
+    await test.step('Verify transfer success', async () => {
+      await mt.waitForSuccess();
+      endAssertionLogging('passed');
+    });
   });
 });

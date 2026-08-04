@@ -40,78 +40,83 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  * 6. Verify registration was successful
  * 7. Persist user credentials for future tests
  */
-test.describe('UI - Create user account', () => {
+test.describe('@ui @feature:create-user UI - Create user account', () => {
   test('should create a user via UI', async ({ page, baseURL }) => {
     setupAssertionLogging('should create a user via UI');
     if (!baseURL) throw new Error('baseURL is not defined');
     const pm = new PageManager(page);
     const register = pm.register();
 
-    // Step 1: Generate fresh random user credentials for this test
     const user = createRandomUser('UI', false);
-    await register.goto(baseURL.toString());
-
-    // Step 2: Use Page Object Model to fill and submit form
     if (!user.email || !user.password) {
       throw new Error('User email or password is undefined');
     }
-    const filledEmail = await register.fillEmail(user.email);
-    const filledPassword = await register.fillPassword(user.password);
-    const clicked = await register.submit();
+    const { email, password } = user;
 
-    // Step 3: Verify form interaction was successful
-    loggedExpect(filledEmail, 'filledEmail').toBeTruthy();
-    loggedExpect(filledPassword, 'filledPassword').toBeTruthy();
-    loggedExpect(clicked, 'clicked').toBeTruthy();
+    await test.step('Fill and submit the registration form', async () => {
+      await register.goto(baseURL.toString());
 
-    // Step 4: Wait for success indication (navigation or success message)
-    try {
-      await Promise.race([
-        expect(page.getByText('Registration successful! Proceed to login')).toBeVisible({ timeout: 5000 }),
-        expect(page).toHaveURL(/\/login/i, { timeout: 5000 }),
-      ]);
-    } catch {
-      // Either condition may not be met, but we check both below
-    }
+      const filledEmail = await register.fillEmail(email);
+      const filledPassword = await register.fillPassword(password);
+      const clicked = await register.submit();
 
-    // Step 5: Verify registration was successful
-    const successMessage = await page.getByText('Registration successful! Proceed to login').count() > 0;
-    const onLogin = /\/login/i.test(page.url());
-    loggedExpect(Boolean(successMessage) || onLogin, 'registration success').toBeTruthy();
-
-    // Step 6: Login with the newly created user to verify credentials and capture a fresh token
-    const login = pm.login();
-    await login.goto(baseURL.toString());
-    await login.fillEmail(user.email);
-    await login.fillPassword(user.password);
-    await login.submit();
-
-    await expect(page).toHaveURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
-    await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible({ timeout: 7000 });
-
-    const storageToken = await page.evaluate(() => {
-      const keys = ['jwt_token', 'token', 'jwt', 'access_token', 'id_token', 'auth'];
-      for (const key of keys) {
-        const value = window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
-        if (value) return value;
-      }
-      return null;
+      loggedExpect(filledEmail, 'filledEmail').toBeTruthy();
+      loggedExpect(filledPassword, 'filledPassword').toBeTruthy();
+      loggedExpect(clicked, 'clicked').toBeTruthy();
     });
 
-    const cookies = await page.context().cookies();
-    const cookieToken =
-      cookies.find(c => ['token', 'jwt', 'access_token', 'auth_token'].includes(c.name))?.value || null;
+    await test.step('Verify registration succeeded', async () => {
+      // Wait for success indication (navigation or success message)
+      try {
+        await Promise.race([
+          expect(page.getByText('Registration successful! Proceed to login')).toBeVisible({ timeout: 5000 }),
+          expect(page).toHaveURL(/\/login/i, { timeout: 5000 }),
+        ]);
+      } catch {
+        // Either condition may not be met, but we check both below
+      }
 
-    const freshToken = storageToken || cookieToken;
-    loggedExpect(freshToken, 'freshToken').toBeTruthy();
+      const successMessage = await page.getByText('Registration successful! Proceed to login').count() > 0;
+      const onLogin = /\/login/i.test(page.url());
+      loggedExpect(Boolean(successMessage) || onLogin, 'registration success').toBeTruthy();
+    });
 
-    // Step 7: Persist single shared user credentials and token for all tests
-    saveUser(user, { replace: true });
-    if (freshToken) {
-      saveStoredToken(freshToken, 'user');
-      process.env.API_AUTH_TOKEN = freshToken;
-    }
-    endAssertionLogging('passed');
+    const freshToken = await test.step('Log in with the new user and capture a fresh token', async () => {
+      const login = pm.login();
+      await login.goto(baseURL.toString());
+      await login.fillEmail(email);
+      await login.fillPassword(password);
+      await login.submit();
+
+      await expect(page).toHaveURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 7000 });
+      await expect(page.getByRole('heading', { name: /welcome back/i })).toBeVisible({ timeout: 7000 });
+
+      const storageToken = await page.evaluate(() => {
+        const keys = ['jwt_token', 'token', 'jwt', 'access_token', 'id_token', 'auth'];
+        for (const key of keys) {
+          const value = window.localStorage.getItem(key) || window.sessionStorage.getItem(key);
+          if (value) return value;
+        }
+        return null;
+      });
+
+      const cookies = await page.context().cookies();
+      const cookieToken =
+        cookies.find(c => ['token', 'jwt', 'access_token', 'auth_token'].includes(c.name))?.value || null;
+
+      const freshToken = storageToken || cookieToken;
+      loggedExpect(freshToken, 'freshToken').toBeTruthy();
+      return freshToken;
+    });
+
+    await test.step('Persist credentials for future tests', async () => {
+      saveUser(user, { replace: true });
+      if (freshToken) {
+        saveStoredToken(freshToken, 'user');
+        process.env.API_AUTH_TOKEN = freshToken;
+      }
+      endAssertionLogging('passed');
+    });
   });
 
   test('should show an error and not proceed to login when registering a duplicate username', async ({ page, baseURL }) => {
@@ -127,16 +132,20 @@ test.describe('UI - Create user account', () => {
       throw new Error('Existing user is missing a username/email to reuse for the duplicate check');
     }
 
-    // Registration stores `email` as the username (RegisterPage.fillEmail
-    // fills the form's username/email field with this value), so it's the
-    // value that must be resubmitted to actually collide with the existing row.
-    await register.goto(baseURL.toString());
-    await register.fillEmail(existing.email || existing.username!);
-    await register.fillPassword('SomeOtherPassword123!');
-    await register.submit();
+    await test.step('Register with a username that already exists', async () => {
+      // Registration stores `email` as the username (RegisterPage.fillEmail
+      // fills the form's username/email field with this value), so it's the
+      // value that must be resubmitted to actually collide with the existing row.
+      await register.goto(baseURL.toString());
+      await register.fillEmail(existing.email || existing.username!);
+      await register.fillPassword('SomeOtherPassword123!');
+      await register.submit();
+    });
 
-    await expect(page.locator('#message')).toHaveText(/already exists/i, { timeout: 5000 });
-    loggedExpect(page.url(), 'page.url').not.toContain('/login');
-    endAssertionLogging('passed');
+    await test.step('Verify the duplicate was rejected', async () => {
+      await expect(page.locator('#message')).toHaveText(/already exists/i, { timeout: 5000 });
+      loggedExpect(page.url(), 'page.url').not.toContain('/login');
+      endAssertionLogging('passed');
+    });
   });
 });

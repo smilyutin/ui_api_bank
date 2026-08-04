@@ -120,7 +120,7 @@ export class StateVerifier {
     };
   }
 
-  verifyContextData(key: string, expectedValue: any): StateValidation {
+  verifyContextData(key: string, expectedValue: unknown): StateValidation {
     const violations: string[] = [];
     const actualValue = this.stateMachine.getContextData(key);
 

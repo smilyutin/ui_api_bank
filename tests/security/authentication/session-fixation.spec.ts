@@ -16,7 +16,7 @@ import { resetPasswordViaPin } from '../sec-objects/authentication/session-fixat
  * possibly-compromised token remains valid indefinitely even after the
  * legitimate user "secures" their account by resetting their password.
  */
-test.describe('Authentication - Session fixation', () => {
+test.describe('@security  Authentication - Session fixation', () => {
   test('a token issued before a password reset should not still authenticate afterward', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
@@ -30,16 +30,21 @@ test.describe('Authentication - Session fixation', () => {
       return;
     }
 
-    const preResetCheck = await api.get('/dashboard', { headers: { Authorization: `Bearer ${session.token}` } });
-    if (preResetCheck.status() !== 200) {
+    const preResetStatus = await test.step('Confirm the token authenticates before reset', async () => {
+      const preResetCheck = await api.get('/dashboard', { headers: { Authorization: `Bearer ${session.token}` } });
+      return preResetCheck.status();
+    });
+    if (preResetStatus !== 200) {
       reporter.reportSkip('Token from a fresh login did not authenticate /dashboard on this target; cannot test fixation.');
       await api.dispose();
       test.skip(true, 'Baseline token authentication unavailable');
       return;
     }
 
-    const newPassword = 'ResetPassword456!';
-    const reset = await resetPasswordViaPin(api, session.user.username!, newPassword);
+    const reset = await test.step('Reset the password via PIN', async () => {
+      const newPassword = 'ResetPassword456!';
+      return resetPasswordViaPin(api, session.user.username!, newPassword);
+    });
 
     if (!reset.resetSucceeded) {
       reporter.reportSkip('Could not complete the forgot-password -> reset-password flow on this target.');
@@ -48,15 +53,19 @@ test.describe('Authentication - Session fixation', () => {
       return;
     }
 
-    const postResetCheck = await api.get('/dashboard', { headers: { Authorization: `Bearer ${session.token}` } });
-    const status = postResetCheck.status();
-    await api.dispose();
+    const status = await test.step('Check whether the token still authenticates after reset', async () => {
+      const postResetCheck = await api.get('/dashboard', { headers: { Authorization: `Bearer ${session.token}` } });
+      const status = postResetCheck.status();
+      await api.dispose();
 
-    testInfo.attach('session-fixation-probe', {
-      body: JSON.stringify({ pin: reset.pin, preResetStatus: preResetCheck.status(), postResetStatus: status }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('session-fixation-probe', {
+        body: JSON.stringify({ pin: reset.pin, preResetStatus, postResetStatus: status }, null, 2),
+        contentType: 'application/json'
+      });
+      return status;
     });
 
+    await test.step('Verify the token was invalidated by the reset', async () => {
     const stillValid = status === 200;
 
     if (stillValid) {
@@ -72,11 +81,12 @@ test.describe('Authentication - Session fixation', () => {
           'Store a per-user token-invalidation timestamp and reject any token issued before it.'
         ]
       );
-    } else {
-      reporter.reportPass(
-        'Token issued before a password reset no longer authenticates after the reset.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      } else {
+        reporter.reportPass(
+          'Token issued before a password reset no longer authenticates after the reset.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
+    });
   });
 });

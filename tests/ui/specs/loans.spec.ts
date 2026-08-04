@@ -27,7 +27,7 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  * tests/api/loans.spec.ts; this UI test just confirms the same behavior is
  * visible through the dashboard.
  */
-test.describe('Loan requests', () => {
+test.describe('@ui @feature:loans Loan requests', () => {
   let pm: PageManager;
 
   test.beforeEach(async ({ page, baseURL }) => {
@@ -48,12 +48,16 @@ test.describe('Loan requests', () => {
     const loans = pm.loans();
     const amount = '850';
 
-    await loans.fillAmount(amount);
-    await loans.submit();
+    await test.step('Submit a loan request', async () => {
+      await loans.fillAmount(amount);
+      await loans.submit();
+      await loans.waitForMessage(/loan requested successfully/i);
+    });
 
-    await loans.waitForMessage(/loan requested successfully/i);
-    await loans.waitForLoanRow(amount, /pending/i);
-    endAssertionLogging('passed');
+    await test.step('Verify it appears as pending', async () => {
+      await loans.waitForLoanRow(amount, /pending/i);
+      endAssertionLogging('passed');
+    });
   });
 
   test('should keep a submitted loan visible after the dashboard is reloaded', async ({ page }) => {
@@ -61,15 +65,21 @@ test.describe('Loan requests', () => {
     const loans = pm.loans();
     const amount = '925';
 
-    await loans.fillAmount(amount);
-    await loans.submit();
-    await loans.waitForMessage(/loan requested successfully/i);
+    await test.step('Submit a loan request', async () => {
+      await loans.fillAmount(amount);
+      await loans.submit();
+      await loans.waitForMessage(/loan requested successfully/i);
+    });
 
-    await page.reload();
-    await pm.dashboard().waitForLoad();
+    await test.step('Reload the dashboard', async () => {
+      await page.reload();
+      await pm.dashboard().waitForLoad();
+    });
 
-    await loans.waitForLoanRow(amount, /pending/i);
-    endAssertionLogging('passed');
+    await test.step('Verify the loan is still visible as pending', async () => {
+      await loans.waitForLoanRow(amount, /pending/i);
+      endAssertionLogging('passed');
+    });
   });
 
   test.skip('should not accept a negative loan amount (no client or server-side validation)', async () => {
@@ -77,11 +87,15 @@ test.describe('Loan requests', () => {
     const loans = pm.loans();
     const amount = '-500';
 
-    await loans.fillAmount(amount);
-    await loans.submit();
+    await test.step('Submit a negative loan amount', async () => {
+      await loans.fillAmount(amount);
+      await loans.submit();
+    });
 
-    await loans.waitForMessage(/loan requested unsuccessfully/i);
-    await loans.waitForLoanRow(amount, /pending/i);
-    endAssertionLogging('passed');
+    await test.step('Verify current (unvalidated) behavior', async () => {
+      await loans.waitForMessage(/loan requested unsuccessfully/i);
+      await loans.waitForLoanRow(amount, /pending/i);
+      endAssertionLogging('passed');
+    });
   });
 });

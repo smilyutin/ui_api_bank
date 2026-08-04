@@ -12,26 +12,30 @@ import { createRandomUser } from '../utils/test-users';
  */
 const WEAK_PASSWORDS = ['', 'a', '123', 'password'];
 
-test.describe('Authentication - Password policy', () => {
+test.describe('@security  Authentication - Password policy', () => {
   test('POST /register should reject passwords with no length or complexity', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
+    const results = await test.step('Register with several weak passwords', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
 
-    const results: { password: string; status: number; accepted: boolean }[] = [];
-    for (const password of WEAK_PASSWORDS) {
-      const user = createRandomUser('pw-policy', false);
-      const res = await api.post('/register', {
-        data: { username: user.username, password },
-        headers: { 'Content-Type': 'application/json' }
-      });
-      results.push({ password, status: res.status(), accepted: [200, 201].includes(res.status()) });
-    }
-    await api.dispose();
+      const results: { password: string; status: number; accepted: boolean }[] = [];
+      for (const password of WEAK_PASSWORDS) {
+        const user = createRandomUser('pw-policy', false);
+        const res = await api.post('/register', {
+          data: { username: user.username, password },
+          headers: { 'Content-Type': 'application/json' }
+        });
+        results.push({ password, status: res.status(), accepted: [200, 201].includes(res.status()) });
+      }
+      await api.dispose();
 
-    testInfo.attach('password-policy-probe', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });
+      testInfo.attach('password-policy-probe', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });
+      return results;
+    });
 
+    await test.step('Verify all weak passwords were rejected', async () => {
     const acceptedWeakPasswords = results.filter((r) => r.accepted);
 
     if (acceptedWeakPasswords.length > 0) {
@@ -48,11 +52,12 @@ test.describe('Authentication - Password policy', () => {
           'Apply the same validation to /reset-password\'s new_password field, which has the same gap.'
         ]
       );
-    } else {
-      reporter.reportPass(
-        `All ${results.length} weak passwords tested were rejected at registration.`,
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      } else {
+        reporter.reportPass(
+          `All ${results.length} weak passwords tested were rejected at registration.`,
+          'API2:2023 - Broken Authentication'
+        );
+      }
+    });
   });
 });

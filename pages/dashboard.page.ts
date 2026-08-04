@@ -76,15 +76,20 @@ export class DashboardPage extends HelperBase {
 		return out;
 	}
 
-	async clickNavigationLink(selector: string) {
+	// On mobile, open the navigation side panel if it's toggled closed. The panel
+	// slides in via a CSS transform transition; no manual wait is needed because
+	// click()'s actionability check waits for the element to stop moving before
+	// interacting with it. No-op on desktop, where the toggle is hidden.
+	async openSidePanel() {
 		const menuToggle = this.page.locator('.menu-toggle');
-		const link = this.page.locator(selector);
-
-		// On mobile, open the navigation menu if it's toggled closed.
 		if (await menuToggle.isVisible()) {
 			await menuToggle.click();
-			await this.page.waitForTimeout(300);
 		}
+	}
+
+	async clickNavigationLink(selector: string) {
+		const link = this.page.locator(selector);
+		await this.openSidePanel();
 
 		// Ensure the link is visible and ready for interaction.
 		const isVisible = await link.count().then(count => count > 0);
@@ -94,20 +99,13 @@ export class DashboardPage extends HelperBase {
 
 		await expect(link.first()).toBeVisible({ timeout: 5000 });
 		await link.first().evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-		await this.page.waitForTimeout(200);
 		await expect(link.first()).toBeEnabled({ timeout: 2000 });
 		await link.first().click();
 		await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 });
 	}
 
 	async clickNavigationLinkByText(textPattern: RegExp | string) {
-		const menuToggle = this.page.locator('.menu-toggle');
-
-		// On mobile, open the navigation menu if it's toggled closed.
-		if (await menuToggle.isVisible()) {
-			await menuToggle.click();
-			await this.page.waitForTimeout(300);
-		}
+		await this.openSidePanel();
 
 		const link = this.page.getByRole('link', { name: textPattern });
 		const isVisible = await link.count().then(count => count > 0);
@@ -117,7 +115,6 @@ export class DashboardPage extends HelperBase {
 
 		await expect(link.first()).toBeVisible({ timeout: 5000 });
 		await link.first().evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-		await this.page.waitForTimeout(200);
 		await expect(link.first()).toBeEnabled({ timeout: 2000 });
 		await link.first().click();
 		await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 });
@@ -206,16 +203,11 @@ export class DashboardPage extends HelperBase {
 		} catch {
 			return false;
 		}
-		// On mobile, the side panel is off-screen by default.
-		// Ensure it's open by clicking the menu toggle if visible.
-		const menuToggle = this.page.locator('.menu-toggle');
-		if (await menuToggle.isVisible()) {
-			await menuToggle.click();
-			await this.page.waitForTimeout(100);
-		}
+		// On mobile, the side panel is off-screen by default; open it if closed.
+		await this.openSidePanel();
 		// Scroll the logout link into view within the side panel (in case it's below the fold).
 		await logoutLink.evaluate(el => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-		await this.page.waitForTimeout(300);
+		await expect(logoutLink).toBeVisible({ timeout: 5000 });
 		await logoutLink.click();
 		return true;
 	}
