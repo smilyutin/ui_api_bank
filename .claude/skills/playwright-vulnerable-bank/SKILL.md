@@ -76,11 +76,10 @@ Write locators the way users interact with your application, not how the DOM is 
 
 | Priority | Locator | Example | Notes |
 |----------|---------|---------|-------|
-| ⭐⭐⭐⭐⭐ | `getByRole()` | `page.getByRole('button', { name: 'Login' })` | Best choice — accessible & user-centric |
-| ⭐⭐⭐⭐⭐ | `getByLabel()` | `page.getByLabel('Email')` | Best for form fields |
-| ⭐⭐⭐⭐ | `getByPlaceholder()` | `page.getByPlaceholder('Enter email')` | Good for input fields |
-| ⭐⭐⭐⭐ | `getByText()` | `page.getByText('Welcome')` | Good for static text/headings |
-| ⭐⭐⭐⭐ | `getByAltText()` | `page.getByAltText('Company Logo')` | For images |
+| P1 | `getByRole()` | `page.getByRole('button', { name: 'Login' })` | Best choice — accessible & user-centric |
+| P1 | `getByLabel()` | `page.getByLabel('Email')` | Best for form fields |
+| P2 | `getByPlaceholder()` | `page.getByPlaceholder('Enter email')` | Good for input fields |
+| P2 | `getByText()` | `page.getByText('Welcome')` | Good for static text/headings |
 | ⭐⭐⭐⭐ | `getByTitle()` | `page.getByTitle('Close')` | For icons/tooltips |
 | ⭐⭐⭐ | `getByTestId()` | `page.getByTestId('login-button')` | Excellent for automation-friendly markup |
 | ⭐⭐ | CSS Selector | `.login button` | Use only when necessary |
