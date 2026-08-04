@@ -60,7 +60,7 @@ export class DashboardPage extends MobileHelperBase {
 		const nav = $('nav');
 		if (!(await nav.isExisting())) return [];
 		await this.openMenu();
-		const links = nav.$$('a, button, [role="link"]');
+		const links = await nav.$$('a, button, [role="link"]');
 		const texts: string[] = [];
 		for (const link of links) {
 			if (!(await link.isDisplayed())) continue;
