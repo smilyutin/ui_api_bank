@@ -43,16 +43,21 @@ test.describe('API - Virtual card creation', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await createVirtualCard(anon, '', { card_limit: 500 });
-    const status = res.status();
-    await anon.dispose();
+    const status = await test.step('Attempt to create a card without authentication', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await createVirtualCard(anon, '', { card_limit: 500 });
+      const status = res.status();
+      await anon.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Virtual card creation endpoint rejected a request without a valid token.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify the request was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Virtual card creation endpoint rejected a request without a valid token.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 
   test('should let an authenticated user create a card with the requested limit and type', async ({ baseURL }, testInfo) => {
@@ -68,30 +73,35 @@ test.describe('API - Virtual card creation', () => {
       return;
     }
 
-    const { createRes, card } = await createVirtualCardAndFetch(api, session.token, {
-      card_limit: 1500,
-      card_type: 'premium'
+    const { createRes, card, createBody } = await test.step('Create a card with a limit and type', async () => {
+      const { createRes, card } = await createVirtualCardAndFetch(api, session.token, {
+        card_limit: 1500,
+        card_type: 'premium'
+      });
+      const createBody = await createRes.json().catch(() => null);
+      await api.dispose();
+      return { createRes, card, createBody };
     });
-    const createBody = await createRes.json().catch(() => null);
-    await api.dispose();
 
-    expect(createRes.status()).toBe(200);
-    expect(createBody?.status).toBe('success');
-    expect(createBody?.card_details?.card_number).toMatch(/^\d{16}$/);
-    expect(createBody?.card_details?.cvv).toMatch(/^\d{3}$/);
-    expect(createBody?.card_details?.expiry_date).toMatch(/^\d{2}\/\d{2}$/);
-    await validateSchema('virtual-cards-schema', 'POST_create', createBody);
+    await test.step('Verify it was created with the requested limit and type', async () => {
+      expect(createRes.status()).toBe(200);
+      expect(createBody?.status).toBe('success');
+      expect(createBody?.card_details?.card_number).toMatch(/^\d{16}$/);
+      expect(createBody?.card_details?.cvv).toMatch(/^\d{3}$/);
+      expect(createBody?.card_details?.expiry_date).toMatch(/^\d{2}\/\d{2}$/);
+      await validateSchema('virtual-cards-schema', 'POST_create', createBody);
 
-    expect(card).toBeTruthy();
-    expect(card?.card_type).toBe('premium');
-    expect(card?.limit).toBe(1500);
-    expect(card?.is_active).toBe(true);
-    expect(card?.is_frozen).toBe(false);
+      expect(card).toBeTruthy();
+      expect(card?.card_type).toBe('premium');
+      expect(card?.limit).toBe(1500);
+      expect(card?.is_active).toBe(true);
+      expect(card?.is_frozen).toBe(false);
 
-    reporter.reportPass(
-      'Authenticated user created a virtual card and it was persisted with the requested limit and type.',
-      'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-    );
+      reporter.reportPass(
+        'Authenticated user created a virtual card and it was persisted with the requested limit and type.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    });
   });
 
   test('should not validate card_limit bounds (negative limit accepted)', async ({ baseURL }, testInfo) => {
@@ -107,35 +117,40 @@ test.describe('API - Virtual card creation', () => {
       return;
     }
 
-    const { createRes, card } = await createVirtualCardAndFetch(api, session.token, { card_limit: -500 });
-    const createBody = await createRes.json().catch(() => null);
-    await api.dispose();
+    const { createRes, card, createBody } = await test.step('Create a card with a negative limit', async () => {
+      const { createRes, card } = await createVirtualCardAndFetch(api, session.token, { card_limit: -500 });
+      const createBody = await createRes.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('negative-limit-probe', { body: JSON.stringify({ createBody, card }, null, 2), contentType: 'application/json' });
+      testInfo.attach('negative-limit-probe', { body: JSON.stringify({ createBody, card }, null, 2), contentType: 'application/json' });
+      return { createRes, card, createBody };
+    });
 
-    const accepted = createRes.status() === 200 && createBody?.status === 'success' && card?.limit === -500;
+    await test.step('Verify the negative limit was rejected', async () => {
+      const accepted = createRes.status() === 200 && createBody?.status === 'success' && card?.limit === -500;
 
-    if (accepted) {
-      reporter.reportVulnerability(
-        'API6_MASS_ASSIGNMENT',
-        {
-          endpoint: '/api/virtual-cards/create',
-          limitSubmitted: -500,
-          responseStatus: createRes.status(),
-          persistedLimit: card?.limit
-        },
-        [
-          'Reject non-positive card_limit values server-side before creating the card.',
-          'Apply a sane maximum card_limit to prevent unbounded spending authority from a single request.'
-        ]
-      );
-    } else {
-      expect(createRes.status()).toBeGreaterThanOrEqual(400);
-      reporter.reportPass(
-        'Virtual card creation endpoint rejected a negative card_limit.',
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      if (accepted) {
+        reporter.reportVulnerability(
+          'API6_MASS_ASSIGNMENT',
+          {
+            endpoint: '/api/virtual-cards/create',
+            limitSubmitted: -500,
+            responseStatus: createRes.status(),
+            persistedLimit: card?.limit
+          },
+          [
+            'Reject non-positive card_limit values server-side before creating the card.',
+            'Apply a sane maximum card_limit to prevent unbounded spending authority from a single request.'
+          ]
+        );
+      } else {
+        expect(createRes.status()).toBeGreaterThanOrEqual(400);
+        reporter.reportPass(
+          'Virtual card creation endpoint rejected a negative card_limit.',
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 
   test('should not build the card_type column value with unsanitized input (SQL injection / error exposure)', async ({ baseURL }, testInfo) => {
@@ -156,37 +171,42 @@ test.describe('API - Virtual card creation', () => {
     // out of the quoted literal in app.py's f-string INSERT without needing
     // any destructive payload, and confirms whether the raw DB error (which
     // reveals the query structure) reaches the client.
-    const res = await createVirtualCard(api, session.token, { card_limit: 500, card_type: "o'brien" });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Submit an apostrophe in card_type', async () => {
+      const res = await createVirtualCard(api, session.token, { card_limit: 500, card_type: "o'brien" });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('card-type-sqli-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      testInfo.attach('card-type-sqli-probe', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      return { status, body };
+    });
 
-    const revealsRawSqlError = status === 500 && /syntax error|psycopg2|SQL|LINE \d+/i.test(body?.message || '');
+    await test.step('Verify no raw SQL error was exposed', async () => {
+      const revealsRawSqlError = status === 500 && /syntax error|psycopg2|SQL|LINE \d+/i.test(body?.message || '');
 
-    if (revealsRawSqlError) {
-      reporter.reportVulnerability(
-        'API8_SECURITY_MISCONFIGURATION',
-        {
-          endpoint: '/api/virtual-cards/create',
-          field: 'card_type',
-          technique: "Unescaped apostrophe in card_type (o'brien) breaking out of the interpolated SQL string literal",
-          responseStatus: status,
-          exposedMessage: body?.message
-        },
-        [
-          'Use parameterized queries for the card creation INSERT instead of interpolating card_type directly into the SQL string.',
-          'Do not return raw database exception text (str(e)) to API clients; log it server-side and return a generic error message.'
-        ]
-      );
-    } else {
-      expect(status).not.toBe(500);
-      reporter.reportPass(
-        "Virtual card creation handled an apostrophe in card_type without exposing a raw database error.",
-        'API8:2023 - Security Misconfiguration'
-      );
-    }
+      if (revealsRawSqlError) {
+        reporter.reportVulnerability(
+          'API8_SECURITY_MISCONFIGURATION',
+          {
+            endpoint: '/api/virtual-cards/create',
+            field: 'card_type',
+            technique: "Unescaped apostrophe in card_type (o'brien) breaking out of the interpolated SQL string literal",
+            responseStatus: status,
+            exposedMessage: body?.message
+          },
+          [
+            'Use parameterized queries for the card creation INSERT instead of interpolating card_type directly into the SQL string.',
+            'Do not return raw database exception text (str(e)) to API clients; log it server-side and return a generic error message.'
+          ]
+        );
+      } else {
+        expect(status).not.toBe(500);
+        reporter.reportPass(
+          "Virtual card creation handled an apostrophe in card_type without exposing a raw database error.",
+          'API8:2023 - Security Misconfiguration'
+        );
+      }
+    });
   });
 
   test('should not generate card numbers with a non-cryptographic random source', async ({ baseURL }, testInfo) => {
@@ -202,47 +222,52 @@ test.describe('API - Virtual card creation', () => {
       return;
     }
 
-    const cardNumbers: string[] = [];
-    for (let i = 0; i < 3; i++) {
-      const res = await createVirtualCard(api, session.token, { card_limit: 100 });
-      const body = await res.json().catch(() => null);
-      const cardNumber: string | undefined = body?.card_details?.card_number;
-      if (cardNumber) cardNumbers.push(cardNumber);
-    }
-    await api.dispose();
+    const cardNumbers = await test.step('Create three cards back-to-back and collect card numbers', async () => {
+      const cardNumbers: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        const res = await createVirtualCard(api, session.token, { card_limit: 100 });
+        const body = await res.json().catch(() => null);
+        const cardNumber: string | undefined = body?.card_details?.card_number;
+        if (cardNumber) cardNumbers.push(cardNumber);
+      }
+      await api.dispose();
 
-    testInfo.attach('card-number-predictability-probe', { body: JSON.stringify({ cardNumbers }, null, 2), contentType: 'application/json' });
+      testInfo.attach('card-number-predictability-probe', { body: JSON.stringify({ cardNumbers }, null, 2), contentType: 'application/json' });
+      return cardNumbers;
+    });
 
     if (cardNumbers.length < 2) {
       reporter.reportSkip('Could not create enough cards back-to-back to probe number generation on this target.');
       return;
     }
 
-    const hasDuplicate = new Set(cardNumbers).size !== cardNumbers.length;
+    await test.step('Assess the card number generation source', async () => {
+      const hasDuplicate = new Set(cardNumbers).size !== cardNumbers.length;
 
-    // app.py's generate_card_number()/generate_cvv() use
-    // random.choices(string.digits, k=...) — Python's Mersenne-Twister
-    // `random` module, not the `secrets` module (CWE-330: Use of
-    // Insufficiently Random Values). This is a source-level finding
-    // (visible in app.py, not something these three samples alone prove
-    // via statistical attack) — the live probe here rules out the more
-    // naive failure mode this was originally suspected to be (a
-    // sequential/incrementing counter, the way bill-payment reference
-    // numbers are int(time.time())-based): these card numbers are not
-    // sequential. That doesn't make the underlying RNG choice safe.
-    reporter.reportVulnerability(
-      'API8_SECURITY_MISCONFIGURATION',
-      {
-        endpoint: '/api/virtual-cards/create',
-        sampledCardNumbers: cardNumbers,
-        hasDuplicateInSample: hasDuplicate,
-        source: "app.py generate_card_number()/generate_cvv() use random.choices(string.digits, ...) — Python's non-cryptographic random module"
-      },
-      [
-        "Use the secrets module (e.g. secrets.choice / secrets.randbelow) instead of random for card_number and cvv generation — both are security-sensitive values.",
-        'Add a uniqueness constraint on virtual_cards.card_number at the database level regardless of generator choice.'
-      ]
-    );
+      // app.py's generate_card_number()/generate_cvv() use
+      // random.choices(string.digits, k=...) — Python's Mersenne-Twister
+      // `random` module, not the `secrets` module (CWE-330: Use of
+      // Insufficiently Random Values). This is a source-level finding
+      // (visible in app.py, not something these three samples alone prove
+      // via statistical attack) — the live probe here rules out the more
+      // naive failure mode this was originally suspected to be (a
+      // sequential/incrementing counter, the way bill-payment reference
+      // numbers are int(time.time())-based): these card numbers are not
+      // sequential. That doesn't make the underlying RNG choice safe.
+      reporter.reportVulnerability(
+        'API8_SECURITY_MISCONFIGURATION',
+        {
+          endpoint: '/api/virtual-cards/create',
+          sampledCardNumbers: cardNumbers,
+          hasDuplicateInSample: hasDuplicate,
+          source: "app.py generate_card_number()/generate_cvv() use random.choices(string.digits, ...) — Python's non-cryptographic random module"
+        },
+        [
+          "Use the secrets module (e.g. secrets.choice / secrets.randbelow) instead of random for card_number and cvv generation — both are security-sensitive values.",
+          'Add a uniqueness constraint on virtual_cards.card_number at the database level regardless of generator choice.'
+        ]
+      );
+    });
   });
 });
 
@@ -251,16 +276,21 @@ test.describe('API - Virtual card listing', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await listVirtualCards(anon, '');
-    const status = res.status();
-    await anon.dispose();
+    const status = await test.step('Request the card list without authentication', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await listVirtualCards(anon, '');
+      const status = res.status();
+      await anon.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Virtual card listing endpoint rejected a request without a valid token.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify the request was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Virtual card listing endpoint rejected a request without a valid token.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 
   test('should return the full card number and CVV in plaintext for the owner (excessive data exposure)', async ({ baseURL }, testInfo) => {
@@ -276,37 +306,42 @@ test.describe('API - Virtual card listing', () => {
       return;
     }
 
-    const { card } = await createVirtualCardAndFetch(api, session.token, { card_limit: 750 });
+    const card = await test.step('Create a card and list it back', async () => {
+      const { card } = await createVirtualCardAndFetch(api, session.token, { card_limit: 750 });
 
-    const listRes = await listVirtualCards(api, session.token);
-    const listBody = await listRes.json().catch(() => null);
-    await api.dispose();
+      const listRes = await listVirtualCards(api, session.token);
+      const listBody = await listRes.json().catch(() => null);
+      await api.dispose();
 
-    expect(card).toBeTruthy();
-    await validateSchema('virtual-cards-schema', 'GET_list', listBody);
+      expect(card).toBeTruthy();
+      await validateSchema('virtual-cards-schema', 'GET_list', listBody);
+      return card;
+    });
 
-    const exposesFullCardNumber = /^\d{16}$/.test(card?.card_number || '');
-    const exposesCvv = /^\d{3}$/.test(card?.cvv || '');
+    await test.step('Verify the card number and CVV are not exposed unmasked', async () => {
+      const exposesFullCardNumber = /^\d{16}$/.test(card?.card_number || '');
+      const exposesCvv = /^\d{3}$/.test(card?.cvv || '');
 
-    if (exposesFullCardNumber && exposesCvv) {
-      reporter.reportVulnerability(
-        'API3_DATA_EXPOSURE',
-        {
-          endpoint: '/api/virtual-cards',
-          disclosedFields: ['card_number (full, unmasked)', 'cvv'],
-          cardId: card?.id
-        },
-        [
-          'Mask all but the last four digits of card_number in list/read responses.',
-          'Never return CVV after card creation; it should not be retrievable at all once issued.'
-        ]
-      );
-    } else {
-      reporter.reportPass(
-        'Virtual card listing endpoint did not return an unmasked card number or CVV.',
-        'API3:2023 - Broken Object Property Level Authorization'
-      );
-    }
+      if (exposesFullCardNumber && exposesCvv) {
+        reporter.reportVulnerability(
+          'API3_DATA_EXPOSURE',
+          {
+            endpoint: '/api/virtual-cards',
+            disclosedFields: ['card_number (full, unmasked)', 'cvv'],
+            cardId: card?.id
+          },
+          [
+            'Mask all but the last four digits of card_number in list/read responses.',
+            'Never return CVV after card creation; it should not be retrievable at all once issued.'
+          ]
+        );
+      } else {
+        reporter.reportPass(
+          'Virtual card listing endpoint did not return an unmasked card number or CVV.',
+          'API3:2023 - Broken Object Property Level Authorization'
+        );
+      }
+    });
   });
 });
 
@@ -332,23 +367,28 @@ test.describe('API - Virtual card freeze toggle', () => {
       return;
     }
 
-    const freezeRes = await toggleCardFreeze(api, session.token, card.id);
-    const freezeBody = await freezeRes.json().catch(() => null);
+    const { freezeRes, freezeBody, unfreezeRes, unfreezeBody } = await test.step('Freeze then unfreeze the card', async () => {
+      const freezeRes = await toggleCardFreeze(api, session.token, card.id);
+      const freezeBody = await freezeRes.json().catch(() => null);
 
-    const unfreezeRes = await toggleCardFreeze(api, session.token, card.id);
-    const unfreezeBody = await unfreezeRes.json().catch(() => null);
-    await api.dispose();
+      const unfreezeRes = await toggleCardFreeze(api, session.token, card.id);
+      const unfreezeBody = await unfreezeRes.json().catch(() => null);
+      await api.dispose();
+      return { freezeRes, freezeBody, unfreezeRes, unfreezeBody };
+    });
 
-    expect(freezeRes.status()).toBe(200);
-    expect(freezeBody?.message).toMatch(/frozen/i);
-    expect(unfreezeRes.status()).toBe(200);
-    expect(unfreezeBody?.message).toMatch(/unfrozen/i);
-    await validateSchema('virtual-cards-schema', 'POST_toggle_freeze', freezeBody);
+    await test.step('Verify both toggles succeeded', async () => {
+      expect(freezeRes.status()).toBe(200);
+      expect(freezeBody?.message).toMatch(/frozen/i);
+      expect(unfreezeRes.status()).toBe(200);
+      expect(unfreezeBody?.message).toMatch(/unfrozen/i);
+      await validateSchema('virtual-cards-schema', 'POST_toggle_freeze', freezeBody);
 
-    reporter.reportPass(
-      'Owner successfully froze and unfroze their own virtual card.',
-      'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-    );
+      reporter.reportPass(
+        'Owner successfully froze and unfroze their own virtual card.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    });
   });
 
   test('should not let another authenticated user freeze someone else\'s card (BOLA)', async ({ baseURL }, testInfo) => {
@@ -373,39 +413,44 @@ test.describe('API - Virtual card freeze toggle', () => {
       return;
     }
 
-    const crossUserRes = await toggleCardFreeze(api, attacker.token, card.id);
-    const crossUserBody = await crossUserRes.json().catch(() => null);
-    await api.dispose();
+    const crossUserRes = await test.step('Attempt to freeze the card as a different user', async () => {
+      const crossUserRes = await toggleCardFreeze(api, attacker.token, card.id);
+      const crossUserBody = await crossUserRes.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('toggle-freeze-bola-probe', {
-      body: JSON.stringify({ status: crossUserRes.status(), body: crossUserBody }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('toggle-freeze-bola-probe', {
+        body: JSON.stringify({ status: crossUserRes.status(), body: crossUserBody }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status: crossUserRes.status(), body: crossUserBody };
     });
 
-    const bolaConfirmed = crossUserRes.status() === 200 && crossUserBody?.status === 'success';
+    await test.step('Verify the request was rejected', async () => {
+      const bolaConfirmed = crossUserRes.status === 200 && crossUserRes.body?.status === 'success';
 
-    if (bolaConfirmed) {
-      reporter.reportVulnerability(
-        'API1_BOLA',
-        {
-          endpoint: '/api/virtual-cards/<id>/toggle-freeze',
-          cardId: card.id,
-          cardOwner: owner.userId,
-          actingUser: attacker.userId,
-          responseStatus: crossUserRes.status()
-        },
-        [
-          'Verify the requesting user owns the card (WHERE id = %s AND user_id = %s) before toggling is_frozen.',
-          'Return 403/404 for freeze requests against a card the caller does not own.'
-        ]
-      );
-    } else {
-      expect(AUTH_DENIED_STATUSES.concat(404)).toContain(crossUserRes.status());
-      reporter.reportPass(
-        "Toggle-freeze endpoint rejected a request from a user who does not own the card.",
-        'API1:2023 - Broken Object Level Authorization'
-      );
-    }
+      if (bolaConfirmed) {
+        reporter.reportVulnerability(
+          'API1_BOLA',
+          {
+            endpoint: '/api/virtual-cards/<id>/toggle-freeze',
+            cardId: card.id,
+            cardOwner: owner.userId,
+            actingUser: attacker.userId,
+            responseStatus: crossUserRes.status
+          },
+          [
+            'Verify the requesting user owns the card (WHERE id = %s AND user_id = %s) before toggling is_frozen.',
+            'Return 403/404 for freeze requests against a card the caller does not own.'
+          ]
+        );
+      } else {
+        expect(AUTH_DENIED_STATUSES.concat(404)).toContain(crossUserRes.status);
+        reporter.reportPass(
+          "Toggle-freeze endpoint rejected a request from a user who does not own the card.",
+          'API1:2023 - Broken Object Level Authorization'
+        );
+      }
+    });
   });
 });
 
@@ -432,40 +477,45 @@ test.describe('API - Virtual card transaction history', () => {
       return;
     }
 
-    const crossUserRes = await getCardTransactions(api, attacker.token, card.id);
-    const crossUserBody = await crossUserRes.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Attempt to read the card transactions as a different user', async () => {
+      const crossUserRes = await getCardTransactions(api, attacker.token, card.id);
+      const crossUserBody = await crossUserRes.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('transactions-bola-probe', {
-      body: JSON.stringify({ status: crossUserRes.status(), body: crossUserBody }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('transactions-bola-probe', {
+        body: JSON.stringify({ status: crossUserRes.status(), body: crossUserBody }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status: crossUserRes.status(), body: crossUserBody };
     });
 
-    const bolaConfirmed = crossUserRes.status() === 200 && crossUserBody?.status === 'success';
+    await test.step('Verify the request was rejected', async () => {
+      const bolaConfirmed = status === 200 && body?.status === 'success';
 
-    if (bolaConfirmed) {
-      await validateSchema('virtual-cards-schema', 'GET_card_transactions', crossUserBody);
-      reporter.reportVulnerability(
-        'API1_BOLA',
-        {
-          endpoint: '/api/virtual-cards/<id>/transactions',
-          cardId: card.id,
-          cardOwner: owner.userId,
-          actingUser: attacker.userId,
-          responseStatus: crossUserRes.status()
-        },
-        [
-          'Verify the requesting user owns the card before returning its transaction history.',
-          'Return 403/404 for transaction history requests against a card the caller does not own.'
-        ]
-      );
-    } else {
-      expect(AUTH_DENIED_STATUSES.concat(404)).toContain(crossUserRes.status());
-      reporter.reportPass(
-        "Card transaction history endpoint rejected a request from a user who does not own the card.",
-        'API1:2023 - Broken Object Level Authorization'
-      );
-    }
+      if (bolaConfirmed) {
+        await validateSchema('virtual-cards-schema', 'GET_card_transactions', body);
+        reporter.reportVulnerability(
+          'API1_BOLA',
+          {
+            endpoint: '/api/virtual-cards/<id>/transactions',
+            cardId: card.id,
+            cardOwner: owner.userId,
+            actingUser: attacker.userId,
+            responseStatus: status
+          },
+          [
+            'Verify the requesting user owns the card before returning its transaction history.',
+            'Return 403/404 for transaction history requests against a card the caller does not own.'
+          ]
+        );
+      } else {
+        expect(AUTH_DENIED_STATUSES.concat(404)).toContain(status);
+        reporter.reportPass(
+          "Card transaction history endpoint rejected a request from a user who does not own the card.",
+          'API1:2023 - Broken Object Level Authorization'
+        );
+      }
+    });
   });
 });
 
@@ -491,19 +541,24 @@ test.describe('API - Virtual card limit update', () => {
       return;
     }
 
-    const updateRes = await updateCardLimit(api, session.token, card.id, { card_limit: 2000 });
-    const updateBody = await updateRes.json().catch(() => null);
-    await api.dispose();
+    const { updateRes, updateBody } = await test.step("Update the card's limit as the owner", async () => {
+      const updateRes = await updateCardLimit(api, session.token, card.id, { card_limit: 2000 });
+      const updateBody = await updateRes.json().catch(() => null);
+      await api.dispose();
+      return { updateRes, updateBody };
+    });
 
-    expect(updateRes.status()).toBe(200);
-    expect(updateBody?.status).toBe('success');
-    expect(updateBody?.debug_info?.card_details?.card_limit).toBe(2000);
-    await validateSchema('virtual-cards-schema', 'POST_update_limit', updateBody);
+    await test.step('Verify the limit was updated', async () => {
+      expect(updateRes.status()).toBe(200);
+      expect(updateBody?.status).toBe('success');
+      expect(updateBody?.debug_info?.card_details?.card_limit).toBe(2000);
+      await validateSchema('virtual-cards-schema', 'POST_update_limit', updateBody);
 
-    reporter.reportPass(
-      "Owner successfully updated their own card's limit.",
-      'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-    );
+      reporter.reportPass(
+        "Owner successfully updated their own card's limit.",
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    });
   });
 
   test('should not let extra request fields update sensitive columns like current_balance (mass assignment)', async ({ baseURL }, testInfo) => {
@@ -527,19 +582,23 @@ test.describe('API - Virtual card limit update', () => {
       return;
     }
 
-    // The UI only ever sends { card_limit }, but the handler iterates every
-    // key in the request body with no allowlist (app.py), so current_balance
-    // is a legitimate DB column an attacker can set directly.
-    const res = await updateCardLimit(api, session.token, card.id, { current_balance: 999999 });
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Attempt to set current_balance via update-limit', async () => {
+      // The UI only ever sends { card_limit }, but the handler iterates every
+      // key in the request body with no allowlist (app.py), so current_balance
+      // is a legitimate DB column an attacker can set directly.
+      const res = await updateCardLimit(api, session.token, card.id, { current_balance: 999999 });
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('update-limit-mass-assignment-probe', {
-      body: JSON.stringify({ status, body }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('update-limit-mass-assignment-probe', {
+        body: JSON.stringify({ status, body }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status, body };
     });
 
+    await test.step('Verify current_balance was not fabricated', async () => {
     const balanceFabricated = status === 200 && body?.debug_info?.card_details?.current_balance === 999999;
 
     if (balanceFabricated) {
@@ -556,13 +615,14 @@ test.describe('API - Virtual card limit update', () => {
           'Never accept current_balance, is_frozen, is_active, card_number, or cvv from client-supplied update data.'
         ]
       );
-    } else {
-      expect(body?.debug_info?.card_details?.current_balance).not.toBe(999999);
-      reporter.reportPass(
-        'Update-limit endpoint did not honor a client-supplied current_balance field.',
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      } else {
+        expect(body?.debug_info?.card_details?.current_balance).not.toBe(999999);
+        reporter.reportPass(
+          'Update-limit endpoint did not honor a client-supplied current_balance field.',
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 
   test('should not let another authenticated user update someone else\'s card limit (BOLA)', async ({ baseURL }, testInfo) => {
@@ -587,16 +647,20 @@ test.describe('API - Virtual card limit update', () => {
       return;
     }
 
-    const crossUserRes = await updateCardLimit(api, attacker.token, card.id, { card_limit: 999 });
-    const crossUserBody = await crossUserRes.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Attempt to update the limit as a different user', async () => {
+      const crossUserRes = await updateCardLimit(api, attacker.token, card.id, { card_limit: 999 });
+      const crossUserBody = await crossUserRes.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('update-limit-bola-probe', {
-      body: JSON.stringify({ status: crossUserRes.status(), body: crossUserBody }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('update-limit-bola-probe', {
+        body: JSON.stringify({ status: crossUserRes.status(), body: crossUserBody }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status: crossUserRes.status(), body: crossUserBody };
     });
 
-    const bolaConfirmed = crossUserRes.status() === 200 && crossUserBody?.status === 'success';
+    await test.step('Verify the request was rejected', async () => {
+    const bolaConfirmed = status === 200 && body?.status === 'success';
 
     if (bolaConfirmed) {
       reporter.reportVulnerability(
@@ -606,7 +670,7 @@ test.describe('API - Virtual card limit update', () => {
           cardId: card.id,
           cardOwner: owner.userId,
           actingUser: attacker.userId,
-          responseStatus: crossUserRes.status()
+          responseStatus: status
         },
         [
           'Verify the requesting user owns the card before applying any update-limit changes.',
@@ -614,11 +678,12 @@ test.describe('API - Virtual card limit update', () => {
         ]
       );
     } else {
-      expect(AUTH_DENIED_STATUSES.concat(404)).toContain(crossUserRes.status());
+      expect(AUTH_DENIED_STATUSES.concat(404)).toContain(status);
       reporter.reportPass(
         "Update-limit endpoint rejected a request from a user who does not own the card.",
         'API1:2023 - Broken Object Level Authorization'
       );
     }
+    });
   });
 });

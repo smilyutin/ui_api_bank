@@ -43,16 +43,21 @@ test.describe('API - Loan requests', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await requestLoan(anon, '', 500);
-    const status = res.status();
-    await anon.dispose();
+    const status = await test.step('Request a loan without authentication', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await requestLoan(anon, '', 500);
+      const status = res.status();
+      await anon.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Loan request endpoint rejected a request without a valid token.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify the request was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Loan request endpoint rejected a request without a valid token.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 
   test('POST /request_loan should let an authenticated user submit a loan that appears as pending', async ({ baseURL }, testInfo) => {
@@ -69,26 +74,31 @@ test.describe('API - Loan requests', () => {
     }
 
     const amount = 750;
-    const res = await requestLoan(api, session.token, amount);
-    const status = res.status();
-    const body = await res.json().catch(() => null);
 
-    expect(status).toBe(200);
-    expect(body?.status).toBe('success');
-    await validateSchema('loans-schema', 'POST_request_loan', body);
+    await test.step('Submit a loan request and verify the API response', async () => {
+      const res = await requestLoan(api, session.token, amount);
+      const status = res.status();
+      const body = await res.json().catch(() => null);
 
-    const dashboardHtml = await fetchDashboardHtml(api, session.token);
-    const loans = extractLoanRowsFromDashboardHtml(dashboardHtml);
-    await api.dispose();
+      expect(status).toBe(200);
+      expect(body?.status).toBe('success');
+      await validateSchema('loans-schema', 'POST_request_loan', body);
+    });
 
-    testInfo.attach('loan-rows', { body: JSON.stringify(loans, null, 2), contentType: 'application/json' });
+    await test.step('Verify the loan is persisted as pending on the dashboard', async () => {
+      const dashboardHtml = await fetchDashboardHtml(api, session.token);
+      const loans = extractLoanRowsFromDashboardHtml(dashboardHtml);
+      await api.dispose();
 
-    expect(loans.some((loan) => loan.amount === amount && loan.status === 'pending')).toBe(true);
+      testInfo.attach('loan-rows', { body: JSON.stringify(loans, null, 2), contentType: 'application/json' });
 
-    reporter.reportPass(
-      'Authenticated user requested a loan and it was persisted with pending status.',
-      'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-    );
+      expect(loans.some((loan) => loan.amount === amount && loan.status === 'pending')).toBe(true);
+
+      reporter.reportPass(
+        'Authenticated user requested a loan and it was persisted with pending status.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    });
   });
 
   test('POST /request_loan should not accept a negative loan amount without validation', async ({ baseURL }, testInfo) => {
@@ -105,35 +115,40 @@ test.describe('API - Loan requests', () => {
     }
 
     const amount = -500;
-    const res = await requestLoan(api, session.token, amount);
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Submit a loan request with a negative amount', async () => {
+      const res = await requestLoan(api, session.token, amount);
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('negative-loan-request', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      testInfo.attach('negative-loan-request', { body: JSON.stringify({ status, body }, null, 2), contentType: 'application/json' });
+      return { status, body };
+    });
 
-    const accepted = status === 200 && body?.status === 'success';
+    await test.step('Verify the negative amount was rejected', async () => {
+      const accepted = status === 200 && body?.status === 'success';
 
-    if (accepted) {
-      reporter.reportVulnerability(
-        'API6_MASS_ASSIGNMENT',
-        {
-          endpoint: '/request_loan',
-          amountSubmitted: amount,
-          responseStatus: status
-        },
-        [
-          'Reject non-positive loan amounts server-side (amount <= 0) before persisting a loan application.',
-          'Apply a sane maximum loan amount to prevent unbounded liabilities from a single request.'
-        ]
-      );
-    } else {
-      expect(status).toBeGreaterThanOrEqual(400);
-      reporter.reportPass(
-        'Loan request endpoint rejected a negative loan amount.',
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      if (accepted) {
+        reporter.reportVulnerability(
+          'API6_MASS_ASSIGNMENT',
+          {
+            endpoint: '/request_loan',
+            amountSubmitted: amount,
+            responseStatus: status
+          },
+          [
+            'Reject non-positive loan amounts server-side (amount <= 0) before persisting a loan application.',
+            'Apply a sane maximum loan amount to prevent unbounded liabilities from a single request.'
+          ]
+        );
+      } else {
+        expect(status).toBeGreaterThanOrEqual(400);
+        reporter.reportPass(
+          'Loan request endpoint rejected a negative loan amount.',
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 
   test('POST /request_loan should have no ceiling on the requested amount', async ({ baseURL }, testInfo) => {
@@ -155,27 +170,32 @@ test.describe('API - Loan requests', () => {
     // path to distinguish from a real ceiling — any positive amount should
     // just succeed outright if there's no ceiling.
     const amount = 999999999;
-    const res = await requestLoan(api, session.token, amount);
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Submit a loan request for an enormous amount', async () => {
+      const res = await requestLoan(api, session.token, amount);
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('loan-ceiling-probe', { body: JSON.stringify({ amount, status, body }, null, 2), contentType: 'application/json' });
+      testInfo.attach('loan-ceiling-probe', { body: JSON.stringify({ amount, status, body }, null, 2), contentType: 'application/json' });
+      return { status, body };
+    });
 
-    const acceptedWithNoCeiling = status === 200 && body?.status === 'success';
+    await test.step('Verify there is a ceiling on the accepted amount', async () => {
+      const acceptedWithNoCeiling = status === 200 && body?.status === 'success';
 
-    if (acceptedWithNoCeiling) {
-      reporter.reportVulnerability(
-        'API6_MASS_ASSIGNMENT',
-        { endpoint: '/request_loan', amountSubmitted: amount, responseStatus: status },
-        ['Apply a sane maximum loan amount to prevent unbounded liabilities from a single request, independent of the missing negative-amount validation already flagged above.']
-      );
-    } else {
-      reporter.reportPass(
-        `A very large loan request (${amount}) was rejected.`,
-        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-      );
-    }
+      if (acceptedWithNoCeiling) {
+        reporter.reportVulnerability(
+          'API6_MASS_ASSIGNMENT',
+          { endpoint: '/request_loan', amountSubmitted: amount, responseStatus: status },
+          ['Apply a sane maximum loan amount to prevent unbounded liabilities from a single request, independent of the missing negative-amount validation already flagged above.']
+        );
+      } else {
+        reporter.reportPass(
+          `A very large loan request (${amount}) was rejected.`,
+          'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+        );
+      }
+    });
   });
 });
 
@@ -193,18 +213,23 @@ test.describe('API - Loan approval authorization', () => {
       return;
     }
 
-    // The is_admin check in /admin/approve_loan happens before any loan
-    // lookup, so a real (non-forged) loan id is not required to prove
-    // authorization is enforced for a genuine non-admin token.
-    const res = await approveLoan(api, session.token, 999999999);
-    const status = res.status();
-    await api.dispose();
+    const status = await test.step('Attempt approval with a genuine non-admin token', async () => {
+      // The is_admin check in /admin/approve_loan happens before any loan
+      // lookup, so a real (non-forged) loan id is not required to prove
+      // authorization is enforced for a genuine non-admin token.
+      const res = await approveLoan(api, session.token, 999999999);
+      const status = res.status();
+      await api.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Loan approval endpoint rejected a genuine non-admin token.',
-      'API5:2023 - Broken Function Level Authorization'
-    );
+    await test.step('Verify the approval was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Loan approval endpoint rejected a genuine non-admin token.',
+        'API5:2023 - Broken Function Level Authorization'
+      );
+    });
   });
 
   test('POST /admin/approve_loan/<id> should not be reachable via a forged admin claim (weak JWT secret)', async ({ baseURL }, testInfo) => {
@@ -221,66 +246,72 @@ test.describe('API - Loan approval authorization', () => {
     }
 
     const amount = 500;
-    await requestLoan(api, session.token, amount);
-
-    const balanceBeforeRes = await api.get(`/check_balance/${session.accountNumber}`);
-    const balanceBefore = (await balanceBeforeRes.json().catch(() => null))?.balance;
-
-    // Forge a token for this same user claiming is_admin=true, signed with the
-    // app's hardcoded HS256 secret (auth.py: JWT_SECRET = "secret123"). No
-    // admin credentials are ever used or required.
-    const forgedAdminToken = forgeToken({ userId: session.userId, username: session.user.username || '', isAdmin: true });
-
-    const adminHtml = await fetchAdminPanelHtml(api, forgedAdminToken);
-    const adminPanelReachable = adminHtml.status() === 200;
-
-    const pending = extractPendingLoansFromAdminHtml(await adminHtml.text());
-    const loanId = findPendingLoanId(pending, session.userId, amount);
-
-    let approvalSucceeded = false;
-    let balanceAfter: number | undefined;
-
-    if (loanId !== null) {
-      const approveRes = await approveLoan(api, forgedAdminToken, loanId);
-      const approveBody = await approveRes.json().catch(() => null);
-      approvalSucceeded = approveRes.status() === 200 && approveBody?.status === 'success';
-
-      const balanceAfterRes = await api.get(`/check_balance/${session.accountNumber}`);
-      balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
-    }
-
-    await api.dispose();
-
-    testInfo.attach('privilege-escalation-probe', {
-      body: JSON.stringify({ adminPanelReachable, loanId, approvalSucceeded, balanceBefore, balanceAfter }, null, 2),
-      contentType: 'application/json'
+    const balanceBefore = await test.step('Request a loan as a normal user', async () => {
+      await requestLoan(api, session.token, amount);
+      const balanceBeforeRes = await api.get(`/check_balance/${session.accountNumber}`);
+      return (await balanceBeforeRes.json().catch(() => null))?.balance;
     });
 
-    const escalationConfirmed = adminPanelReachable && approvalSucceeded && balanceAfter === balanceBefore + amount;
+    const { adminPanelReachable, loanId, approvalSucceeded, balanceAfter } = await test.step('Forge an admin JWT and attempt to approve the loan', async () => {
+      // Forge a token for this same user claiming is_admin=true, signed with the
+      // app's hardcoded HS256 secret (auth.py: JWT_SECRET = "secret123"). No
+      // admin credentials are ever used or required.
+      const forgedAdminToken = forgeToken({ userId: session.userId, username: session.user.username || '', isAdmin: true });
 
-    if (escalationConfirmed) {
-      reporter.reportVulnerability(
-        'API5_BFLA',
-        {
-          endpoint: '/admin/approve_loan/<loan_id>',
-          technique: 'Forged JWT with is_admin=true, signed using the hardcoded weak secret from auth.py',
-          loanId,
-          balanceBefore,
-          balanceAfter,
-          fundsFabricated: amount
-        },
-        [
-          'Replace the hardcoded JWT secret with a strong, environment-provided secret that is never committed to source control.',
-          'Do not trust an `is_admin` claim from the token payload alone — verify the user\'s role against the database on every privileged request.',
-          'Reject tokens signed with unexpected algorithms and enforce a single expected algorithm (no "none", no algorithm confusion).'
-        ]
-      );
-    } else {
-      reporter.reportPass(
-        'Forging an admin claim with the application\'s JWT secret did not result in a successful, financially-impactful loan approval.',
-        'API5:2023 - Broken Function Level Authorization'
-      );
-    }
+      const adminHtml = await fetchAdminPanelHtml(api, forgedAdminToken);
+      const adminPanelReachable = adminHtml.status() === 200;
+
+      const pending = extractPendingLoansFromAdminHtml(await adminHtml.text());
+      const loanId = findPendingLoanId(pending, session.userId, amount);
+
+      let approvalSucceeded = false;
+      let balanceAfter: number | undefined;
+
+      if (loanId !== null) {
+        const approveRes = await approveLoan(api, forgedAdminToken, loanId);
+        const approveBody = await approveRes.json().catch(() => null);
+        approvalSucceeded = approveRes.status() === 200 && approveBody?.status === 'success';
+
+        const balanceAfterRes = await api.get(`/check_balance/${session.accountNumber}`);
+        balanceAfter = (await balanceAfterRes.json().catch(() => null))?.balance;
+      }
+
+      await api.dispose();
+
+      testInfo.attach('privilege-escalation-probe', {
+        body: JSON.stringify({ adminPanelReachable, loanId, approvalSucceeded, balanceBefore, balanceAfter }, null, 2),
+        contentType: 'application/json'
+      });
+      return { adminPanelReachable, loanId, approvalSucceeded, balanceAfter };
+    });
+
+    await test.step('Verify the forged claim did not result in a financially-impactful approval', async () => {
+      const escalationConfirmed = adminPanelReachable && approvalSucceeded && balanceAfter === balanceBefore + amount;
+
+      if (escalationConfirmed) {
+        reporter.reportVulnerability(
+          'API5_BFLA',
+          {
+            endpoint: '/admin/approve_loan/<loan_id>',
+            technique: 'Forged JWT with is_admin=true, signed using the hardcoded weak secret from auth.py',
+            loanId,
+            balanceBefore,
+            balanceAfter,
+            fundsFabricated: amount
+          },
+          [
+            'Replace the hardcoded JWT secret with a strong, environment-provided secret that is never committed to source control.',
+            'Do not trust an `is_admin` claim from the token payload alone — verify the user\'s role against the database on every privileged request.',
+            'Reject tokens signed with unexpected algorithms and enforce a single expected algorithm (no "none", no algorithm confusion).'
+          ]
+        );
+      } else {
+        reporter.reportPass(
+          'Forging an admin claim with the application\'s JWT secret did not result in a successful, financially-impactful loan approval.',
+          'API5:2023 - Broken Function Level Authorization'
+        );
+      }
+    });
   });
 
   test('POST /admin/approve_loan/<id> should not allow the same loan to be approved twice', async ({ baseURL }, testInfo) => {
@@ -297,9 +328,10 @@ test.describe('API - Loan approval authorization', () => {
     }
 
     const amount = 300;
-    await requestLoan(api, session.token, amount);
-
-    const admin = await loginAsSeededAdmin(api);
+    const admin = await test.step('Request a loan and log in as admin', async () => {
+      await requestLoan(api, session.token, amount);
+      return loginAsSeededAdmin(api);
+    });
     if (!admin) {
       reporter.reportSkip('Could not log in as the seeded admin account to run the double-approval check.');
       await api.dispose();
@@ -307,9 +339,11 @@ test.describe('API - Loan approval authorization', () => {
       return;
     }
 
-    const adminHtml = await fetchAdminPanelHtml(api, admin.token);
-    const pending = extractPendingLoansFromAdminHtml(await adminHtml.text());
-    const loanId = findPendingLoanId(pending, session.userId, amount);
+    const loanId = await test.step('Locate the pending loan id', async () => {
+      const adminHtml = await fetchAdminPanelHtml(api, admin.token);
+      const pending = extractPendingLoansFromAdminHtml(await adminHtml.text());
+      return findPendingLoanId(pending, session.userId, amount);
+    });
 
     if (loanId === null) {
       reporter.reportSkip('Could not locate the created loan id to run the double-approval check.');
@@ -318,23 +352,27 @@ test.describe('API - Loan approval authorization', () => {
       return;
     }
 
-    const firstApproval = await approveLoan(api, admin.token, loanId);
-    const firstBody = await firstApproval.json().catch(() => null);
-    const balanceAfterFirstRes = await api.get(`/check_balance/${session.accountNumber}`);
-    const balanceAfterFirst = (await balanceAfterFirstRes.json().catch(() => null))?.balance;
+    const { firstBody, secondBody, balanceAfterFirst, balanceAfterSecond } = await test.step('Approve the loan twice', async () => {
+      const firstApproval = await approveLoan(api, admin.token, loanId);
+      const firstBody = await firstApproval.json().catch(() => null);
+      const balanceAfterFirstRes = await api.get(`/check_balance/${session.accountNumber}`);
+      const balanceAfterFirst = (await balanceAfterFirstRes.json().catch(() => null))?.balance;
 
-    const secondApproval = await approveLoan(api, admin.token, loanId);
-    const secondBody = await secondApproval.json().catch(() => null);
-    const balanceAfterSecondRes = await api.get(`/check_balance/${session.accountNumber}`);
-    const balanceAfterSecond = (await balanceAfterSecondRes.json().catch(() => null))?.balance;
+      const secondApproval = await approveLoan(api, admin.token, loanId);
+      const secondBody = await secondApproval.json().catch(() => null);
+      const balanceAfterSecondRes = await api.get(`/check_balance/${session.accountNumber}`);
+      const balanceAfterSecond = (await balanceAfterSecondRes.json().catch(() => null))?.balance;
 
-    await api.dispose();
+      await api.dispose();
 
-    testInfo.attach('double-approval-probe', {
-      body: JSON.stringify({ firstBody, secondBody, balanceAfterFirst, balanceAfterSecond }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('double-approval-probe', {
+        body: JSON.stringify({ firstBody, secondBody, balanceAfterFirst, balanceAfterSecond }, null, 2),
+        contentType: 'application/json'
+      });
+      return { firstBody, secondBody, balanceAfterFirst, balanceAfterSecond };
     });
 
+    await test.step('Verify the second approval did not double-credit the balance', async () => {
     const doubleCredited = secondBody?.status === 'success' && balanceAfterSecond === balanceAfterFirst + amount;
 
     if (doubleCredited) {
@@ -358,5 +396,6 @@ test.describe('API - Loan approval authorization', () => {
         'API6:2023 - Unrestricted Access to Sensitive Business Flows'
       );
     }
+    });
   });
 });

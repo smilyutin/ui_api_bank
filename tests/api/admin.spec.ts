@@ -38,16 +38,21 @@ test.describe('API - Admin panel access control', () => {
 		if (!baseURL) throw new Error('baseURL is not defined');
 		const reporter = new SecurityReporter(testInfo);
 
-		const anon = await request.newContext({ baseURL: baseURL.toString() });
-		const res = await fetchAdminPanelHtml(anon, '');
-		const status = res.status();
-		await anon.dispose();
+		const status = await test.step('Request the admin panel without authentication', async () => {
+			const anon = await request.newContext({ baseURL: baseURL.toString() });
+			const res = await fetchAdminPanelHtml(anon, '');
+			const status = res.status();
+			await anon.dispose();
+			return status;
+		});
 
-		expect(AUTH_DENIED_STATUSES).toContain(status);
-		reporter.reportPass(
-			'Admin panel endpoint rejected an unauthenticated request.',
-			'API5:2023 - Broken Function Level Authorization'
-		);
+		await test.step('Verify the request was rejected', async () => {
+			expect(AUTH_DENIED_STATUSES).toContain(status);
+			reporter.reportPass(
+				'Admin panel endpoint rejected an unauthenticated request.',
+				'API5:2023 - Broken Function Level Authorization'
+			);
+		});
 	});
 
 	test('GET /sup3r_s3cr3t_admin should reject a non-admin authenticated user', async ({ baseURL }, testInfo) => {
@@ -63,15 +68,20 @@ test.describe('API - Admin panel access control', () => {
 			return;
 		}
 
-		const res = await fetchAdminPanelHtml(api, session.token);
-		const status = res.status();
-		await api.dispose();
+		const status = await test.step('Request the admin panel with a genuine non-admin token', async () => {
+			const res = await fetchAdminPanelHtml(api, session.token);
+			const status = res.status();
+			await api.dispose();
+			return status;
+		});
 
-		expect(AUTH_DENIED_STATUSES).toContain(status);
-		reporter.reportPass(
-			'Admin panel endpoint rejected a genuine non-admin token.',
-			'API5:2023 - Broken Function Level Authorization'
-		);
+		await test.step('Verify the request was rejected', async () => {
+			expect(AUTH_DENIED_STATUSES).toContain(status);
+			reporter.reportPass(
+				'Admin panel endpoint rejected a genuine non-admin token.',
+				'API5:2023 - Broken Function Level Authorization'
+			);
+		});
 	});
 
 	test('GET /sup3r_s3cr3t_admin should not expose sensitive user fields', async ({ baseURL }, testInfo) => {
@@ -87,35 +97,40 @@ test.describe('API - Admin panel access control', () => {
 			return;
 		}
 
-		const res = await fetchAdminPanelHtml(api, admin.token);
-		const html = await res.text();
-		await api.dispose();
+		const html = await test.step('Fetch the admin panel as admin', async () => {
+			const res = await fetchAdminPanelHtml(api, admin.token);
+			const html = await res.text();
+			await api.dispose();
 
-		testInfo.attach('admin-panel-html', { body: html, contentType: 'text/html' });
+			testInfo.attach('admin-panel-html', { body: html, contentType: 'text/html' });
+			return html;
+		});
 
-		const exposesPlaintextPassword =
-			html.toLowerCase().includes('password') && html.includes('admin123') && !html.includes('hashed');
-		const exposesResetPin = html.includes('reset_pin') && html.match(/\d{4,6}/);
+		await test.step('Verify no plaintext passwords or reset PINs are exposed', async () => {
+			const exposesPlaintextPassword =
+				html.toLowerCase().includes('password') && html.includes('admin123') && !html.includes('hashed');
+			const exposesResetPin = html.includes('reset_pin') && html.match(/\d{4,6}/);
 
-		if (exposesPlaintextPassword || exposesResetPin) {
-			reporter.reportVulnerability(
-				'API3_DATA_EXPOSURE',
-				{
-					endpoint: '/sup3r_s3cr3t_admin',
-					exposedFields: [exposesPlaintextPassword && 'plaintext_password', exposesResetPin && 'reset_pin'].filter(Boolean)
-				},
-				[
-					'Hash all passwords before storage and never expose them in responses.',
-					'Redact sensitive fields like reset PINs from admin views unless explicitly required.',
-					'Audit the admin panel template to ensure no unencrypted sensitive data appears.'
-				]
-			);
-		} else {
-			reporter.reportPass(
-				'Admin panel does not expose plaintext passwords or reset PINs in the rendered HTML.',
-				'API3:2023 - Broken Object Property Level Authorization'
-			);
-		}
+			if (exposesPlaintextPassword || exposesResetPin) {
+				reporter.reportVulnerability(
+					'API3_DATA_EXPOSURE',
+					{
+						endpoint: '/sup3r_s3cr3t_admin',
+						exposedFields: [exposesPlaintextPassword && 'plaintext_password', exposesResetPin && 'reset_pin'].filter(Boolean)
+					},
+					[
+						'Hash all passwords before storage and never expose them in responses.',
+						'Redact sensitive fields like reset PINs from admin views unless explicitly required.',
+						'Audit the admin panel template to ensure no unencrypted sensitive data appears.'
+					]
+				);
+			} else {
+				reporter.reportPass(
+					'Admin panel does not expose plaintext passwords or reset PINs in the rendered HTML.',
+					'API3:2023 - Broken Object Property Level Authorization'
+				);
+			}
+		});
 	});
 });
 
@@ -133,19 +148,24 @@ test.describe('API - Admin create_admin authorization', () => {
 			return;
 		}
 
-		const res = await createAdmin(api, session.token, {
-			username: 'attacker-admin',
-			password: 'attacker123',
-			account_number: 'ATTACKER001'
+		const status = await test.step('Attempt to create an admin with a genuine non-admin token', async () => {
+			const res = await createAdmin(api, session.token, {
+				username: 'attacker-admin',
+				password: 'attacker123',
+				account_number: 'ATTACKER001'
+			});
+			const status = res.status();
+			await api.dispose();
+			return status;
 		});
-		const status = res.status();
-		await api.dispose();
 
-		expect(AUTH_DENIED_STATUSES).toContain(status);
-		reporter.reportPass(
-			'Create admin endpoint rejected a genuine non-admin token.',
-			'API5:2023 - Broken Function Level Authorization'
-		);
+		await test.step('Verify the request was rejected', async () => {
+			expect(AUTH_DENIED_STATUSES).toContain(status);
+			reporter.reportPass(
+				'Create admin endpoint rejected a genuine non-admin token.',
+				'API5:2023 - Broken Function Level Authorization'
+			);
+		});
 	});
 
 	test('POST /admin/create_admin should not be reachable via a forged admin claim (weak JWT secret)', async ({ baseURL }, testInfo) => {
@@ -162,53 +182,59 @@ test.describe('API - Admin create_admin authorization', () => {
 		}
 
 		const newAdminUsername = `forged-admin-${Date.now()}`;
-		const forgedAdminToken = forgeToken({ userId: session.userId, username: session.user.username || '', isAdmin: true });
 
-		const createRes = await createAdmin(api, forgedAdminToken, {
-			username: newAdminUsername,
-			password: 'forged123',
-			account_number: `FORGED${Date.now()}`
-		});
-		const createBody = await createRes.json().catch(() => null);
+		const escalationConfirmed = await test.step('Forge an admin JWT and attempt to create a new admin', async () => {
+			const forgedAdminToken = forgeToken({ userId: session.userId, username: session.user.username || '', isAdmin: true });
 
-		let escalationConfirmed = false;
-
-		if (createRes.status() === 200 && createBody?.status === 'success') {
-			const verifyLogin = await api.post('/login', {
-				data: { username: newAdminUsername, password: 'forged123' }
+			const createRes = await createAdmin(api, forgedAdminToken, {
+				username: newAdminUsername,
+				password: 'forged123',
+				account_number: `FORGED${Date.now()}`
 			});
-			const verifyBody = await verifyLogin.json().catch(() => null);
-			escalationConfirmed = verifyLogin.status() === 200 && verifyBody?.isAdmin === true;
-		}
+			const createBody = await createRes.json().catch(() => null);
 
-		await api.dispose();
+			let escalationConfirmed = false;
 
-		testInfo.attach('admin-creation-probe', {
-			body: JSON.stringify({ createStatus: createRes.status(), createBody, escalationConfirmed }, null, 2),
-			contentType: 'application/json'
+			if (createRes.status() === 200 && createBody?.status === 'success') {
+				const verifyLogin = await api.post('/login', {
+					data: { username: newAdminUsername, password: 'forged123' }
+				});
+				const verifyBody = await verifyLogin.json().catch(() => null);
+				escalationConfirmed = verifyLogin.status() === 200 && verifyBody?.isAdmin === true;
+			}
+
+			await api.dispose();
+
+			testInfo.attach('admin-creation-probe', {
+				body: JSON.stringify({ createStatus: createRes.status(), createBody, escalationConfirmed }, null, 2),
+				contentType: 'application/json'
+			});
+			return escalationConfirmed;
 		});
 
-		if (escalationConfirmed) {
-			reporter.reportVulnerability(
-				'API5_BFLA',
-				{
-					endpoint: '/admin/create_admin',
-					technique: 'Forged JWT with is_admin=true, signed using the hardcoded weak secret from auth.py',
-					newAdminUsername,
-					newAdminCreated: true
-				},
-				[
-					'Replace the hardcoded JWT secret with a strong, environment-provided secret that is never committed to source control.',
-					'Do not trust an `is_admin` claim from the token payload alone — verify the user\'s role against the database on every privileged request.',
-					'Reject tokens signed with unexpected algorithms and enforce a single expected algorithm (no "none", no algorithm confusion).'
-				]
-			);
-		} else {
-			reporter.reportPass(
-				'Forging an admin claim with the application\'s JWT secret did not result in a new admin account creation.',
-				'API5:2023 - Broken Function Level Authorization'
-			);
-		}
+		await test.step('Verify the forged claim did not create a new admin account', async () => {
+			if (escalationConfirmed) {
+				reporter.reportVulnerability(
+					'API5_BFLA',
+					{
+						endpoint: '/admin/create_admin',
+						technique: 'Forged JWT with is_admin=true, signed using the hardcoded weak secret from auth.py',
+						newAdminUsername,
+						newAdminCreated: true
+					},
+					[
+						'Replace the hardcoded JWT secret with a strong, environment-provided secret that is never committed to source control.',
+						'Do not trust an `is_admin` claim from the token payload alone — verify the user\'s role against the database on every privileged request.',
+						'Reject tokens signed with unexpected algorithms and enforce a single expected algorithm (no "none", no algorithm confusion).'
+					]
+				);
+			} else {
+				reporter.reportPass(
+					'Forging an admin claim with the application\'s JWT secret did not result in a new admin account creation.',
+					'API5:2023 - Broken Function Level Authorization'
+				);
+			}
+		});
 	});
 
 	test('POST /admin/create_admin should reject duplicate usernames', async ({ baseURL }, testInfo) => {
@@ -224,52 +250,57 @@ test.describe('API - Admin create_admin authorization', () => {
 			return;
 		}
 
-		const testUsername = `duplicate-test-${Date.now()}`;
-		const testPayload = {
-			username: testUsername,
-			password: 'test123',
-			account_number: `TEST${Date.now()}`
-		};
+		const { secondCreate, secondBody, testUsername } = await test.step('Create the same admin username twice', async () => {
+			const testUsername = `duplicate-test-${Date.now()}`;
+			const testPayload = {
+				username: testUsername,
+				password: 'test123',
+				account_number: `TEST${Date.now()}`
+			};
 
-		const firstCreate = await createAdmin(api, admin.token, testPayload);
-		const firstBody = await firstCreate.json().catch(() => null);
+			const firstCreate = await createAdmin(api, admin.token, testPayload);
+			const firstBody = await firstCreate.json().catch(() => null);
 
-		const secondCreate = await createAdmin(api, admin.token, testPayload);
-		const secondBody = await secondCreate.json().catch(() => null);
+			const secondCreate = await createAdmin(api, admin.token, testPayload);
+			const secondBody = await secondCreate.json().catch(() => null);
 
-		await api.dispose();
+			await api.dispose();
 
-		testInfo.attach('duplicate-username-probe', {
-			body: JSON.stringify(
-				{ firstCreateStatus: firstCreate.status(), firstBody, secondCreateStatus: secondCreate.status(), secondBody },
-				null,
-				2
-			),
-			contentType: 'application/json'
+			testInfo.attach('duplicate-username-probe', {
+				body: JSON.stringify(
+					{ firstCreateStatus: firstCreate.status(), firstBody, secondCreateStatus: secondCreate.status(), secondBody },
+					null,
+					2
+				),
+				contentType: 'application/json'
+			});
+			return { secondCreate, secondBody, testUsername };
 		});
 
-		const duplicateAccepted = secondCreate.status() === 200 && secondBody?.status === 'success';
+		await test.step('Verify the duplicate was rejected', async () => {
+			const duplicateAccepted = secondCreate.status() === 200 && secondBody?.status === 'success';
 
-		if (duplicateAccepted) {
-			reporter.reportVulnerability(
-				'API8_SECURITY_MISCONFIGURATION',
-				{
-					endpoint: '/admin/create_admin',
-					issue: 'Duplicate username accepted without uniqueness constraint',
-					testUsername
-				},
-				[
-					'Add a UNIQUE constraint on the `username` column in the users table.',
-					'Validate input on the application side and return a clear error message if a username already exists.',
-					'Test uniqueness constraints as part of the CI/CD pipeline.'
-				]
-			);
-		} else {
-			reporter.reportPass(
-				'Duplicate username was rejected by the create_admin endpoint.',
-				'API8:2023 - Software and Data Integrity Failures'
-			);
-		}
+			if (duplicateAccepted) {
+				reporter.reportVulnerability(
+					'API8_SECURITY_MISCONFIGURATION',
+					{
+						endpoint: '/admin/create_admin',
+						issue: 'Duplicate username accepted without uniqueness constraint',
+						testUsername
+					},
+					[
+						'Add a UNIQUE constraint on the `username` column in the users table.',
+						'Validate input on the application side and return a clear error message if a username already exists.',
+						'Test uniqueness constraints as part of the CI/CD pipeline.'
+					]
+				);
+			} else {
+				reporter.reportPass(
+					'Duplicate username was rejected by the create_admin endpoint.',
+					'API8:2023 - Software and Data Integrity Failures'
+				);
+			}
+		});
 	});
 
 	test('POST /admin/create_admin should handle SQL injection attempts safely', async ({ baseURL }, testInfo) => {
@@ -286,46 +317,51 @@ test.describe('API - Admin create_admin authorization', () => {
 		}
 
 		const sqlInjectionPayload = `', true); DROP TABLE users; --`;
-		const res = await createAdmin(api, admin.token, {
-			username: sqlInjectionPayload,
-			password: 'sqli-test',
-			account_number: 'SQLI001'
+		const { statusCode, body } = await test.step('Submit a SQL injection payload as the admin username', async () => {
+			const res = await createAdmin(api, admin.token, {
+				username: sqlInjectionPayload,
+				password: 'sqli-test',
+				account_number: 'SQLI001'
+			});
+			const body = await res.json().catch(() => null);
+			const statusCode = res.status();
+			const statusText = res.statusText();
+
+			await api.dispose();
+
+			testInfo.attach('sqli-probe', {
+				body: JSON.stringify({ statusCode, statusText, body }, null, 2),
+				contentType: 'application/json'
+			});
+			return { statusCode, body };
 		});
-		const body = await res.json().catch(() => null);
-		const statusCode = res.status();
-		const statusText = res.statusText();
 
-		await api.dispose();
-
-		testInfo.attach('sqli-probe', {
-			body: JSON.stringify({ statusCode, statusText, body }, null, 2),
-			contentType: 'application/json'
-		});
-
+		await test.step('Verify no SQL error was exposed', async () => {
 		const indicatesInjection =
 			statusCode === 500 || (body && (body.error?.includes('Syntax') || body.error?.includes('SQL') || body.error?.includes('query')));
 
 		if (indicatesInjection) {
-			reporter.reportVulnerability(
-				'API8_SECURITY_MISCONFIGURATION',
-				{
-					endpoint: '/admin/create_admin',
-					issue: 'SQL injection via f-string interpolation in INSERT statement',
-					payload: sqlInjectionPayload,
-					statusCode
-				},
-				[
-					'Use parameterized queries (prepared statements) instead of string interpolation for all database operations.',
-					'Validate and sanitize all user inputs before using them in any SQL query.',
-					'Implement input length limits and character whitelisting for usernames.'
-				]
-			);
-		} else {
-			reporter.reportPass(
-				'SQL injection attempt did not result in a 500 error or SQL-specific error message.',
-				'API8:2023 - Software and Data Integrity Failures'
-			);
-		}
+				reporter.reportVulnerability(
+					'API8_SECURITY_MISCONFIGURATION',
+					{
+						endpoint: '/admin/create_admin',
+						issue: 'SQL injection via f-string interpolation in INSERT statement',
+						payload: sqlInjectionPayload,
+						statusCode
+					},
+					[
+						'Use parameterized queries (prepared statements) instead of string interpolation for all database operations.',
+						'Validate and sanitize all user inputs before using them in any SQL query.',
+						'Implement input length limits and character whitelisting for usernames.'
+					]
+				);
+			} else {
+				reporter.reportPass(
+					'SQL injection attempt did not result in a 500 error or SQL-specific error message.',
+					'API8:2023 - Software and Data Integrity Failures'
+				);
+			}
+		});
 	});
 });
 
@@ -343,15 +379,20 @@ test.describe('API - Admin delete_account authorization', () => {
 			return;
 		}
 
-		const res = await deleteAccount(api, session.token, 999999999);
-		const status = res.status();
-		await api.dispose();
+		const status = await test.step('Attempt account deletion with a genuine non-admin token', async () => {
+			const res = await deleteAccount(api, session.token, 999999999);
+			const status = res.status();
+			await api.dispose();
+			return status;
+		});
 
-		expect(AUTH_DENIED_STATUSES).toContain(status);
-		reporter.reportPass(
-			'Delete account endpoint rejected a genuine non-admin token.',
-			'API5:2023 - Broken Function Level Authorization'
-		);
+		await test.step('Verify the request was rejected', async () => {
+			expect(AUTH_DENIED_STATUSES).toContain(status);
+			reporter.reportPass(
+				'Delete account endpoint rejected a genuine non-admin token.',
+				'API5:2023 - Broken Function Level Authorization'
+			);
+		});
 	});
 
 	test('POST /admin/delete_account/<id> should not be reachable via a forged admin claim (weak JWT secret)', async ({ baseURL }, testInfo) => {
@@ -367,33 +408,37 @@ test.describe('API - Admin delete_account authorization', () => {
 			return;
 		}
 
-		const forgedAdminToken = forgeToken({
-			userId: victimSession.userId,
-			username: victimSession.user.username || '',
-			isAdmin: true
-		});
-
-		const deleteRes = await deleteAccount(api, forgedAdminToken, victimSession.userId);
-
-		let deletionConfirmed = false;
-
-		if (deleteRes.status() === 200) {
-			const verifyLogin = await api.post('/login', {
-				data: {
-					username: victimSession.user.username,
-					password: victimSession.user.password
-				}
+		const deletionConfirmed = await test.step('Forge an admin JWT and attempt to delete the victim account', async () => {
+			const forgedAdminToken = forgeToken({
+				userId: victimSession.userId,
+				username: victimSession.user.username || '',
+				isAdmin: true
 			});
-			deletionConfirmed = verifyLogin.status() !== 200;
-		}
 
-		await api.dispose();
+			const deleteRes = await deleteAccount(api, forgedAdminToken, victimSession.userId);
 
-		testInfo.attach('account-deletion-probe', {
-			body: JSON.stringify({ deleteStatus: deleteRes.status(), deletionConfirmed }, null, 2),
-			contentType: 'application/json'
+			let deletionConfirmed = false;
+
+			if (deleteRes.status() === 200) {
+				const verifyLogin = await api.post('/login', {
+					data: {
+						username: victimSession.user.username,
+						password: victimSession.user.password
+					}
+				});
+				deletionConfirmed = verifyLogin.status() !== 200;
+			}
+
+			await api.dispose();
+
+			testInfo.attach('account-deletion-probe', {
+				body: JSON.stringify({ deleteStatus: deleteRes.status(), deletionConfirmed }, null, 2),
+				contentType: 'application/json'
+			});
+			return deletionConfirmed;
 		});
 
+		await test.step('Verify the forged claim did not delete the account', async () => {
 		if (deletionConfirmed) {
 			reporter.reportVulnerability(
 				'API5_BFLA',
@@ -409,12 +454,13 @@ test.describe('API - Admin delete_account authorization', () => {
 					'Require additional confirmation (e.g., one-time code) for destructive operations like account deletion.'
 				]
 			);
-		} else {
-			reporter.reportPass(
-				'Forging an admin claim with the application\'s JWT secret did not result in account deletion.',
-				'API5:2023 - Broken Function Level Authorization'
-			);
-		}
+			} else {
+				reporter.reportPass(
+					'Forging an admin claim with the application\'s JWT secret did not result in account deletion.',
+					'API5:2023 - Broken Function Level Authorization'
+				);
+			}
+		});
 	});
 
 	test('POST /admin/delete_account/<id> should allow seeded admin to delete an account', async ({ baseURL }, testInfo) => {
@@ -438,26 +484,31 @@ test.describe('API - Admin delete_account authorization', () => {
 			return;
 		}
 
-		const deleteRes = await deleteAccount(api, admin.token, victim.userId);
-		const deleteBody = await deleteRes.json().catch(() => null);
+		const { deleteRes, verifyLogin } = await test.step('Delete the account as admin and attempt to log in as it', async () => {
+			const deleteRes = await deleteAccount(api, admin.token, victim.userId);
+			const deleteBody = await deleteRes.json().catch(() => null);
 
-		const verifyLogin = await api.post('/login', {
-			data: { username: victim.user.username || victim.user.email, password: victim.user.password }
+			const verifyLogin = await api.post('/login', {
+				data: { username: victim.user.username || victim.user.email, password: victim.user.password }
+			});
+
+			await api.dispose();
+
+			testInfo.attach('deletion-result', {
+				body: JSON.stringify({ deleteStatus: deleteRes.status(), deleteBody, verifyLoginStatus: verifyLogin.status() }, null, 2),
+				contentType: 'application/json'
+			});
+			return { deleteRes, verifyLogin };
 		});
 
-		await api.dispose();
-
-		testInfo.attach('deletion-result', {
-			body: JSON.stringify({ deleteStatus: deleteRes.status(), deleteBody, verifyLoginStatus: verifyLogin.status() }, null, 2),
-			contentType: 'application/json'
+		await test.step('Verify deletion succeeded and login now fails', async () => {
+			expect(deleteRes.status()).toBe(200);
+			expect(verifyLogin.status()).not.toBe(200);
+			reporter.reportPass(
+				'Seeded admin successfully deleted a user account and subsequent login attempt failed.',
+				'API5:2023 - Broken Function Level Authorization'
+			);
 		});
-
-		expect(deleteRes.status()).toBe(200);
-		expect(verifyLogin.status()).not.toBe(200);
-		reporter.reportPass(
-			'Seeded admin successfully deleted a user account and subsequent login attempt failed.',
-			'API5:2023 - Broken Function Level Authorization'
-		);
 	});
 
 	test('POST /admin/delete_account/<id> should handle idempotent deletes gracefully', async ({ baseURL }, testInfo) => {
@@ -481,41 +532,46 @@ test.describe('API - Admin delete_account authorization', () => {
 			return;
 		}
 
-		const firstDelete = await deleteAccount(api, admin.token, victim.userId);
-		const firstStatus = firstDelete.status();
+		const { firstStatus, secondStatus } = await test.step('Delete the same account twice', async () => {
+			const firstDelete = await deleteAccount(api, admin.token, victim.userId);
+			const firstStatus = firstDelete.status();
 
-		const secondDelete = await deleteAccount(api, admin.token, victim.userId);
-		const secondStatus = secondDelete.status();
+			const secondDelete = await deleteAccount(api, admin.token, victim.userId);
+			const secondStatus = secondDelete.status();
 
-		await api.dispose();
+			await api.dispose();
 
-		testInfo.attach('idempotent-delete-probe', {
-			body: JSON.stringify({ firstStatus, secondStatus }, null, 2),
-			contentType: 'application/json'
+			testInfo.attach('idempotent-delete-probe', {
+				body: JSON.stringify({ firstStatus, secondStatus }, null, 2),
+				contentType: 'application/json'
+			});
+			return { firstStatus, secondStatus };
 		});
 
+		await test.step('Verify the second delete did not error', async () => {
 		const secondDeleteErrored = secondStatus === 500 || secondStatus === 400;
 
-		if (secondDeleteErrored) {
-			reporter.reportVulnerability(
-				'API8_SECURITY_MISCONFIGURATION',
-				{
-					endpoint: '/admin/delete_account/<id>',
-					issue: 'Attempting to delete an already-deleted account results in an error instead of a graceful no-op',
-					firstStatus,
-					secondStatus
-				},
-				[
-					'Implement idempotent delete operations that return 200/204 even if the resource no longer exists.',
-					'Return a 404 status if appropriate, but never expose internal SQL errors (500).',
-					'Test edge cases like double-delete, concurrent delete, and delete of non-existent resources.'
-				]
-			);
-		} else {
-			reporter.reportPass(
-				'Deleting an already-deleted account did not cause an error (idempotent behavior).',
-				'API8:2023 - Software and Data Integrity Failures'
-			);
-		}
+			if (secondDeleteErrored) {
+				reporter.reportVulnerability(
+					'API8_SECURITY_MISCONFIGURATION',
+					{
+						endpoint: '/admin/delete_account/<id>',
+						issue: 'Attempting to delete an already-deleted account results in an error instead of a graceful no-op',
+						firstStatus,
+						secondStatus
+					},
+					[
+						'Implement idempotent delete operations that return 200/204 even if the resource no longer exists.',
+						'Return a 404 status if appropriate, but never expose internal SQL errors (500).',
+						'Test edge cases like double-delete, concurrent delete, and delete of non-existent resources.'
+					]
+				);
+			} else {
+				reporter.reportPass(
+					'Deleting an already-deleted account did not cause an error (idempotent behavior).',
+					'API8:2023 - Software and Data Integrity Failures'
+				);
+			}
+		});
 	});
 });

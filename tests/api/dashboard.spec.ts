@@ -57,10 +57,14 @@ test.describe('API - Dashboard', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
     const reporter = new SecurityReporter(testInfo);
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await api.get('/dashboard');
-    const status = res.status();
-    const ct = (res.headers()['content-type'] || '').toLowerCase();
+
+    const { res, status, ct } = await test.step('Request /dashboard without authentication', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await api.get('/dashboard');
+      const status = res.status();
+      const ct = (res.headers()['content-type'] || '').toLowerCase();
+      return { res, status, ct };
+    });
 
     // If the app simply doesn't have a dashboard route, treat as not applicable.
     if (status === 404) {
@@ -68,95 +72,103 @@ test.describe('API - Dashboard', () => {
       test.skip(true, 'GET /dashboard not found (404)');
     }
 
-    // A dashboard is typically protected; these are acceptable outcomes.
-    const ok =
-      status === 200 ||
-      status === 401 ||
-      status === 403 ||
-      isRedirect(status);
+    await test.step('Verify the response is either protected or safely reachable', async () => {
+      // A dashboard is typically protected; these are acceptable outcomes.
+      const ok =
+        status === 200 ||
+        status === 401 ||
+        status === 403 ||
+        isRedirect(status);
 
-    if (!ok) {
-      reporter.reportWarning(
-        `Unexpected dashboard response status detected: ${status}.`,
-        [
-          'Restrict dashboard access to authenticated users and return explicit 401/403 when unauthenticated.',
-          'Avoid non-standard status codes for auth-protected resources.',
-          'Document expected status behavior for /dashboard in API docs.'
-        ],
-        'API5:2023 - Broken Function Level Authorization'
-      );
-    }
+      if (!ok) {
+        reporter.reportWarning(
+          `Unexpected dashboard response status detected: ${status}.`,
+          [
+            'Restrict dashboard access to authenticated users and return explicit 401/403 when unauthenticated.',
+            'Avoid non-standard status codes for auth-protected resources.',
+            'Document expected status behavior for /dashboard in API docs.'
+          ],
+          'API5:2023 - Broken Function Level Authorization'
+        );
+      }
 
-    // Never acceptable: server errors.
-    expect(status, `Unexpected status for GET /dashboard: ${status}`).toBeLessThan(500);
-    expect(ok, `Unexpected status for GET /dashboard: ${status}`).toBeTruthy();
+      // Never acceptable: server errors.
+      expect(status, `Unexpected status for GET /dashboard: ${status}`).toBeLessThan(500);
+      expect(ok, `Unexpected status for GET /dashboard: ${status}`).toBeTruthy();
 
-    // GET /dashboard only ever returns JSON for the unauthenticated (401)
-    // case — an authenticated 200 always serves server-rendered HTML (see
-    // the text/html assertion below), so that's not schema-validated here.
-    if (status === 401 && ct.includes('application/json')) {
-      await validateSchema('dashboard-schema', 'GET_dashboard_error', await res.json());
-    }
+      // GET /dashboard only ever returns JSON for the unauthenticated (401)
+      // case — an authenticated 200 always serves server-rendered HTML (see
+      // the text/html assertion below), so that's not schema-validated here.
+      if (status === 401 && ct.includes('application/json')) {
+        await validateSchema('dashboard-schema', 'GET_dashboard_error', await res.json());
+      }
 
-    if (status === 200) {
-      expect(ct, 'Expected HTML content-type for /dashboard').toContain('text/html');
+      if (status === 200) {
+        expect(ct, 'Expected HTML content-type for /dashboard').toContain('text/html');
 
-      const body = (await safeText(res)).toLowerCase();
-      // very light sanity check; avoid brittle selectors
-      expect(body, 'Expected an HTML document response for /dashboard').toContain('<html');
-      reporter.reportPass(
-        'Dashboard endpoint is reachable and returns a valid HTML response without server errors.',
-        'API7:2023 - Server Side Request Forgery'
-      );
-    }
+        const body = (await safeText(res)).toLowerCase();
+        // very light sanity check; avoid brittle selectors
+        expect(body, 'Expected an HTML document response for /dashboard').toContain('<html');
+        reporter.reportPass(
+          'Dashboard endpoint is reachable and returns a valid HTML response without server errors.',
+          'API7:2023 - Server Side Request Forgery'
+        );
+      }
 
-    if (isRedirect(status)) {
-      const location = res.headers()['location'] || '';
-      // Many apps redirect unauthenticated users to login.
-      expect(location.toLowerCase(), 'Redirect should likely go to login/signin').toMatch(/login|sign(in)?/);
-      reporter.reportPass(
-        `Dashboard access is protected and redirects unauthenticated users to login (${location || 'no location header'}).`,
-        'API2:2023 - Broken Authentication'
-      );
-    }
+      if (isRedirect(status)) {
+        const location = res.headers()['location'] || '';
+        // Many apps redirect unauthenticated users to login.
+        expect(location.toLowerCase(), 'Redirect should likely go to login/signin').toMatch(/login|sign(in)?/);
+        reporter.reportPass(
+          `Dashboard access is protected and redirects unauthenticated users to login (${location || 'no location header'}).`,
+          'API2:2023 - Broken Authentication'
+        );
+      }
 
-    if (status === 401 || status === 403) {
-      reporter.reportPass(
-        `Dashboard endpoint correctly denies unauthenticated access with status ${status}.`,
-        'API5:2023 - Broken Function Level Authorization'
-      );
-    }
+      if (status === 401 || status === 403) {
+        reporter.reportPass(
+          `Dashboard endpoint correctly denies unauthenticated access with status ${status}.`,
+          'API5:2023 - Broken Function Level Authorization'
+        );
+      }
+    });
   });
 
   test('GET /dashboard should be accessible after API login (best-effort)', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
     const reporter = new SecurityReporter(testInfo);
-    const tokenHeaders = getTokenHeaders();
-    const api = await request.newContext({
-      baseURL: baseURL.toString(),
-      extraHTTPHeaders: tokenHeaders,
+
+    const { api, tokenHeaders } = await test.step('Establish an API-authenticated session', async () => {
+      const tokenHeaders = getTokenHeaders();
+      const api = await request.newContext({
+        baseURL: baseURL.toString(),
+        extraHTTPHeaders: tokenHeaders,
+      });
+
+      if (tokenHeaders) {
+        reporter.reportPass(
+          'Using API_AUTH_TOKEN from the environment for the authenticated dashboard check.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
+
+      if (!tokenHeaders) {
+        const user = findOrCreateUser('e2e');
+        const loggedIn = await tryApiLogin(api, user);
+
+        if (!loggedIn) {
+          reporter.reportSkip('Could not establish API-authenticated session through supported login endpoints.');
+          test.skip(true, 'Could not login via API candidates; skipping authenticated dashboard check');
+        }
+      }
+      return { api, tokenHeaders };
     });
 
-    if (tokenHeaders) {
-      reporter.reportPass(
-        'Using API_AUTH_TOKEN from the environment for the authenticated dashboard check.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
-
-    if (!tokenHeaders) {
-      const user = findOrCreateUser('e2e');
-      const loggedIn = await tryApiLogin(api, user);
-
-      if (!loggedIn) {
-        reporter.reportSkip('Could not establish API-authenticated session through supported login endpoints.');
-        test.skip(true, 'Could not login via API candidates; skipping authenticated dashboard check');
-      }
-    }
-
-    const res = await api.get('/dashboard');
-    const status = res.status();
+    const status = await test.step('Request /dashboard with that session', async () => {
+      const res = await api.get('/dashboard');
+      return res.status();
+    });
 
     if (status === 404) {
       reporter.reportSkip('Dashboard route is not present on this application target (404).');
@@ -171,10 +183,12 @@ test.describe('API - Dashboard', () => {
       test.skip(true, `Dashboard not accessible via ${authMode} (status ${status})`);
     }
 
-    expect(status, `Expected 200 after login, got ${status}`).toBe(200);
-    reporter.reportPass(
-      'Dashboard endpoint is accessible after API login and returns HTTP 200.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify dashboard is accessible after authentication', async () => {
+      expect(status, `Expected 200 after login, got ${status}`).toBe(200);
+      reporter.reportPass(
+        'Dashboard endpoint is accessible after API login and returns HTTP 200.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 });

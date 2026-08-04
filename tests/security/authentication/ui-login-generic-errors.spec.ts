@@ -23,55 +23,62 @@ test.describe('Authentication - Generic login errors', () => {
     const reporter = new SecurityReporter(testInfo);
 
     const api = await request.newContext({ baseURL: baseURL.toString() });
-    const user = createRandomUser('generic-errors', false);
-    const register = await api.post('/register', {
-      data: { username: user.username, password: user.password },
-      headers: { 'Content-Type': 'application/json' }
+    const user = await test.step('Register a fresh user', async () => {
+      const user = createRandomUser('generic-errors', false);
+      const register = await api.post('/register', {
+        data: { username: user.username, password: user.password },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (![200, 201].includes(register.status())) {
+        reporter.reportSkip('Could not register a fresh user for the generic-errors probe on this target.');
+        await api.dispose();
+        test.skip(true, 'Registration unavailable');
+      }
+      return user;
     });
-    if (![200, 201].includes(register.status())) {
-      reporter.reportSkip('Could not register a fresh user for the generic-errors probe on this target.');
+
+    const probe = await test.step('Log in with a nonexistent username and a wrong password', async () => {
+      const nonexistentRes = await api.post('/login', {
+        data: { username: `${user.username}-does-not-exist`, password: 'irrelevant' },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const wrongPasswordRes = await api.post('/login', {
+        data: { username: user.username, password: 'definitely-wrong-password' },
+        headers: { 'Content-Type': 'application/json' }
+      });
       await api.dispose();
-      test.skip(true, 'Registration unavailable');
-      return;
-    }
 
-    const nonexistentRes = await api.post('/login', {
-      data: { username: `${user.username}-does-not-exist`, password: 'irrelevant' },
-      headers: { 'Content-Type': 'application/json' }
+      const nonexistentBody = await nonexistentRes.json().catch(() => null);
+      const wrongPasswordBody = await wrongPasswordRes.json().catch(() => null);
+
+      const probe = {
+        nonexistentUser: { status: nonexistentRes.status(), message: nonexistentBody?.message },
+        wrongPassword: { status: wrongPasswordRes.status(), message: wrongPasswordBody?.message }
+      };
+      testInfo.attach('generic-login-errors-probe', { body: JSON.stringify(probe, null, 2), contentType: 'application/json' });
+      return probe;
     });
-    const wrongPasswordRes = await api.post('/login', {
-      data: { username: user.username, password: 'definitely-wrong-password' },
-      headers: { 'Content-Type': 'application/json' }
+
+    await test.step('Verify the errors are identical', async () => {
+      const identical =
+        probe.nonexistentUser.status === probe.wrongPassword.status &&
+        probe.nonexistentUser.message === probe.wrongPassword.message;
+
+      if (!identical) {
+        reporter.reportVulnerability(
+          'API2_AUTH',
+          { endpoint: 'POST /login', ...probe },
+          [
+            'Return the exact same status and message for "user not found" and "wrong password" — do not let the two cases diverge.',
+            'Apply the same fix to /forgot-password, which currently does distinguish the two cases (404 "User not found" vs 200 with a PIN).'
+          ]
+        );
+      } else {
+        reporter.reportPass(
+          'Login returns identical errors for a nonexistent username and a wrong password on a real account.',
+          'API2:2023 - Broken Authentication'
+        );
+      }
     });
-    await api.dispose();
-
-    const nonexistentBody = await nonexistentRes.json().catch(() => null);
-    const wrongPasswordBody = await wrongPasswordRes.json().catch(() => null);
-
-    const probe = {
-      nonexistentUser: { status: nonexistentRes.status(), message: nonexistentBody?.message },
-      wrongPassword: { status: wrongPasswordRes.status(), message: wrongPasswordBody?.message }
-    };
-    testInfo.attach('generic-login-errors-probe', { body: JSON.stringify(probe, null, 2), contentType: 'application/json' });
-
-    const identical =
-      probe.nonexistentUser.status === probe.wrongPassword.status &&
-      probe.nonexistentUser.message === probe.wrongPassword.message;
-
-    if (!identical) {
-      reporter.reportVulnerability(
-        'API2_AUTH',
-        { endpoint: 'POST /login', ...probe },
-        [
-          'Return the exact same status and message for "user not found" and "wrong password" — do not let the two cases diverge.',
-          'Apply the same fix to /forgot-password, which currently does distinguish the two cases (404 "User not found" vs 200 with a PIN).'
-        ]
-      );
-    } else {
-      reporter.reportPass(
-        'Login returns identical errors for a nonexistent username and a wrong password on a real account.',
-        'API2:2023 - Broken Authentication'
-      );
-    }
   });
 });

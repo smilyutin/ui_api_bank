@@ -52,16 +52,21 @@ test.describe('API - Profile picture management', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await uploadProfilePicture(anon, '');
-    const status = res.status();
-    await anon.dispose();
+    const status = await test.step('Upload a profile picture without a token', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await uploadProfilePicture(anon, '');
+      const status = res.status();
+      await anon.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Profile picture upload rejected a request without a valid token.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify the request was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Profile picture upload rejected a request without a valid token.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 
   test('POST /upload_profile_picture should let the authenticated owner upload a picture', async ({ baseURL }, testInfo) => {
@@ -74,42 +79,52 @@ test.describe('API - Profile picture management', () => {
       return;
     }
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await uploadProfilePicture(api, session.token);
-    const status = res.status();
-    const body = await res.json().catch(() => null);
-    await api.dispose();
+    const { status, body } = await test.step('Upload a profile picture as the owner', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await uploadProfilePicture(api, session!.token);
+      const status = res.status();
+      const body = await res.json().catch(() => null);
+      await api.dispose();
 
-    testInfo.attach('upload-profile-picture', {
-      body: JSON.stringify({ status, body }, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('upload-profile-picture', {
+        body: JSON.stringify({ status, body }, null, 2),
+        contentType: 'application/json'
+      });
+      return { status, body };
     });
 
-    expect(READ_SUCCESS_STATUSES).toContain(status);
-    expect(body?.status).toBe('success');
-    expect(typeof body?.file_path).toBe('string');
-    await validateSchema('profile-schema', 'POST_upload_profile_picture', body);
+    await test.step('Verify the upload succeeded and matches the API contract', async () => {
+      expect(READ_SUCCESS_STATUSES).toContain(status);
+      expect(body?.status).toBe('success');
+      expect(typeof body?.file_path).toBe('string');
+      await validateSchema('profile-schema', 'POST_upload_profile_picture', body);
 
-    reporter.reportPass(
-      'Authenticated owner successfully uploaded a profile picture.',
-      'API6:2023 - Unrestricted Access to Sensitive Business Flows'
-    );
+      reporter.reportPass(
+        'Authenticated owner successfully uploaded a profile picture.',
+        'API6:2023 - Unrestricted Access to Sensitive Business Flows'
+      );
+    });
   });
 
   test('POST /upload_profile_picture_url should require authentication', async ({ baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const anon = await request.newContext({ baseURL: baseURL.toString() });
-    const res = await importProfilePictureFromUrl(anon, '', new URL('/static/user.png', baseURL).toString());
-    const status = res.status();
-    await anon.dispose();
+    const status = await test.step('Import a profile picture by URL without a token', async () => {
+      const anon = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await importProfilePictureFromUrl(anon, '', new URL('/static/user.png', baseURL).toString());
+      const status = res.status();
+      await anon.dispose();
+      return status;
+    });
 
-    expect(AUTH_DENIED_STATUSES).toContain(status);
-    reporter.reportPass(
-      'Profile picture URL import rejected a request without a valid token.',
-      'API2:2023 - Broken Authentication'
-    );
+    await test.step('Verify the request was rejected', async () => {
+      expect(AUTH_DENIED_STATUSES).toContain(status);
+      reporter.reportPass(
+        'Profile picture URL import rejected a request without a valid token.',
+        'API2:2023 - Broken Authentication'
+      );
+    });
   });
 
   test('POST /upload_profile_picture_url should not allow fetching internal-only resources (SSRF)', async ({ baseURL }, testInfo) => {
@@ -122,35 +137,40 @@ test.describe('API - Profile picture management', () => {
       return;
     }
 
-    const api = await request.newContext({ baseURL: baseURL.toString() });
-    const probe = await attemptSsrfViaProfileUrlImport(api, session.token, baseURL.toString());
-    await api.dispose();
+    const probe = await test.step('Attempt to import a profile picture from an internal-only URL', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const probe = await attemptSsrfViaProfileUrlImport(api, session!.token, baseURL.toString());
+      await api.dispose();
 
-    testInfo.attach('ssrf-probe', {
-      body: JSON.stringify(probe, null, 2),
-      contentType: 'application/json'
+      testInfo.attach('ssrf-probe', {
+        body: JSON.stringify(probe, null, 2),
+        contentType: 'application/json'
+      });
+      return probe;
     });
 
-    if (probe.succeeded) {
-      reporter.reportVulnerability(
-        'API7_MISCONFIGURATION',
-        {
-          endpoint: '/upload_profile_picture_url',
-          matchedUrl: probe.matchedUrl,
-          attempted: probe.attempted,
-          response: probe.response
-        },
-        [
-          'Resolve and validate the target host of image_url before fetching, rejecting loopback, link-local, and private address ranges.',
-          'Use an allowlist of permitted external hosts/schemes for URL-based imports instead of an open fetch.',
-          'Do not let the server-side fetch treat the app\'s own internal-only endpoints as trusted just because the request originates locally.'
-        ]
-      );
-    } else {
-      reporter.reportPass(
-        'Profile picture URL import did not reach the loopback-only internal metadata endpoint through any attempted internal port.',
-        'API7:2023 - Server Side Request Forgery'
-      );
-    }
+    await test.step('Verify the internal resource was not fetched', async () => {
+      if (probe.succeeded) {
+        reporter.reportVulnerability(
+          'API7_MISCONFIGURATION',
+          {
+            endpoint: '/upload_profile_picture_url',
+            matchedUrl: probe.matchedUrl,
+            attempted: probe.attempted,
+            response: probe.response
+          },
+          [
+            'Resolve and validate the target host of image_url before fetching, rejecting loopback, link-local, and private address ranges.',
+            'Use an allowlist of permitted external hosts/schemes for URL-based imports instead of an open fetch.',
+            'Do not let the server-side fetch treat the app\'s own internal-only endpoints as trusted just because the request originates locally.'
+          ]
+        );
+      } else {
+        reporter.reportPass(
+          'Profile picture URL import did not reach the loopback-only internal metadata endpoint through any attempted internal port.',
+          'API7:2023 - Server Side Request Forgery'
+        );
+      }
+    });
   });
 });
