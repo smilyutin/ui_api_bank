@@ -204,8 +204,9 @@ export async function ensureAdminSession(
 		],
 		origins: [
 			{
-				origin: baseURL,
+				origin: new URL(baseURL).origin,
 				localStorage: [
+					{ name: 'jwt_token', value: token },
 					{ name: 'token', value: token },
 					{ name: 'access_token', value: token },
 				],
