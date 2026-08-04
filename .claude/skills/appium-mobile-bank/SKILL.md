@@ -43,11 +43,11 @@ WebdriverIO's locator strategies should prioritize semantic/accessible selectors
 
 | Priority | Strategy | Example | Notes |
 |----------|----------|---------|-------|
-| ⭐⭐⭐⭐⭐ | Accessibility ID | `$('button[aria-label="Login"]')` or `$('[role="button"]')` | Use ARIA roles/labels |
-| ⭐⭐⭐⭐ | Test ID | `$('[data-testid="submit-button"]')` | Stable, automation-friendly |
-| ⭐⭐⭐⭐ | Label/Text | `$('label:has-text("Email")')` or `$(':text("Submit")')` | User-centric |
-| ⭐⭐⭐ | ID Selector | `$('#balance')` | OK for unique elements |
-| ⭐⭐ | Attribute Selector | `$('input[name="username"]')` | Use when stable |
+| P1 | ARIA attributes | `$('button[aria-label="Login"]')` or `$('[role="button"]')` | Prefer semantic/accessible attributes |
+| P2 | Test ID | `$('[data-testid="submit-button"]')` | Stable, automation-friendly |
+| P2 | Text match | `$('button*=Submit')` | User-centric (WDIO partial text selector) |
+| P3 | ID Selector | `$('#balance')` | OK for unique elements |
+| P4 | Attribute Selector | `$('input[name="username"]')` | Use when stable |
 | ⭐ | CSS Class | `$('.btn-primary')` | Avoid — classes change |
 | ⭐ | XPath | `$('//div[2]/button')` | Avoid |
 
