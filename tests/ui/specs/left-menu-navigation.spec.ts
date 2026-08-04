@@ -8,11 +8,11 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
 // nav items render with expected labels. For pixel-level regression, see
 // visual-leftmenu.spec.ts.
 test.describe('@smoke UI - Left menu navigation', () => {
-  test('should render the left menu and core navigation items', async ({ page, baseURL }) => {
+  test('should render the left menu and core navigation items', async ({ page, baseURL }, testInfo) => {
     setupAssertionLogging('should render the left menu and core navigation items');
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    const dashboard = await test.step('Authenticate and load the dashboard', async (testInfo) => {
+    const dashboard = await test.step('Authenticate and load the dashboard', async () => {
       const tempStoragePath = `/tmp/auth-${testInfo.testId || 'left-menu'}.json`;
       await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'UI' });
 

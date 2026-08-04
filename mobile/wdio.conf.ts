@@ -29,13 +29,13 @@ export const config: Partial<WebdriverIO.Config> = {
 	],
 	beforeTest: async function() {
 		try {
-			await browser.clearLocalStorage();
+			await browser.execute('window.localStorage.clear()');
 		} catch (e) {
 			console.debug('Failed to clear localStorage at test start:', e);
 		}
 
 		try {
-			await browser.clearSessionStorage();
+			await browser.execute('window.sessionStorage.clear()');
 		} catch (e) {
 			console.debug('Failed to clear sessionStorage at test start:', e);
 		}
@@ -48,13 +48,13 @@ export const config: Partial<WebdriverIO.Config> = {
 	},
 	afterTest: async function() {
 		try {
-			await browser.clearLocalStorage();
+			await browser.execute('window.localStorage.clear()');
 		} catch (e) {
 			console.warn('Failed to clear localStorage:', e);
 		}
 
 		try {
-			await browser.clearSessionStorage();
+			await browser.execute('window.sessionStorage.clear()');
 		} catch (e) {
 			console.warn('Failed to clear sessionStorage:', e);
 		}

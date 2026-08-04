@@ -63,8 +63,8 @@ test.describe('@security  Authentication - CSP and storage hardening', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const { storageToken, httpOnlyCookie } = await test.step('Authenticate and inspect token storage locations', async (stepInfo) => {
-      const tempStoragePath = `/tmp/auth-${stepInfo.testId || 'xss-storage'}.json`;
+    const { storageToken, httpOnlyCookie } = await test.step('Authenticate and inspect token storage locations', async () => {
+      const tempStoragePath = `/tmp/auth-${testInfo.testId || 'xss-storage'}.json`;
       await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'xss-storage' });
 
       const storageToken = await page.evaluate(() => {

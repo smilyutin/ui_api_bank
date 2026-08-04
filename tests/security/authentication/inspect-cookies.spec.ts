@@ -19,7 +19,7 @@ test.describe('@security  Authentication - Cookie attributes', () => {
 
     const cookie = await test.step('Register, log in, and capture the token cookie', async () => {
       const api = await request.newContext({ baseURL: baseURL.toString() });
-      const user = createRandomUser('inspect-cookie', false);
+      const user = createRandomUser('inspect-cookie');
       await api.post('/register', {
         data: { username: user.username, password: user.password },
         headers: { 'Content-Type': 'application/json' }

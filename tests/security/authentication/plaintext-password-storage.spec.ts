@@ -21,7 +21,7 @@ test.describe('@security  Authentication - Plaintext password storage', () => {
 
     const api = await request.newContext({ baseURL: baseURL.toString() });
     const user = await test.step('Register a fresh user', async () => {
-      const user = createRandomUser('plaintext-pw', false);
+      const user = createRandomUser('plaintext-pw');
       const register = await api.post('/register', {
         data: { username: user.username, password: user.password },
         headers: { 'Content-Type': 'application/json' }

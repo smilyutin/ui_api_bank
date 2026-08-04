@@ -32,8 +32,8 @@ test.describe('@ui @security UI - Stored XSS via transfer description', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const { pm, recipient } = await test.step('Authenticate and navigate to money transfer', async (stepInfo) => {
-      const tempStoragePath = `/tmp/auth-${stepInfo.testId || 'xss'}.json`;
+    const { pm, recipient } = await test.step('Authenticate and navigate to money transfer', async () => {
+      const tempStoragePath = `/tmp/auth-${testInfo.testId || 'xss'}.json`;
       await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'xss-ui' });
 
       // A real, freshly created recipient account instead of a hardcoded
@@ -71,7 +71,7 @@ test.describe('@ui @security UI - Stored XSS via transfer description', () => {
       let fired = false;
       try {
         await expect.poll(
-          async () => (await page.evaluate<boolean>((marker) => (window as any)[marker] === true, XSS_MARKER)),
+          async () => (await page.evaluate<boolean>(() => (window as any)[XSS_MARKER] === true)),
           { timeout: 3000 }
         ).toBeTruthy();
         fired = true;

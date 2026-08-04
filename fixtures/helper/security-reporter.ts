@@ -526,16 +526,16 @@ export class SecurityReporter {
 				}
 			}
 
-			if (Array.isArray(evidence.issues) && evidence.issues.length > 0) {
-				return this.getEvidenceReason(evidence.issues[0]);
+			if (Array.isArray((evidence as any).issues) && (evidence as any).issues.length > 0) {
+				return this.getEvidenceReason((evidence as any).issues[0]);
 			}
 
-			if (Array.isArray(evidence.examples) && evidence.examples.length > 0) {
-				return this.getEvidenceReason(evidence.examples[0]);
+			if (Array.isArray((evidence as any).examples) && (evidence as any).examples.length > 0) {
+				return this.getEvidenceReason((evidence as any).examples[0]);
 			}
 
-			if (evidence.vulnerability && typeof evidence.vulnerability === 'string') {
-				return evidence.vulnerability;
+			if ((evidence as any).vulnerability && typeof (evidence as any).vulnerability === 'string') {
+				return (evidence as any).vulnerability;
 			}
 		}
 

@@ -41,11 +41,11 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  * 6. Verify success confirmation
  */
 test.describe('@ui @feature:money-transfer Money transfer flow', () => {
-  test('should send money successfully', async ({ page, baseURL, request }) => {
+  test('should send money successfully', async ({ page, baseURL, request }, testInfo) => {
     setupAssertionLogging('should send money successfully');
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    const recipient = await test.step('Authenticate and establish a recipient account', async (testInfo) => {
+    const recipient = await test.step('Authenticate and establish a recipient account', async () => {
       const tempStoragePath = `/tmp/auth-${testInfo.testId || 'money-transfer'}.json`;
       await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'e2e' });
       // Clean up after test step

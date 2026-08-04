@@ -24,7 +24,7 @@ test.describe('@security  Authentication - Generic login errors', () => {
 
     const api = await request.newContext({ baseURL: baseURL.toString() });
     const user = await test.step('Register a fresh user', async () => {
-      const user = createRandomUser('generic-errors', false);
+      const user = createRandomUser('generic-errors');
       const register = await api.post('/register', {
         data: { username: user.username, password: user.password },
         headers: { 'Content-Type': 'application/json' }
