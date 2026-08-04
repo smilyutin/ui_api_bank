@@ -18,6 +18,8 @@ test.describe('Phase 4: Advanced Integration', () => {
 
     logger.info('Test: State machine for authentication');
 
+    await page.goto('/', { waitUntil: 'networkidle' });
+
     const sm = new StateMachineBuilder('login_page')
       .withLogger(logger)
       .withState({
