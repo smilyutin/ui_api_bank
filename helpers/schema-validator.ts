@@ -216,7 +216,7 @@ function getTypeOf(value: unknown): string {
 function getValueByPath(obj: unknown, path: string): unknown {
 	if (!path || path === '') return obj
 	const keys = path.split('/').filter(k => k)
-	return keys.reduce((current, key) => current?.[key], obj)
+	return keys.reduce((current: any, key) => current?.[key], obj as any)
 }
 
 // Navigate a schema object to find the type constraint at a given path.
