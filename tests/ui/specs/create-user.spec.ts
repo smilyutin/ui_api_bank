@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
-import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
+import { saveUser, createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
@@ -112,7 +112,6 @@ test.describe('@ui @feature:create-user UI - Create user account', () => {
     await test.step('Persist credentials for future tests', async () => {
       saveUser(user, { replace: true });
       if (freshToken) {
-        saveStoredToken(freshToken, 'user');
         process.env.API_AUTH_TOKEN = freshToken;
       }
       endAssertionLogging('passed');

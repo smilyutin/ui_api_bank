@@ -1,10 +1,10 @@
 import { test, expect, request, APIRequestContext, APIResponse } from '@playwright/test';
-import { findOrCreateUser, User, loadStoredToken } from '../../helpers/credentials';
+import { findOrCreateUser, User } from '../../helpers/credentials';
 import { validateSchema } from '../../helpers/schema-validator';
 import { SecurityReporter } from '../../fixtures/helper/security-reporter';
 
 function getTokenHeaders(): Record<string, string> | undefined {
-  const token = loadStoredToken('user') || process.env.API_AUTH_TOKEN?.trim();
+  const token = process.env.API_AUTH_TOKEN?.trim();
   if (!token) return undefined;
 
   return {

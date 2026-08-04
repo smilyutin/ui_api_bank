@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
 import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
-import { loadStoredToken } from '../../../helpers/credentials';
 import { request } from '@playwright/test';
 import { updateCardLimit, listVirtualCards } from '../../../fixtures/api/virtual-cards.helpers';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
@@ -93,8 +92,8 @@ test.describe('@ui @feature:bill-payments Bill payments', () => {
       const cardId = await cards.waitForCardWithLimit('500');
       loggedExpect(cardId, 'cardId').not.toBeNull();
 
-      const token = loadStoredToken('user') || process.env.API_AUTH_TOKEN;
-      if (!token) throw new Error('No auth token available to fund the virtual card via the API');
+      const token = process.env.API_AUTH_TOKEN;
+      if (!token) throw new Error('No API_AUTH_TOKEN available to fund the virtual card via the API');
       const api = await request.newContext({ baseURL: baseURL.toString() });
       await updateCardLimit(api, token, cardId!, { current_balance: 200 });
 
