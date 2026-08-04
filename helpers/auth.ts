@@ -30,10 +30,9 @@ export async function loginViaCredentials(
 		const payload: Record<string, string> = { password };
 
 		// Send as both username and email to handle different API expectations
+		payload.username = identifier;
 		if (identifier.includes('@')) {
 			payload.email = identifier;
-		} else {
-			payload.username = identifier;
 		}
 
 		const res = await api.post(LOGIN_ENDPOINT, {
