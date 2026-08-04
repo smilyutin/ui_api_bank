@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { createLogger } from '../helpers/logger';
+import { WaitHelper } from '../helpers/wait-helpers';
 import {
   StateMachine,
   StateMachineBuilder
@@ -29,8 +30,17 @@ test.describe('Phase 4: Advanced Integration', () => {
         name: 'authenticating',
         onEnter: async (ctx) => {
           logger.debug('Entering authenticating state');
-          // Simulate auth process
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Wait for auth to complete via token availability (condition-based, not arbitrary sleep)
+          const authReady = await WaitHelper.waitForCondition(
+            async () => {
+              const token = await ctx.page?.evaluate(() => localStorage.getItem('auth_token'));
+              return !!token;
+            },
+            { timeout: WaitHelper.timeouts.QUICK, logger }
+          );
+          if (!authReady) {
+            logger.warn('Auth token not found after condition wait');
+          }
         }
       })
       .withState({

@@ -35,6 +35,78 @@ Conventions carried over from the Playwright suite, unchanged:
 - One manager class (`MobilePageManager`) owns every page object; specs build one manager and never construct a page object directly.
 - Reuse `test-data/users.json` via `helpers/credentials.ts` (`findOrCreateUser`, `loadStoredToken`, `saveStoredToken`) — do not create a separate mobile-only user store. That module is pure `fs`/JSON with no Playwright dependency, so it imports cleanly from `mobile/fixtures/mobile-auth.ts`.
 
+## Locator Best Practices for WebdriverIO
+
+WebdriverIO's locator strategies should prioritize semantic/accessible selectors, mirroring Playwright's philosophy. Use selectors that reflect how users interact with the page, not DOM structure.
+
+**WebdriverIO Locator Strategy Priority:**
+
+| Priority | Strategy | Example | Notes |
+|----------|----------|---------|-------|
+| ⭐⭐⭐⭐⭐ | Accessibility ID | `$('button[aria-label="Login"]')` or `$('[role="button"]')` | Use ARIA roles/labels |
+| ⭐⭐⭐⭐ | Test ID | `$('[data-testid="submit-button"]')` | Stable, automation-friendly |
+| ⭐⭐⭐⭐ | Label/Text | `$('label:has-text("Email")')` or `$(':text("Submit")')` | User-centric |
+| ⭐⭐⭐ | ID Selector | `$('#balance')` | OK for unique elements |
+| ⭐⭐ | Attribute Selector | `$('input[name="username"]')` | Use when stable |
+| ⭐ | CSS Class | `$('.btn-primary')` | Avoid — classes change |
+| ⭐ | XPath | `$('//div[2]/button')` | Avoid |
+
+**Key patterns (WebdriverIO/mobile pages):**
+
+```ts
+// Input fields by name attribute (stable across most forms)
+const input = $('input[name="username"]');
+await input.waitForDisplayed({ timeout: 5000 });
+await input.setValue('testuser');
+
+// Buttons by ID or data-testid
+const button = $('button[data-testid="login-submit"]');
+await button.waitForDisplayed({ timeout: 5000 });
+await button.click();
+
+// Headings/text content
+const heading = $('h1');
+const text = await heading.getText();
+
+// Navigation/links by role or text
+const navLinks = $('nav').$$('a, button, [role="link"]');
+for (const link of navLinks) {
+  if (await link.isDisplayed()) {
+    const text = await link.getText();
+    if (text.toLowerCase().includes('logout')) {
+      await link.click();
+      return true;
+    }
+  }
+}
+
+// Combined selectors (ID + verification)
+const balance = $('#balance');
+await balance.waitForDisplayed({ timeout: 7000 });
+const balanceText = await balance.getText();
+return /\d+/.test(balanceText);
+```
+
+**Do not:**
+
+```ts
+// ❌ Avoid complex XPath
+$('//div[2]/span/table/tr[3]/td[5]');
+
+// ❌ Avoid relying on CSS classes
+$('.menu-item.active');
+
+// ❌ Avoid hard-coded waits
+await browser.pause(3000);
+```
+
+**Mobile-specific considerations:**
+
+- The same DOM is tested by both Playwright and Appium/WebdriverIO — use identical locator strategies across both suites for consistency.
+- When porting a Playwright page object to WebdriverIO, translate Playwright's `getByRole()` / `getByLabel()` / `getByTestId()` into their WebdriverIO equivalents: ARIA attributes, data-testid selectors, and semantic HTML.
+- Mobile viewport may hide elements (e.g., off-canvas menu) — use `isDisplayed()` checks and `openMenu()`-style methods (see `mobile/pages/dashboard.page.ts`) before interacting.
+- Follow the same LocatorFactory fallback pattern if an element might have multiple possible locators.
+
 ## Test Isolation & Teardown
 
 **Per-test isolation** (`mobile/wdio.conf.ts` hooks):

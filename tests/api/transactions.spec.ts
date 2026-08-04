@@ -29,11 +29,17 @@ const AUTH_DENIED_STATUSES = [401, 403];
 test.describe('API - Transaction & balance access', () => {
   let session: AccountSession | null = null;
 
-  test.beforeAll(async ({ baseURL }) => {
+  // Test isolation: Fresh session per test to prevent state leakage
+  test.beforeEach(async ({ baseURL }) => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const api = await request.newContext({ baseURL: baseURL.toString() });
     session = await establishAccountSession(api);
     await api.dispose();
+  });
+
+  // Cleanup: Clear session state after each test
+  test.afterEach(async () => {
+    session = null;
   });
 
   test('GET /check_balance should require authorization for account balances', async ({ baseURL }, testInfo) => {

@@ -87,9 +87,11 @@ No barrel/`index.ts` files — import each module directly.
 
 See `ADMIN_PANEL_TESTS.md` for the full explanation and how tests interact with this system.
 
-**Before writing or editing any test, read `.claude/skills/playwright-vulnerable-bank/SKILL.md`** — the detailed reference (conventions, auth/schema/security workflows, feature checklist). Keep new detail there, not here.
+**Before writing or editing any test, read `.claude/skills/playwright-vulnerable-bank/SKILL.md`** — the detailed reference (conventions, auth/schema/security workflows, feature checklist, locator best practices). Keep new detail there, not here.
 
-**For the Appium suite specifically, read `.claude/skills/appium-mobile-bank/SKILL.md` instead** — it mirrors the same Page Object Model / no-barrel-files conventions but documents WebdriverIO-specific APIs (`mobile/wdio*.conf.ts`, `mobile/pages/`, `mobile/fixtures/mobile-auth.ts`).
+Key reminder on locators: Write locators as users interact with your application, not by DOM structure. Locator priority (best to worst): `getByRole()` > `getByLabel()` > `getByPlaceholder()` > `getByText()` > `getByAltText()` > `getByTitle()` > `getByTestId()` > CSS selectors > XPath. Use `LocatorFactory.find()` for fallback strategies when elements might have multiple locators. See the "Locator Best Practices" section in the Playwright skill for detailed examples and patterns.
+
+**For the Appium suite specifically, read `.claude/skills/appium-mobile-bank/SKILL.md` instead** — it mirrors the same Page Object Model / no-barrel-files conventions but documents WebdriverIO-specific APIs (`mobile/wdio*.conf.ts`, `mobile/pages/`, `mobile/fixtures/mobile-auth.ts`). The locator guidance applies to WebdriverIO too: prefer ARIA roles/labels, test IDs, and semantic selectors over CSS classes and XPath.
 
 **Onboarding a third framework/suite?** See `.claude/skills/framework-onboarding/SKILL.md` — the meta-skill for identifying the workflow, drafting a new `SKILL.md`, and wiring it into this file, `.claude/settings.json`, and CI the way the two suites above were done.
 

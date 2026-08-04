@@ -14,8 +14,24 @@ export class DashboardPage extends MobileHelperBase {
 			async () => (await browser.getUrl()).toLowerCase().includes('/dashboard'),
 			{ timeout: 7000, timeoutMsg: 'Expected to land on /dashboard' }
 		);
-		await $('h1*=Welcome back').waitForDisplayed({ timeout: 7000 });
-		await $('#balance').waitForDisplayed({ timeout: 7000 });
+		const heading = $('h1');
+		await heading.waitForDisplayed({ timeout: 7000 });
+		const text = await heading.getText();
+		if (!text.toLowerCase().includes('welcome')) {
+			throw new Error('Expected h1 to contain "welcome"');
+		}
+		const balance = $('#balance');
+		await balance.waitForDisplayed({ timeout: 7000 });
+
+		// Verify data is actually loaded (not just DOM elements visible)
+		// Wait for balance text to contain numeric value
+		await browser.waitUntil(
+			async () => {
+				const text = await balance.getText();
+				return /\d+/.test(text);
+			},
+			{ timeout: 7000, timeoutMsg: 'Balance data not loaded' }
+		);
 	}
 
 	async getAccountBalance(): Promise<number | null> {
@@ -35,7 +51,7 @@ export class DashboardPage extends MobileHelperBase {
 	// empty. .menu-toggle is a no-op (not displayed) above 768px.
 	async openMenu() {
 		const toggle = $('.menu-toggle');
-		if ((await toggle.isExisting()) && (await toggle.isDisplayed())) {
+		if (await toggle.isDisplayed()) {
 			await toggle.click();
 		}
 	}
@@ -44,9 +60,10 @@ export class DashboardPage extends MobileHelperBase {
 		const nav = $('nav');
 		if (!(await nav.isExisting())) return [];
 		await this.openMenu();
-		const links = await nav.$$('a, button, [role="link"]');
+		const links = nav.$$('a, button, [role="link"]');
 		const texts: string[] = [];
 		for (const link of links) {
+			if (!(await link.isDisplayed())) continue;
 			const text = (await link.getText()).trim();
 			if (text) texts.push(text);
 		}
@@ -55,10 +72,16 @@ export class DashboardPage extends MobileHelperBase {
 
 	// templates/dashboard.html's side-panel Logout link is a static,
 	// always-present `<a href="#" onclick="logout()">Logout</a>`.
+	// Find nav link matching logout pattern (handles "Logout", "Log out", etc).
 	async logout() {
-		const logoutLink = $('a*=Logout');
-		if (!(await logoutLink.isExisting())) return false;
-		await logoutLink.click();
-		return true;
+		const navLinks = $$('nav a');
+		for (const link of navLinks) {
+			const text = (await link.getText()).toLowerCase();
+			if (text.match(/log\s*out/)) {
+				await link.click();
+				return true;
+			}
+		}
+		return false;
 	}
 }

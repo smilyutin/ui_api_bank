@@ -32,6 +32,27 @@ test.describe('Profile picture management', () => {
     await pm.dashboard().waitForLoad();
   });
 
+  // Test cleanup: Logout and clear session state
+  test.afterEach(async ({ page, context }) => {
+    try {
+      await pm.dashboard().logout().catch(() => {
+        // Logout may fail if already logged out, which is fine
+      });
+    } catch (e) {
+      // Silently ignore errors
+    }
+
+    try {
+      await context.clearCookies();
+      await page.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.clear();
+      });
+    } catch (e) {
+      // Silently ignore if page/context already closed
+    }
+  });
+
   test('should upload a profile picture and update the displayed image', async () => {
     setupAssertionLogging('should upload a profile picture and update the displayed image');
     const profile = pm.profile();
