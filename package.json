@@ -12,6 +12,7 @@
     "allure:report": "npm run allure:generate && npm run allure:open",
     "test:mobile:android": "wdio run ./mobile/wdio.android.conf.ts",
     "test:mobile:ios": "wdio run ./mobile/wdio.ios.conf.ts",
+    "mobile:cleanup": "npx ts-node mobile/cleanup.ts",
     "reliability:report": "node -e \"const { createAnalyzer } = require('./helpers/flakiness-analyzer'); const a = createAnalyzer(); console.log(a.generateFormattedReport(true));\"",
     "reliability:analyze": "node scripts/analyze-reliability.js",
     "test:reliability": "playwright test tests/reliability.spec.ts"

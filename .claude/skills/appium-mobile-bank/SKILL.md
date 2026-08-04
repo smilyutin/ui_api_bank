@@ -35,6 +35,21 @@ Conventions carried over from the Playwright suite, unchanged:
 - One manager class (`MobilePageManager`) owns every page object; specs build one manager and never construct a page object directly.
 - Reuse `test-data/users.json` via `helpers/credentials.ts` (`findOrCreateUser`, `loadStoredToken`, `saveStoredToken`) — do not create a separate mobile-only user store. That module is pure `fs`/JSON with no Playwright dependency, so it imports cleanly from `mobile/fixtures/mobile-auth.ts`.
 
+## Test Isolation & Teardown
+
+**Per-test isolation** (`mobile/wdio.conf.ts` hooks):
+- `beforeEach`: Clears localStorage, sessionStorage, and all cookies at the start of each test, ensuring no prior test's auth state bleeds through.
+- `afterEach`: Clears the same storage after each test completes.
+- Result: Each test runs with a fresh browser session (but same Appium instance).
+
+**Global cleanup** (`mobile/global-teardown.ts`, triggered via `onComplete` hook):
+- Runs once after all tests finish.
+- Authenticates as admin and deletes all test users by prefix (`mobile`, `e2e-`, etc.), preserving only the admin account.
+- Cleans up the database state left by the test run, preventing orphaned users from accumulating across multiple test cycles.
+- Result: Next test run starts with a clean database (same as Playwright suite's `global-teardown.ts`).
+
+This mirrors the Playwright suite's global setup/teardown pattern but adapted for WebdriverIO's hook system.
+
 ## What differs from the Playwright suite
 
 - **No `Page` object to pass around.** WebdriverIO exposes the session through the `browser`/`$`/`$$` globals (imported from `@wdio/globals`), so page objects and fixtures call these directly instead of taking a `page` constructor argument.
