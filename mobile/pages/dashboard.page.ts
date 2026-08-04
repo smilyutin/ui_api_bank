@@ -14,7 +14,7 @@ export class DashboardPage extends MobileHelperBase {
 			async () => (await browser.getUrl()).toLowerCase().includes('/dashboard'),
 			{ timeout: 7000, timeoutMsg: 'Expected to land on /dashboard' }
 		);
-		const heading = $('h1');
+		const heading = $('.greeting-section h1');
 		await heading.waitForDisplayed({ timeout: 7000 });
 		const text = await heading.getText();
 		if (!text.toLowerCase().includes('welcome')) {
@@ -60,7 +60,7 @@ export class DashboardPage extends MobileHelperBase {
 		const nav = $('nav');
 		if (!(await nav.isExisting())) return [];
 		await this.openMenu();
-		const links = nav.$$('a, button, [role="link"]');
+		const links = await nav.$$('a, button, [role="link"]');
 		const texts: string[] = [];
 		for (const link of links) {
 			if (!(await link.isDisplayed())) continue;
