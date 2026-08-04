@@ -46,9 +46,8 @@ test.describe('Locator Synchronization & Stability', () => {
 			// Logout may fail if already logged out, which is fine
 		});
 
-		// Close page context to ensure no state leaks to next test
+		// Clear cookies to reduce session state leakage to the next test
 		await page.context().clearCookies();
-	});
 
 	test('should wait for welcome heading using chained locator with regex filter', async ({
 		page,
