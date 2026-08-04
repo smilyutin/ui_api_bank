@@ -47,7 +47,7 @@ test.describe('Locator Synchronization & Stability', () => {
 		});
 
 		// Clear cookies to reduce session state leakage to the next test
-		await page.context().clearCookies();
+	});
 
 	test('should wait for welcome heading using chained locator with regex filter', async ({
 		page,
@@ -366,4 +366,4 @@ test.describe('Locator Synchronization & Stability', () => {
 			// (normally handled by page rendering, not needed)
 		}
 	});
-});
+})
