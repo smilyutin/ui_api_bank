@@ -36,8 +36,11 @@ export class MoneyTransferPage extends MobileHelperBase {
 		try {
 			const message = $('#message');
 			await message.waitForDisplayed({ timeout });
-			const text = await message.getText();
-			return text.toLowerCase().includes('transfer completed');
+			await browser.waitUntil(
+				async () => (await message.getText()).toLowerCase().includes('transfer completed'),
+				{ timeout, timeoutMsg: 'Expected #message to show "Transfer Completed"' }
+			);
+			return true;
 		} catch {
 			return false;
 		}
