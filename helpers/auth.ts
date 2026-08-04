@@ -88,7 +88,7 @@ export async function loginAsUser(
 	baseURL: string,
 	storageStatePath: string,
 	options?: { userPrefix?: string }
-): Promise<{ credentials: User; path: string }> {
+): Promise<{ credentials: User; path: string; token: string }> {
 	// Create a fresh test user for this session
 	const credentials = createRandomUser(options?.userPrefix || 'e2e');
 	const identifier = credentials.username || credentials.email;
@@ -116,6 +116,12 @@ export async function loginAsUser(
 		await api.dispose();
 	}
 
+	// Get the auth token via API (needed for API calls from tests)
+	const token = await loginViaCredentials(baseURL, identifier, credentials.password);
+
+	// Set the token in environment for tests that need API access
+	process.env.API_AUTH_TOKEN = token;
+
 	// Perform login through the UI (form submission) to establish proper session
 	// Navigate to login page
 	await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
@@ -137,7 +143,7 @@ export async function loginAsUser(
 	// Save the authenticated page state to a file
 	await saveStorageState(page, storageStatePath);
 
-	return { credentials, path: storageStatePath };
+	return { credentials, path: storageStatePath, token };
 }
 
 /**
