@@ -80,10 +80,10 @@ Write locators the way users interact with your application, not how the DOM is 
 | P1 | `getByLabel()` | `page.getByLabel('Email')` | Best for form fields |
 | P2 | `getByPlaceholder()` | `page.getByPlaceholder('Enter email')` | Good for input fields |
 | P2 | `getByText()` | `page.getByText('Welcome')` | Good for static text/headings |
-| ⭐⭐⭐⭐ | `getByTitle()` | `page.getByTitle('Close')` | For icons/tooltips |
-| ⭐⭐⭐ | `getByTestId()` | `page.getByTestId('login-button')` | Excellent for automation-friendly markup |
-| ⭐⭐ | CSS Selector | `.login button` | Use only when necessary |
-| ⭐ | XPath | `//div[2]/span` | Avoid |
+| P2 | `getByTitle()` | `page.getByTitle('Close')` | For icons/tooltips |
+| P3 | `getByTestId()` | `page.getByTestId('login-button')` | Excellent for automation-friendly markup |
+| P4 | CSS Selector | `.login button` | Use only when necessary |
+| P5 | XPath | `//div[2]/span` | Avoid |
 
 **Key patterns:**
 
@@ -122,16 +122,16 @@ const section = page.locator('article').filter({
 **Do not:**
 
 ```ts
-// ❌ Avoid XPath
+//  Avoid XPath
 page.locator('//div[3]/button');
 
-// ❌ Avoid CSS classes (they change)
+//  Avoid CSS classes (they change)
 page.locator('.btn-primary');
 
-// ❌ Avoid dynamic indexes
+//  Avoid dynamic indexes
 page.locator('.card').nth(5);
 
-// ❌ Avoid hard-coded waits
+//  Avoid hard-coded waits
 await page.waitForTimeout(3000);
 ```
 

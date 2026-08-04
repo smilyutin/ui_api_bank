@@ -48,8 +48,8 @@ WebdriverIO's locator strategies should prioritize semantic/accessible selectors
 | P2 | Text match | `$('button*=Submit')` | User-centric (WDIO partial text selector) |
 | P3 | ID Selector | `$('#balance')` | OK for unique elements |
 | P4 | Attribute Selector | `$('input[name="username"]')` | Use when stable |
-| ⭐ | CSS Class | `$('.btn-primary')` | Avoid — classes change |
-| ⭐ | XPath | `$('//div[2]/button')` | Avoid |
+| P5 | CSS Class | `$('.btn-primary')` | Avoid — classes change |
+| P6 | XPath | `$('//div[2]/button')` | Avoid |
 
 **Key patterns (WebdriverIO/mobile pages):**
 
@@ -90,13 +90,13 @@ return /\d+/.test(balanceText);
 **Do not:**
 
 ```ts
-// ❌ Avoid complex XPath
+//  Avoid complex XPath
 $('//div[2]/span/table/tr[3]/td[5]');
 
-// ❌ Avoid relying on CSS classes
+//  Avoid relying on CSS classes
 $('.menu-item.active');
 
-// ❌ Avoid hard-coded waits
+//  Avoid hard-coded waits
 await browser.pause(3000);
 ```
 
