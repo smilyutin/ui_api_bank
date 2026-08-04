@@ -97,38 +97,42 @@ export async function loginAsUser(
 		throw new Error('Test user must have username or email');
 	}
 
-	// Log in with the test user credentials
-	const token = await loginViaCredentials(baseURL, identifier, credentials.password);
-
-	// Establish origin before injecting auth state
-	await page.goto(baseURL, { waitUntil: 'domcontentloaded' }).catch(() => {
-		// Ignore if page unavailable; we'll inject state anyway
-	});
-
-	// Add token as cookie
-	await page.context().addCookies([
-		{
-			name: 'token',
-			value: token,
-			domain: new URL(baseURL).hostname,
-			path: '/',
-			sameSite: 'Lax' as const,
-			secure: baseURL.startsWith('https://'),
-		},
-	]);
-
-	// Inject token into localStorage so it persists in storageState
+	// Register the user first
+	const api = await apiRequest.newContext({ baseURL });
 	try {
-		await page.evaluate(() => {
-			const t = document.cookie.split('token=')[1]?.split(';')[0] || '';
-			if (t) {
-				localStorage.setItem('token', decodeURIComponent(t));
-				localStorage.setItem('access_token', decodeURIComponent(t));
-			}
+		const regRes = await api.post('/register', {
+			data: JSON.stringify({
+				username: identifier,
+				password: credentials.password,
+			}),
+			headers: { 'Content-Type': 'application/json' },
 		});
-	} catch {
-		// Ignore if evaluate fails (e.g., access denied); cookies will carry auth
+
+		if (!regRes.ok()) {
+			const text = await regRes.text().catch(() => '(no response body)');
+			throw new Error(`User registration failed with ${regRes.status()}: ${text.substring(0, 150)}`);
+		}
+	} finally {
+		await api.dispose();
 	}
+
+	// Perform login through the UI (form submission) to establish proper session
+	// Navigate to login page
+	await page.goto(`${baseURL}/login`, { waitUntil: 'domcontentloaded' });
+
+	// Fill in the login form
+	const usernameInput = page.locator('input[name="username"], input[type="email"], input[type="text"]').first();
+	const passwordInput = page.locator('input[name="password"], input[type="password"]');
+	const submitButton = page.locator('button[type="submit"], button:has-text("Login"), button:has-text("Sign in")').first();
+
+	await usernameInput.fill(identifier);
+	await passwordInput.fill(credentials.password);
+	await submitButton.click();
+
+	// Wait for dashboard to load after login
+	await page.waitForURL(/\/dashboard(?:[?#].*)?$/i, { timeout: 10000 }).catch(() => {
+		// Ignore timeout; we'll check storageState anyway
+	});
 
 	// Save the authenticated page state to a file
 	await saveStorageState(page, storageStatePath);
