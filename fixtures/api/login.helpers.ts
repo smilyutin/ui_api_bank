@@ -88,7 +88,7 @@ const tryLoginCandidates = async (
 				if (LOGIN_SUCCESS_STATUSES.includes(res.status())) {
 					return { loginRes: res, successfulLoginPath: formPath };
 				}
-			} catch (e: unknown) {
+			} catch (e: any) {
 				recordAttempt(attempts, formPath, e?.message || 'error');
 			}
 
