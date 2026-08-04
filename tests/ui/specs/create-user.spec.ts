@@ -47,7 +47,7 @@ test.describe('@ui @feature:create-user UI - Create user account', () => {
     const pm = new PageManager(page);
     const register = pm.register();
 
-    const user = createRandomUser('UI', false);
+    const user = createRandomUser('UI');
     if (!user.email || !user.password) {
       throw new Error('User email or password is undefined');
     }
