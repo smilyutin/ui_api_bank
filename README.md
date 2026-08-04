@@ -503,7 +503,7 @@ npm run test:mobile:ios              # Run iOS/Safari tests (macOS only, require
 npm run mobile:cleanup               # Manually cleanup test users from database
 ```
 
-**Note:** Mobile tests automatically clean up test users and browser state after completion (per-test) and after the full suite finishes (global). See `CLAUDE.md` for details.
+**Note:** Mobile tests clean up test users after the full suite finishes (global). See `CLAUDE.md` for details.
 
 ### Performance Testing
 ```bash
