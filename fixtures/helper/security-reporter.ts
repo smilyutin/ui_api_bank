@@ -519,8 +519,9 @@ export class SecurityReporter {
 
 		if (typeof evidence === 'object') {
 			const keys = ['issue', 'reason', 'message', 'description', 'detail'];
+			const obj = evidence as any;
 			for (const key of keys) {
-				const value = evidence[key];
+				const value = obj[key];
 				if (typeof value === 'string' && value.trim()) {
 					return value.trim();
 				}

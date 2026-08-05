@@ -1,6 +1,5 @@
 import { expect, type APIRequestContext, type APIResponse, type Browser } from '@playwright/test';
 import { RegisterPage } from '../../pages/register.page';
-import { saveUser } from '../../helpers/credentials';
 import { buildRegisterFormSubmission } from './register-form.helpers';
 
 /**
@@ -146,7 +145,6 @@ const tryRegisterHtmlFallback = async (
 			const regPost = await apiContext.post(actionPath, { form: formBody, headers });
 			recordTry(tried, `${actionPath} (form submit)`, regPost.status());
 			if (STRICT_SUCCESS_STATUSES.includes(regPost.status())) {
-				saveUser({ email: payload.email, password: payload.password });
 				return { response: regPost, path: `${actionPath} (form submit)` };
 			}
 		} catch (e: unknown) {
@@ -273,7 +271,6 @@ const tryUiRegisterFallback = async (
 				await page.close();
 				return null;
 			}
-			saveUser({ email: payload.email, password: payload.password });
 			await page.close();
 			return {
 				response: {

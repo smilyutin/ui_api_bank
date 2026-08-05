@@ -38,7 +38,7 @@ export type XssUsernameSession = {
 export async function establishXssUsernameSession(
 	api: APIRequestContext
 ): Promise<XssUsernameSession | null> {
-	const { password } = createRandomUser('xss', false);
+	const { password } = createRandomUser('xss');
 	const nonce = Math.random().toString(36).slice(2, 8);
 	const usernamePayload = `<script>window.${XSS_MARKER}=true;/*${nonce}*/</script>`;
 	const credentials = { username: usernamePayload, password };
