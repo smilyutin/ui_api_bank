@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
@@ -26,18 +27,20 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  */
 test.describe('@ui @feature:virtual-cards Virtual cards', () => {
   let pm: PageManager;
+  let tempStoragePath: string;
 
-  test.beforeEach(async ({ page, baseURL }) => {
+  test.beforeEach(async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'vcards-ui',
-    });
+    tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+    await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'vcards-ui' });
 
     pm = new PageManager(page);
     await pm.dashboard().waitForLoad();
+  });
+
+  test.afterEach(async () => {
+    await fs.rm(tempStoragePath, { force: true }).catch(() => {});
   });
 
   test('should create a virtual card and show it in the cards list', async () => {

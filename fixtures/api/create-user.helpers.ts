@@ -1,6 +1,5 @@
 import { expect, type APIRequestContext, type APIResponse, type Browser } from '@playwright/test';
 import { RegisterPage } from '../../pages/register.page';
-import { saveUser } from '../../helpers/credentials';
 import { buildRegisterFormSubmission } from './register-form.helpers';
 
 /**
@@ -72,10 +71,11 @@ const recordTry = (tried: TriedEntry[], path: string, status: number | string) =
 };
 
 // Build JSON payload for user creation (accommodate common field name patterns)
+// Note: The users table only has username/password columns (email is in the test payload
+// for compatibility with UI registration flows, but not stored in DB)
 const buildJsonBody = (payload: CreatePayload) =>
 	JSON.stringify({
-		email: payload.email,
-		username: payload.email,
+		username: payload.email,  // Use email as the username for compatibility
 		password: payload.password,
 	});
 
@@ -87,18 +87,10 @@ const tryCreateAtPath = async (
 	tried: TriedEntry[],
 	successStatuses: number[]
 ): Promise<CreateResult> => {
-	// Try form-encoded
-	try {
-		const resForm = await apiContext.post(path, { data: payload });
-		recordTry(tried, `${path} (form)`, resForm.status());
-		if (successStatuses.includes(resForm.status())) {
-			return { response: resForm, path: `${path} (form)` };
-		}
-	} catch (e: unknown) {
-		recordTry(tried, `${path} (form)`, e?.message || 'error');
-	}
+	// /register endpoint requires JSON, so try that first
+	// Other endpoints may accept form-encoded, so try JSON first then fallback
 
-	// Try JSON
+	// Try JSON first (works for /register and most modern APIs)
 	try {
 		const resJson = await apiContext.post(path, {
 			data: buildJsonBody(payload),
@@ -110,6 +102,17 @@ const tryCreateAtPath = async (
 		}
 	} catch (e: unknown) {
 		recordTry(tried, `${path} (json)`, e?.message || 'error');
+	}
+
+	// Try form-encoded as fallback
+	try {
+		const resForm = await apiContext.post(path, { data: payload });
+		recordTry(tried, `${path} (form)`, resForm.status());
+		if (successStatuses.includes(resForm.status())) {
+			return { response: resForm, path: `${path} (form)` };
+		}
+	} catch (e: unknown) {
+		recordTry(tried, `${path} (form)`, e?.message || 'error');
 	}
 
 	return null;
@@ -142,7 +145,6 @@ const tryRegisterHtmlFallback = async (
 			const regPost = await apiContext.post(actionPath, { form: formBody, headers });
 			recordTry(tried, `${actionPath} (form submit)`, regPost.status());
 			if (STRICT_SUCCESS_STATUSES.includes(regPost.status())) {
-				saveUser({ email: payload.email, password: payload.password });
 				return { response: regPost, path: `${actionPath} (form submit)` };
 			}
 		} catch (e: unknown) {
@@ -269,7 +271,6 @@ const tryUiRegisterFallback = async (
 				await page.close();
 				return null;
 			}
-			saveUser({ email: payload.email, password: payload.password });
 			await page.close();
 			return {
 				response: {

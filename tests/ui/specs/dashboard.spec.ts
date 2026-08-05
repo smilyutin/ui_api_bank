@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { DashboardPage } from '../../../pages/dashboard.page';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
@@ -42,37 +43,22 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  */
 test.describe('@smoke Dashboard functionality', () => {
   let dashboardPage: DashboardPage;
-  let expectedIdentifiers: string[];
+  let tempStoragePath: string;
+  let userIdentifier: string;
 
   test.beforeEach(async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    const base = baseURL.toString();
-    const auth = await ensureDashboardAuthenticated(page, {
-      baseURL: base,
-      role: 'user',
-      fallbackUserPrefix: 'UI',
-      requireToken: true,
-    });
+    tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+    const { credentials } = await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'UI' });
 
     dashboardPage = new PageManager(page).dashboard();
-    expectedIdentifiers = auth.expectedIdentifiers;
+    userIdentifier = credentials.username || credentials.email || '';
 
-    testInfo.attach('auth-mode.json', {
+    testInfo.attach('auth-user.json', {
       contentType: 'application/json',
-      body: JSON.stringify(
-        {
-          mode: auth.mode,
-          role: auth.role,
-          identifier: auth.identifier,
-          expectedIdentifiers: auth.expectedIdentifiers,
-        },
-        null,
-        2
-      ),
+      body: JSON.stringify({ identifier: userIdentifier }, null, 2),
     });
-
-    loggedExpect(auth.mode, 'auth.mode').toBe('token');
   });
 
   // Test cleanup: Clear browser state to prevent leakage to next test
@@ -91,6 +77,9 @@ test.describe('@smoke Dashboard functionality', () => {
     } catch (e) {
       // Silently ignore if page already closed
     }
+
+    // Clean up temporary auth storageState file
+    await fs.rm(tempStoragePath, { force: true }).catch(() => {});
   });
 
   test('should display welcome message and navigation', async () => {
@@ -99,12 +88,11 @@ test.describe('@smoke Dashboard functionality', () => {
       const welcomeText = await dashboardPage.getWelcomeMessage();
       loggedExpect(welcomeText, 'welcomeText').toBeTruthy();
 
-      if (expectedIdentifiers.length > 0 && welcomeText) {
+      if (userIdentifier && welcomeText) {
         const normalizedWelcome = welcomeText.toLowerCase();
-        const matched = expectedIdentifiers.some(identifier =>
-          normalizedWelcome.includes(identifier.split('@')[0].toLowerCase())
-        );
-        loggedExpect(matched, 'matched').toBeTruthy();
+        const identifierPart = userIdentifier.split('@')[0].toLowerCase();
+        const matched = normalizedWelcome.includes(identifierPart);
+        loggedExpect(matched, 'welcome message includes user identifier').toBeTruthy();
       }
     });
 

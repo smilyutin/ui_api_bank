@@ -11,7 +11,7 @@ test.describe('@reliability Phase 3: Reliability Improvements', () => {
 
     await WaitHelper.waitForNavigation(
       page,
-      () => page.goto('/'),
+      async () => { await page.goto('/'); },
       {
         timeout: WaitHelper.timeouts.NORMAL,
         logger

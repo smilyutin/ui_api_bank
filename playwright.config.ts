@@ -64,6 +64,12 @@ export default defineConfig({
     navigationTimeout: 30000,
   },
 
+  /* Configure snapshot matching to be platform-agnostic */
+  snapshotPathTemplate: '{snapshotDir}/{testFileBaseName}-{arg}{ext}',
+  snapshotMatcherOptions: {
+    maxDiffPixels: 100,
+  },
+
   /* Configure projects for major browsers - Phase 6: Cross-Browser Support */
   projects: [
     {

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { SecurityReporter } from '../../../fixtures/helper/security-reporter';
 import { TRANSFER_DESCRIPTION_XSS_PAYLOAD, XSS_MARKER } from '../../../fixtures/api/xss.helpers';
 import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
@@ -32,11 +33,8 @@ test.describe('@ui @security UI - Stored XSS via transfer description', () => {
     const reporter = new SecurityReporter(testInfo);
 
     const { pm, recipient } = await test.step('Authenticate and navigate to money transfer', async () => {
-      await ensureDashboardAuthenticated(page, {
-        baseURL: baseURL.toString(),
-        role: 'user',
-        fallbackUserPrefix: 'xss-ui',
-      });
+      const tempStoragePath = `/tmp/auth-${testInfo.testId || 'xss'}.json`;
+      await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'xss-ui' });
 
       // A real, freshly created recipient account instead of a hardcoded
       // number that /transfer just happens not to validate today.
@@ -54,6 +52,9 @@ test.describe('@ui @security UI - Stored XSS via transfer description', () => {
         const tile = page.getByText(/send money|transfer money/i);
         if (await tile.count()) await tile.first().click();
       }
+
+      // Clean up after step
+      await fs.rm(tempStoragePath, { force: true }).catch(() => {});
       return { pm, recipient };
     });
 
@@ -70,7 +71,7 @@ test.describe('@ui @security UI - Stored XSS via transfer description', () => {
       let fired = false;
       try {
         await expect.poll(
-          async () => (await page.evaluate<boolean>((marker) => (window as any)[marker] === true, XSS_MARKER)),
+          async () => (await page.evaluate<boolean>(() => (window as any)[XSS_MARKER] === true)),
           { timeout: 3000 }
         ).toBeTruthy();
         fired = true;

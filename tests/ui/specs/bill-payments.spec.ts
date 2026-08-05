@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
-import { loadStoredToken } from '../../../helpers/credentials';
+import { loginAsUser } from '../../../helpers/auth';
 import { request } from '@playwright/test';
 import { updateCardLimit, listVirtualCards } from '../../../fixtures/api/virtual-cards.helpers';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
@@ -31,18 +31,21 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  */
 test.describe('@ui @feature:bill-payments Bill payments', () => {
   let pm: PageManager;
+  let tempStoragePath: string;
 
-  test.beforeEach(async ({ page, baseURL }) => {
+  test.beforeEach(async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'bills-ui',
-    });
+    tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+    await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'bills-ui' });
 
     pm = new PageManager(page);
     await pm.dashboard().waitForLoad();
+  });
+
+  test.afterEach(async () => {
+    // Clean up temporary auth storageState file
+    await fs.rm(tempStoragePath, { force: true }).catch(() => {});
   });
 
   test('should pay a bill from account balance', async () => {
@@ -93,8 +96,8 @@ test.describe('@ui @feature:bill-payments Bill payments', () => {
       const cardId = await cards.waitForCardWithLimit('500');
       loggedExpect(cardId, 'cardId').not.toBeNull();
 
-      const token = loadStoredToken('user') || process.env.API_AUTH_TOKEN;
-      if (!token) throw new Error('No auth token available to fund the virtual card via the API');
+      const token = process.env.API_AUTH_TOKEN;
+      if (!token) throw new Error('No API_AUTH_TOKEN available to fund the virtual card via the API');
       const api = await request.newContext({ baseURL: baseURL.toString() });
       await updateCardLimit(api, token, cardId!, { current_balance: 200 });
 

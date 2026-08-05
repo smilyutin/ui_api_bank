@@ -65,8 +65,23 @@ test.describe('@api @feature:create-user API - Create user account', () => {
     if (!baseURL) throw new Error('baseURL is not defined');
     const reporter = new SecurityReporter(testInfo);
 
-    const { status, body } = await test.step('Register with a username that already exists', async () => {
-      const existing = findOrCreateUser('create-user-dup-check');
+    const testUser = findOrCreateUser('create-user-dup-check');
+
+    // First, register the user once
+    await test.step('Register the user first time', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      const res = await api.post('/register', {
+        data: {
+          username: testUser.email || testUser.username,
+          password: testUser.password
+        },
+        headers: { 'Content-Type': 'application/json' }
+      });
+      expect(res.status()).toBe(200);
+      await api.dispose();
+    });
+
+    const { status, body } = await test.step('Register with the same username again', async () => {
       const api = await request.newContext({ baseURL: baseURL.toString() });
 
       const res = await api.post('/register', {
@@ -74,7 +89,7 @@ test.describe('@api @feature:create-user API - Create user account', () => {
         // account with `email` as the username value (create-user.helpers.ts,
         // RegisterPage.fillEmail), so that's what must be resubmitted here to
         // actually collide with the existing row.
-        data: { username: existing.email || existing.username, password: 'Password123!' },
+        data: { username: testUser.email || testUser.username, password: 'Password123!' },
         headers: { 'Content-Type': 'application/json' }
       });
       const status = res.status();

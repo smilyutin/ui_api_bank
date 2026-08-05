@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { WaitHelper } from '../../../helpers/wait-helpers';
 
 /**
@@ -20,17 +21,15 @@ import { WaitHelper } from '../../../helpers/wait-helpers';
  */
 test.describe('@ui Locator Synchronization & Stability', () => {
 	let pm: PageManager;
+	let tempStoragePath: string;
 
 	// Test isolation: Fresh authentication for each test
-	test.beforeEach(async ({ page, baseURL }) => {
+	test.beforeEach(async ({ page, baseURL }, testInfo) => {
 		if (!baseURL) throw new Error('baseURL is not defined');
 
 		// Ensure clean state: authenticate fresh user, no shared session
-		await ensureDashboardAuthenticated(page, {
-			baseURL: baseURL.toString(),
-			role: 'user',
-			fallbackUserPrefix: 'locator-sync-test',
-		});
+		tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+		await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'locator-sync-test' });
 
 		pm = new PageManager(page);
 
@@ -40,13 +39,9 @@ test.describe('@ui Locator Synchronization & Stability', () => {
 	});
 
 	// Test isolation: Clean up after each test
-	test.afterEach(async ({ page }) => {
-		// Logout to clear session state
-		await pm.dashboard().logout().catch(() => {
-			// Logout may fail if already logged out, which is fine
-		});
-
-		// Clear cookies to reduce session state leakage to the next test
+	test.afterEach(async () => {
+		// Clean up temporary auth storageState file
+		await fs.rm(tempStoragePath, { force: true }).catch(() => {});
 	});
 
 	test('should wait for welcome heading using chained locator with regex filter', async ({

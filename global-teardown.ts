@@ -1,125 +1,77 @@
-import { chromium, request as apiRequest } from '@playwright/test';
-import { rm } from 'fs/promises';
-import { resolve } from 'path';
+import { request as apiRequest } from '@playwright/test';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { loadAdminCredentials } from './helpers/credentials';
+import { loginViaCredentials } from './helpers/auth';
 
-// Global teardown (after all tests): Delete all test users, clean storage/.
-// Preserves the admin master account. Ensures a clean slate for the next run.
-// See CLAUDE.md and ADMIN_PANEL_TESTS.md for details.
+// Global teardown (after all tests):
+// Deletes test users created during the test run.
+// Preserves the admin master account.
 
 const baseURL = process.env.BASE_URL ?? 'http://localhost:5001';
 
 export default async () => {
-	const browser = await chromium.launch();
-
-	// Authenticate as admin to call the cleanup API
 	try {
-		const page = await browser.newPage();
-		const adminUsername = process.env.ADMIN_USERNAME ?? 'admin';
-		const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin123';
+		// Authenticate as admin to call cleanup API
+		const adminCreds = loadAdminCredentials();
+		const adminToken = await loginViaCredentials(baseURL, adminCreds.identifier, adminCreds.password);
+		console.log('✓ Admin authenticated for cleanup');
 
-		// Authenticate to get admin token
-		let adminToken: string | null = null;
+		// Get all users and delete test users
+		const api = await apiRequest.newContext({ baseURL });
+		const usersRes = await api.get('/debug/users');
 
-		try {
-			const api = await apiRequest.newContext({ baseURL });
-			const authRes = await api.post('/login', {
-				data: { username: adminUsername, password: adminPassword },
-				headers: { 'Content-Type': 'application/json' },
-			});
+		if (usersRes.ok()) {
+			const data = (await usersRes.json()) as { users?: Array<{ id: string; username?: string }> };
+			const users = data.users || [];
+			const testUserPrefixes = ['e2e', 'UI', 'global-setup-', 'loan-approval-', 'admin-panel-', 'admin-delete-', 'admin-test-', 'admin-form-clear-', 'admin-msg-'];
 
-			if (authRes.ok()) {
-				const authJson = await authRes.json();
-				adminToken = authJson.token;
-				if (!adminToken) {
-					console.warn('No token in login response');
-				} else {
-					console.log('✓ Admin authenticated for cleanup');
+			let deletedCount = 0;
+			for (const user of users) {
+				const username = user.username || '';
+
+				// Skip admin account
+				if (username === 'admin' || username === adminCreds.identifier) {
+					continue;
 				}
-			} else {
-				const text = await authRes.text();
-				console.warn(`Login failed with status ${authRes.status()}: ${text.substring(0, 200)}`);
-			}
-			await api.dispose();
-		} catch (e) {
-			console.warn('Failed to login for cleanup:', e);
-		}
 
-		if (!adminToken) {
-			console.warn('Could not obtain admin token for cleanup, skipping data deletion');
-			await page.close();
-			await browser.close();
-			return;
-		}
+				// Delete if matches test user prefix
+				const isTestUser = testUserPrefixes.some((prefix) => username.startsWith(prefix));
+				if (isTestUser) {
+					try {
+						const deleteRes = await api.post(`/admin/delete_account/${user.id}`, {
+							headers: { Authorization: `Bearer ${adminToken}` },
+						});
 
-		// Get all users from debug endpoint and delete test users
-		try {
-			const api = await apiRequest.newContext({ baseURL });
-			const usersRes = await api.get('/debug/users');
-
-			if (usersRes.ok()) {
-				const data = await usersRes.json();
-				const users = data.users || [];
-				const testUserPrefixes = [
-					'e2e-',
-					'global-setup-',
-					'loan-approval-',
-					'admin-panel-',
-					'admin-delete-',
-					'admin-test-',
-					'admin-form-clear-',
-					'admin-msg-',
-				];
-
-				let deletedCount = 0;
-				for (const user of users) {
-					const username = user.username || '';
-
-					// Skip admin master account
-					if (username === 'admin' || username === adminUsername) {
-						continue;
-					}
-
-					// Delete test users only
-					const isTestUser = testUserPrefixes.some((prefix) => username.includes(prefix));
-					if (isTestUser) {
-						try {
-							const deleteRes = await api.post(`/admin/delete_account/${user.id}`, {
-								headers: { Authorization: `Bearer ${adminToken}` },
-							});
-
-							if (deleteRes.ok()) {
-								console.log(`✓ Deleted test user: ${username}`);
-								deletedCount++;
-							}
-						} catch (e) {
-							console.warn(`Failed to delete user ${username}:`, e);
+						if (deleteRes.ok()) {
+							console.log(`✓ Deleted test user: ${username}`);
+							deletedCount++;
 						}
+					} catch (e) {
+						console.warn(`Failed to delete user ${username}:`, e);
 					}
 				}
-
-				if (deletedCount > 0) {
-					console.log(`✓ Cleanup complete: Deleted ${deletedCount} test users`);
-				} else {
-					console.log('✓ No test users to delete');
-				}
 			}
-			await api.dispose();
-		} catch (e) {
-			console.warn('Failed to cleanup test data:', e);
+
+			console.log(`✓ Cleanup: deleted ${deletedCount} test user(s)`);
 		}
-
-		await page.close();
+		await api.dispose();
 	} catch (e) {
-		console.error('Global teardown error:', e);
+		console.warn('Cleanup failed (continuing anyway):', e);
 	}
 
+	// Clean up temporary storageState files (user sessions)
 	try {
-		const storageDir = resolve(process.cwd(), 'storage');
-		await rm(storageDir, { recursive: true, force: true });
-		console.log('✓ Cleaned up storage/ (regenerated fresh on next run)');
+		const tmpDir = '/tmp';
+		const files = await fs.readdir(tmpDir);
+		const authFiles = files.filter((f) => f.startsWith('auth-') && f.endsWith('.json'));
+		for (const file of authFiles) {
+			await fs.rm(path.join(tmpDir, file), { force: true });
+		}
+		if (authFiles.length > 0) {
+			console.log(`✓ Cleaned up ${authFiles.length} temporary auth file(s)`);
+		}
 	} catch (e) {
-		console.warn('Could not clean storage directory:', e);
+		// Ignore if temp directory cleanup fails
 	}
-
-	await browser.close();
 };

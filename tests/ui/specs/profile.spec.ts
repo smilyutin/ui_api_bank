@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { TEST_PNG_BUFFER } from '../../../fixtures/api/profile.helpers';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
@@ -18,15 +19,13 @@ import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../
  */
 test.describe('@ui @feature:profile Profile picture management', () => {
   let pm: PageManager;
+  let tempStoragePath: string;
 
-  test.beforeEach(async ({ page, baseURL }) => {
+  test.beforeEach(async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'profile-ui',
-    });
+    tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+    await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'profile-ui' });
 
     pm = new PageManager(page);
     await pm.dashboard().waitForLoad();
@@ -51,6 +50,9 @@ test.describe('@ui @feature:profile Profile picture management', () => {
     } catch (e) {
       // Silently ignore if page/context already closed
     }
+
+    // Clean up temporary auth storageState file
+    await fs.rm(tempStoragePath, { force: true }).catch(() => {});
   });
 
   test('should upload a profile picture and update the displayed image', async () => {

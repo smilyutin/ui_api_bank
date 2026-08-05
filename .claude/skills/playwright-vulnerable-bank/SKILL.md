@@ -333,14 +333,20 @@ await test.step('Step two', async () => { await login.fillPassword(password); })
 - `createRandomUser(prefix?, persist?)` always mints a brand-new user; use this when a test specifically needs an isolated/fresh identity (e.g. registration flows, tests that mutate the user's own state destructively).
 - `loadStoredToken(role)` / `saveStoredToken(token, role)` read/write the persisted JWT for `'user'` or `'admin'`.
 
-### Auth bootstrap (`helpers/auth-bootstrap.ts::ensureDashboardAuthenticated`)
+### Auth Bootstrap (`helpers/auth.ts`)
 
-Most UI specs call this in `beforeEach` instead of driving the login form manually. It tries, in order:
+Test authentication uses a unified storageState-based approach:
 
-1. **Token injection** — load a token from `test-data/users.json` / `API_AUTH_TOKEN` / `ADMIN_AUTH_TOKEN`, or mint a fresh one via the login-endpoint candidates below, then inject it into `localStorage`/`sessionStorage`/cookies and navigate straight to the dashboard.
-2. **Real UI credential login** — only if token auth fails to produce a working dashboard session (`LoginPage`, then `DashboardPage.waitForLoad()`).
+**For test users (ephemeral sessions):**
+- `loginAsUser(page, baseURL, storageStatePath, options?)` — creates a fresh test user, logs in, and injects the auth token into localStorage/cookies. Saves storageState to a temp file for this test run only.
 
-Pass `role: 'admin'` for admin-only flows (requires `ADMIN_AUTH_TOKEN`, or `ADMIN_USERNAME`/`ADMIN_EMAIL`/`ADMIN_IDENTIFIER` + `ADMIN_PASSWORD` for the credential fallback), and `requireToken: true` when a test specifically needs token-mode auth and should fail loudly rather than silently falling back to UI login.
+**For admin (persistent session):**
+- `ensureAdminSession(baseURL, options?)` — checks for cached admin session in `storage/admin-auth.json` (reuses if <24 hours old), creates fresh session otherwise. Admin session persists across multiple test runs in a session.
+
+**Low-level helper (used by both above):**
+- `loginViaCredentials(baseURL, identifier, password)` — POSTs to `/login` endpoint, extracts token from response, returns credentials object.
+
+This replaces the old multi-path token injection approach with a single, clear pattern using Playwright's native `storageState` mechanism.
 
 ### Global Setup & Teardown (Admin Panel Tests)
 
@@ -455,7 +461,7 @@ The admin panel suite is a complete example of comprehensive, phased test covera
 
 **PageManager Integration:** accessor added to `pages/page-manager.ts` — `pm.adminPanel()`
 
-**Global Setup & Teardown:** Admin tests run under the `chromium-admin` project with `global-setup.ts`/`global-teardown.ts` hooks (see "Global Setup & Teardown" section above for details). Tests do NOT call `ensureDashboardAuthenticated()` — they reuse the pre-authenticated session from global setup instead.
+**Global Setup & Teardown:** Admin tests run under the `chromium-admin` project with `global-setup.ts`/`global-teardown.ts` hooks (see "Global Setup & Teardown" section above for details). Tests do NOT call `loginAsUser()` — they reuse the pre-authenticated session from global setup via the `chromium-admin` project's `use: { storageState: 'storage/admin-auth.json' }` configuration instead.
 
 **Run the suite:**
 
@@ -485,7 +491,7 @@ When wiring up tests for an endpoint/page that doesn't have coverage yet:
 2. Add a page object in `pages/<feature>.page.ts` extending `HelperBase`, and register it in `pages/page-manager.ts`.
 3. Write the API spec in `tests/api/<feature>.spec.ts`: cover functional/non-functional/security angles per "Test Design" above, call `validateSchema(...)` on success responses, and report security checks via `SecurityReporter`.
 4. Do one `UPDATE_SCHEMAS=1` run to generate `response-schemas/<feature>-schema/`, then review and commit the generated JSON.
-5. Write the UI spec in `tests/ui/specs/<feature>.spec.ts` using `ensureDashboardAuthenticated` in `beforeEach` and the `PageManager`.
+5. Write the UI spec in `tests/ui/specs/<feature>.spec.ts` using `loginAsUser` in `beforeEach` (with temp storageState file cleanup in `afterEach`) and the `PageManager`.
 
 Consider the **three-phase approach** used in the admin panel suite:
 

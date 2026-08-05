@@ -1,6 +1,7 @@
 import { test } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
@@ -29,18 +30,20 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  */
 test.describe('@ui @feature:loans Loan requests', () => {
   let pm: PageManager;
+  let tempStoragePath: string;
 
-  test.beforeEach(async ({ page, baseURL }) => {
+  test.beforeEach(async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
-    await ensureDashboardAuthenticated(page, {
-      baseURL: baseURL.toString(),
-      role: 'user',
-      fallbackUserPrefix: 'loans-ui',
-    });
+    tempStoragePath = `/tmp/auth-${testInfo.testId}.json`;
+    await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'loans-ui' });
 
     pm = new PageManager(page);
     await pm.dashboard().waitForLoad();
+  });
+
+  test.afterEach(async () => {
+    await fs.rm(tempStoragePath, { force: true }).catch(() => {});
   });
 
   test('should submit a loan request and show it as pending', async () => {

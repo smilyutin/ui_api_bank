@@ -22,7 +22,7 @@ test.describe('@security  Authentication - Password policy', () => {
 
       const results: { password: string; status: number; accepted: boolean }[] = [];
       for (const password of WEAK_PASSWORDS) {
-        const user = createRandomUser('pw-policy', false);
+        const user = createRandomUser('pw-policy');
         const res = await api.post('/register', {
           data: { username: user.username, password },
           headers: { 'Content-Type': 'application/json' }

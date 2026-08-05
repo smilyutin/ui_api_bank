@@ -38,7 +38,7 @@ export async function establishAccountSession(
 	api: APIRequestContext,
 	prefix = 'bola'
 ): Promise<AccountSession | null> {
-	const user = createRandomUser(prefix, false);
+	const user = createRandomUser(prefix);
 	const identifier = user.username || user.email;
 	if (!identifier) return null;
 

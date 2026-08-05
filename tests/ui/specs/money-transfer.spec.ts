@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs/promises';
 import { PageManager } from '../../../pages/page-manager';
-import { ensureDashboardAuthenticated } from '../../../helpers/auth-bootstrap';
+import { loginAsUser } from '../../../helpers/auth';
 import { establishAccountSession } from '../../../fixtures/api/transactions.helpers';
 import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
@@ -40,16 +41,15 @@ import { setupAssertionLogging, endAssertionLogging } from '../../../helpers/exp
  * 6. Verify success confirmation
  */
 test.describe('@ui @feature:money-transfer Money transfer flow', () => {
-  test('should send money successfully', async ({ page, baseURL, request }) => {
+  test('should send money successfully', async ({ page, baseURL, request }, testInfo) => {
     setupAssertionLogging('should send money successfully');
     if (!baseURL) throw new Error('baseURL is not defined');
 
     const recipient = await test.step('Authenticate and establish a recipient account', async () => {
-      await ensureDashboardAuthenticated(page, {
-        baseURL: baseURL.toString(),
-        role: 'user',
-        fallbackUserPrefix: 'e2e',
-      });
+      const tempStoragePath = `/tmp/auth-${testInfo.testId || 'money-transfer'}.json`;
+      await loginAsUser(page, baseURL, tempStoragePath, { userPrefix: 'e2e' });
+      // Clean up after test step
+      await fs.rm(tempStoragePath, { force: true }).catch(() => {});
 
       // A real, freshly created recipient account instead of a hardcoded
       // number that /transfer just happens not to validate today.

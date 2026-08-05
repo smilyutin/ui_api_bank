@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, request } from '@playwright/test';
 import { PageManager } from '../../../pages/page-manager';
-import { saveStoredToken, saveUser, createRandomUser, findOrCreateUser } from '../../../helpers/credentials';
+import { createRandomUser } from '../../../helpers/credentials';
 import { loggedExpect, setupAssertionLogging, endAssertionLogging } from '../../../helpers/expect-logger';
 
 /**
@@ -47,7 +47,7 @@ test.describe('@ui @feature:create-user UI - Create user account', () => {
     const pm = new PageManager(page);
     const register = pm.register();
 
-    const user = createRandomUser('UI', false);
+    const user = createRandomUser('UI');
     if (!user.email || !user.password) {
       throw new Error('User email or password is undefined');
     }
@@ -110,9 +110,8 @@ test.describe('@ui @feature:create-user UI - Create user account', () => {
     });
 
     await test.step('Persist credentials for future tests', async () => {
-      saveUser(user, { replace: true });
+      // Set the fresh token in environment for future API calls in this test session
       if (freshToken) {
-        saveStoredToken(freshToken, 'user');
         process.env.API_AUTH_TOKEN = freshToken;
       }
       endAssertionLogging('passed');
@@ -125,19 +124,38 @@ test.describe('@ui @feature:create-user UI - Create user account', () => {
     const pm = new PageManager(page);
     const register = pm.register();
 
-    // Reuse the shared persisted user (already registered) so /register's
-    // "Username already exists" branch (app.py) is guaranteed to trigger.
-    const existing = findOrCreateUser('e2e');
-    if (!existing.username && !existing.email) {
-      throw new Error('Existing user is missing a username/email to reuse for the duplicate check');
+    // Create a test user first
+    const testUser = createRandomUser('dup-check');
+    const userIdentifier = testUser.email || testUser.username;
+
+    if (!userIdentifier) {
+      throw new Error('Test user must have username or email');
     }
 
-    await test.step('Register with a username that already exists', async () => {
-      // Registration stores `email` as the username (RegisterPage.fillEmail
-      // fills the form's username/email field with this value), so it's the
-      // value that must be resubmitted to actually collide with the existing row.
+    // Register the user via API first
+    await test.step('Register the user first', async () => {
+      const api = await request.newContext({ baseURL: baseURL.toString() });
+      try {
+        const res = await api.post('/register', {
+          data: JSON.stringify({
+            username: userIdentifier,
+            password: testUser.password,
+          }),
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!res.ok()) {
+          throw new Error(`Failed to register test user: ${res.status()}`);
+        }
+      } finally {
+        await api.dispose();
+      }
+    });
+
+    // Try to register the same user again
+    await test.step('Register with the same username again', async () => {
       await register.goto(baseURL.toString());
-      await register.fillEmail(existing.email || existing.username!);
+      await register.fillEmail(userIdentifier);
       await register.fillPassword('SomeOtherPassword123!');
       await register.submit();
     });

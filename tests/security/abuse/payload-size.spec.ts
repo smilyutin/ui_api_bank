@@ -22,7 +22,7 @@ test.describe('@security Abuse - Payload size', () => {
 
     const probe = await test.step('Submit an oversized username field', async () => {
       const api = await request.newContext({ baseURL: baseURL.toString() });
-      const { password } = createRandomUser('payload-size', false);
+      const { password } = createRandomUser('payload-size');
 
       const probe = await probeOversizedPayload(api, '/register', { password }, 'username', OVERSIZED_BYTES);
       await api.dispose();
