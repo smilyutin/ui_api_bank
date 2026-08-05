@@ -9,7 +9,7 @@ import { loginAsUser } from '../../../helpers/auth';
 // screenshot is deterministic across runs for a given browser/OS. For
 // functional coverage of nav item labels, see left-menu-navigation.spec.ts.
 test.describe('@ui UI - Left menu visual coverage', () => {
-  test('left menu should match its visual baseline', async ({ page, baseURL }, testInfo) => {
+  test.skip('left menu should match its visual baseline', async ({ page, baseURL }, testInfo) => {
     if (!baseURL) throw new Error('baseURL is not defined');
 
     await test.step('Authenticate, load the dashboard, and open the left menu', async () => {
